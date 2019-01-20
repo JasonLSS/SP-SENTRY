@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>SP19_Template</TargetName>
+      <TargetName>SP19_Template_lite</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <pArmCC>5060750::V5.06 update 6 (build 750)::ARMCC</pArmCC>
@@ -50,7 +50,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>SP19_Template</OutputName>
+          <OutputName>SP19_Template_lite</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\eMPL;..\SPLib\USB;..\User;..\SPLib\Test\sp19dev\src</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\eMPL;..\SPLib\USB;..\User;..\User\Config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -397,6 +397,11 @@
               <FileType>1</FileType>
               <FilePath>..\User\sp_task.c</FilePath>
             </File>
+            <File>
+              <FileName>config.template</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\config.template</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -431,6 +436,11 @@
               <FileName>sp_pid.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\AAL\sp_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_filter.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\AAL\sp_filter.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -467,11 +477,6 @@
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\spi.c</FilePath>
             </File>
-            <File>
-              <FileName>DMA_Channels.md</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\SPLib\DMA_Channels.md</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -480,22 +485,12 @@
             <File>
               <FileName>mpu6500.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\mpu6500.c</FilePath>
-            </File>
-            <File>
-              <FileName>MPU6500_Desc.md</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\SPLib\MPU6500_Desc.md</FilePath>
+              <FilePath>..\SPLib\eMPL\mpu6500.c</FilePath>
             </File>
             <File>
               <FileName>inv_mpu.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\eMPL\inv_mpu.c</FilePath>
-            </File>
-            <File>
-              <FileName>inv_mpu_dmp_motion_driver.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\inv_mpu_dmp_motion_driver.c</FilePath>
             </File>
             <File>
               <FileName>ml.c</FileName>
@@ -561,6 +556,26 @@
               <FileName>system_stm32f427II.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\system_stm32f427II.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>DOC</GroupName>
+          <Files>
+            <File>
+              <FileName>DMA_Channels.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Doc\DMA_Channels.md</FilePath>
+            </File>
+            <File>
+              <FileName>MPU6050_RegDesc.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Doc\MPU6050_RegDesc.md</FilePath>
+            </File>
+            <File>
+              <FileName>MPU6500_Desc.md</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Doc\MPU6500_Desc.md</FilePath>
             </File>
           </Files>
         </Group>

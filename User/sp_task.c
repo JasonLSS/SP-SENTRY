@@ -15,7 +15,6 @@
   ******************************************************************************
   */
 
-
 /* Includes ------------------------------------------------------------------*/
 #include "sp_conf.h"
 
@@ -78,11 +77,11 @@ static struct {
     CAN_Transmitter         transmitter;
     uint8_t                 raw_data[8];
 } gm_data;
-PID_Type            gm_spd;
-PID_Type            gm_pos;
-MOTOR_CrtlType_CAN* gm6020;
-MOTOR_CrtlType_CAN* motor206;
-int32_t            gm_target = 0;
+PID_Type                    gm_spd;
+PID_Type                    gm_pos;
+MOTOR_CrtlType_CAN*         gm6020;
+MOTOR_CrtlType_CAN*         motor206;
+int32_t                     gm_target = 0;
 
 /**
   * @brief  Init modules in system layer control
@@ -90,9 +89,6 @@ int32_t            gm_target = 0;
   *         This function is called in the .s link file
   */
 void TASK_GlobalInit() {
-    //NVIC_InitTypeDef;
-    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);     /* 4 pre-emption priority and 4 subpriority */
-    
     /** 
       * @brief  Low layer initialize
       */
@@ -111,11 +107,6 @@ void TASK_GlobalInit() {
         USART_RX_Config(UART8, 115200);
         USART_Cmd(UART8, ENABLE);
         
-        // Start USART and DMA for send data
-//        USART_TX_Config(UART7, 115200);
-//        DMA_USART_TX_Config(UART7);
-//        USART_Cmd(UART7, ENABLE);
-        
         // Enable Remote Controller Receiver
         RC_ReceiverInit();
         /* Start basis functions */
@@ -123,11 +114,10 @@ void TASK_GlobalInit() {
         
         // IMU module init
         MPU6500_Init();
-        
-//        TIM6_Configuration();
-        
+
         // Init DMA null stream for memory-to-memory transfer
         DMA_InitNull(NULL, NULL, 0);
+        
     #ifdef USING_USB
         USB_TaskInit();
     #endif
@@ -137,7 +127,6 @@ void TASK_GlobalInit() {
       * @brief  System layer initialize
       */
     {
-        // sp::MONITOR_ManagerInit();
     }
     
     /** 
@@ -285,24 +274,6 @@ void TASK_GlobalInit() {
         PID_SetGains(motor206->control.position_pid, 8.f, 15.0f, 0.4f);
 
     #endif
-//        MOTOR_CrtlType_CAN* motor205 = CHASIS_EnableMotor(Motor205, RM_6623_YAW, true);
-//        Friction_Init();
-//        
-//        if(motor205) {
-//            motor205->control.speed_pid->Kp = 2.f;
-//            motor205->control.speed_pid->Ki = 0.2f;
-//            motor205->control.speed_pid->Kd = 0.f;
-//            motor205->control.speed_pid->intergration_limit = 500;
-//            motor205->control.speed_pid->intergration_separation = 500;
-//            motor205->control.speed_pid->functions.input_filter = MovingAverageFilter_f32;
-//            motor205->control.speed_pid->functions.output_filter = MovingAverageFilter_f32;
-//            
-//            motor205->control.position_pid->Kp = -0.7f;
-//            motor205->control.position_pid->Ki = 0.f;
-//            motor205->control.position_pid->Kd = -0.05;
-//            
-//            motor205->control.output_limit = 5000;
-//        }
     }
     /** 
       * @brief  Sundries and initialize
@@ -323,9 +294,6 @@ void TASK_Enable() {
       */
     {
         NVIC_IRQEnable(TIM2_IRQn, 0, 2);            // Friction
-//        NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 1);
-//        NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 1);
-//        NVIC_IRQEnable(DMA2_Stream5_IRQn, 1, 0);    // RC
         NVIC_IRQEnable(DMA1_Stream5_IRQn, 0, 1);    // Friction pulse capture
         NVIC_IRQEnable(DMA1_Stream6_IRQn, 0, 1);    // Friction pulse capture
         NVIC_IRQEnable(EXTI9_5_IRQn, 1, 3);         // MPU int
@@ -375,16 +343,6 @@ void TASK_ControlLooper() {
             
         } else if(task_counter%10 == 3) {
           #ifdef USING_TEST42
-            /* 203 */
-            // 10 12 0.1
-            // 5.0 7.0 0.08
-            /// 5.1 2.2
-            //5 2 0
-            /* 204 */
-            // 6 3.6 0
-            // 10 12 0.1
-            // 5.0 7.0 0.08
-            // 6 4 0.08
             CHASIS_SetMotorSpeed(Motor207, speed);
             CHASIS_SetMotorSpeed(Motor208, -speed);
           #endif
@@ -439,8 +397,6 @@ void TASK_ControlLooper() {
             
             Friction_Looper(target);
           #endif
-//          static float position = 0;
-//          CHASIS_SetMotorPosition(Motor205, position);
         } else if(task_counter%10 == 5) {
           #ifdef USING_CHASIS
             CHASIS_Move(
@@ -458,12 +414,12 @@ void TASK_ControlLooper() {
             CHASIS_ControlLooper();
         } else if(task_counter%10 == 7) {
           #ifdef USING_TEST17
-            // extern PWMFriction_Type Friction_CH1, Friction_CH2;
-            // printf("%.4f,%.4f\r\n", Friction_CH1.speed[0], Friction_CH2.speed[0]);
+            extern PWMFriction_Type Friction_CH1, Friction_CH2;
+            printf("%.4f,%.4f\r\n", Friction_CH1.speed[0], Friction_CH2.speed[0]);
           #endif 
           #ifdef USING_SENTRY
-            static const MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
-            static const MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
+            static MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
+            static MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
             printf("%d,%d\r\n", motor201->state.speed, motor202->state.speed);
           #endif
 
@@ -497,10 +453,7 @@ void TASK_ControlLooper() {
       * @brief  System layer looper
       */
     {
-        if(task_counter%11 == 0) {
-            // sp::MONITOR_ManagerLooper();
-        }
-        Runner_ControlLooper(task_counter);
+        
     }
     /** 
       * @brief  Low layer looper
@@ -598,42 +551,72 @@ void SysTick_Handler(void) {
   */
 
 
-
-/* Private variables ---------------------------------------------------------*/
-/** @defgroup Task User Interfaces Functions
-  * @brief    Interactive with user
+/** @defgroup System Time Support
+  * @brief    Using spCLOCK(default TIM14) as clock source with 1ms(count 1000) period.
   * @{
   */
 
 /**
-  * @brief  Get current task looper counter
+  * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
   */
-uint32_t TASK_GetCounter() {
-    return task_counter;
+static struct {
+    volatile uint32_t  ms;
+    volatile uint32_t* us;
+} spClock = {0, &spCLOCK->CNT};
+
+void spCLOCK_Configuration(void) {
+    /* 84MHz */
+    spRCC_Set_spCLOCK();
+    /* 1000Hz */
+    TIM_TimeBaseInitTypeDef tim_base_initer;
+    tim_base_initer.TIM_Prescaler = 84-1;
+    tim_base_initer.TIM_Period = 1000-1;
+    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
+    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
+    
+    TIM_TimeBaseInit(spCLOCK, &tim_base_initer);
+    TIM_ITConfig(spCLOCK, TIM_IT_Update, ENABLE);
+    NVIC_IRQEnable(spClock_IRQn, 0, 0);
+    TIM_Cmd(spCLOCK, ENABLE);
 }
 
-void TASK_GetCounterPtr(unsigned long *count) {
-    count[0] = task_counter;
+static uint32_t timcount = 0;
+void spClock_IRQHandler(void) {
+    if(TIM_GetITStatus(spCLOCK,TIM_IT_Update) == SET) {
+        spClock.ms ++;
+        TIM_ClearITPendingBit(spCLOCK, TIM_IT_Update);
+    }
 }
 
-/**
-  * @brief  Get current time stamp
-  */
+uint32_t TASK_GetMicrosecond(void) {
+    return spClock.ms;
+}
+
+void TASK_GetMicrosecondPtr(unsigned long *count) {
+    count[0] = spClock.ms;
+}
+
 spTimeStamp TASK_GetTimeStamp(void) {
     spTimeStamp stamp;
-    stamp.us = SysTick->VAL*1000/SysTick->LOAD;
-    TASK_GetCounterPtr((unsigned long*)&stamp.ms);
+    stamp.us = *spClock.us;
+    stamp.ms = spClock.ms;
     return stamp;
+}
+
+float TASK_GetSecond(void) {
+    return spClock.ms*1.0f/1000 + (*spClock.us)*1.0f/1000000;
 }
 
 float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp) {
     return stamp->ms*1.0f/1000 + stamp->us*1.0f/1000000;
 }
 
-
 /**
   * @}
   */
 
+/**
+  * @}
+  */
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
 
