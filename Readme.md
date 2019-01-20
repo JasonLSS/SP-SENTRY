@@ -6,6 +6,9 @@ This is the library and template project of STM32F427II by Super Power Robomaste
 
 # Versions
 
+## v0.1
+- Basic function tested.
+
 ## v0.0 Init
 - Inherit from **SP19_Template** v0.1.3-1
 
