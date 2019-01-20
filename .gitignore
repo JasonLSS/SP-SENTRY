@@ -1,0 +1,11 @@
+*.TMP
+mdk/*
+STMLib
+!**/*.uvprojx
+Doc/*
+**/*.lib
+Debug/*
+Debug++/*
+SPLib/Legacy
+/SPLib/Test/
+!/SPLib/Test/sp19dev/src/*
