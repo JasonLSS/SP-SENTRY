@@ -75,11 +75,6 @@ __CAHSIS_ManagerType            __CAHSIS_Manager;        /* Chasis1 for 201~204,
 #define PIDVAL_CM_POSI_limit                200
 
 
-/* Private variables ---------------------------------------------------------*/
-/**
-  * @brief  Chasis motors control type
-  */
-
 /**
   * @brief  CAN1/CAN2 received message buffer
   */
@@ -90,23 +85,6 @@ PID_Type        __CHASIS_FollowPID;
 /* Private functions ---------------------------------------------------------*/
 void            __CHASIS_Stop(void);
 
-
-/* Private functions ---------------------------------------------------------*/
-/** @defgroup Chasis Control Initializations and Configurations
-  * @brief    Functions for inner motor controll
-  * @{
-  */
-
-/**
-  * @}
-  */
-
-
-
-/** @defgroup Motor Control Functions
-  * @brief    Functions for inner motor controll
-  * @{
-  */
 
 /**
   * @brief  Stop chasis movement via CAN-bus
@@ -120,29 +98,14 @@ inline void __CHASIS_Stop(void) {
     }
 }
 
-/**
-  * @}
-  */
 
 
 
-/** @defgroup Chasis Translation Control Functions
-  * @brief    Control chasis move certain distance with PID position-loop control.
-  * @{
-  */
 
 
-/**
-  * @}
-  */
 
 
-/* Exported functions --------------------------------------------------------*/
 
-/** @defgroup Exported Chasis Control API
-  * @brief    Chasis control user interfaces.
-  * @{
-  */
 
 /**
   * @brief  Control single motor's movement
@@ -223,18 +186,12 @@ const MOTOR_CrtlType_CAN* CHASIS_GetMotor(CHASIS_MotorIdType motorx) {
 //        return NULL;
 //}
 
-
-/**
-  * @}
-  */
   
   
 
-/** @defgroup Low-layer Control API
-  * @brief    Chasis control low-layer functions
-  * @note     
-  * @{
-  */
+
+
+
 
 /**
   * @brief  Init chasis control
@@ -278,9 +235,5 @@ void CHASIS_ControlLooper(void) {
     CAN_SubmitChange(&__CAHSIS_Manager.dataA.transmitter);
     CAN_SubmitChange(&__CAHSIS_Manager.dataB.transmitter);
 }
-
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

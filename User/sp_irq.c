@@ -18,6 +18,7 @@
 #include "mpu6500.h"
 #include "sp_utility.h"
 #include "sp_kalman.h"
+#include "mpu6500.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -69,7 +70,6 @@ void DMA1_Stream1_IRQHandler(void)
 
 void TIM6_DAC_IRQHandler(void)
 {
-    extern MPU6500_REAL_DATA mpu6500_real_data;
     if(TIM_GetITStatus(TIM6, TIM_IT_Update)) {
 
     }

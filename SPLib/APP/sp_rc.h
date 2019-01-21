@@ -23,7 +23,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_conf.h"
 
-/* Exported types ------------------------------------------------------------*/
+/** @addtogroup SP
+  * @{
+  */
+
+/** @addtogroup RC
+  * @{
+  */
+
+/** @defgroup   Definations
+  * @note       Exported Macros And Definations
+  * @ingroup    RC
+  * @{
+  */
+  
 /**
   * @brief  Remote controller data structure (data frame via USART1_RX)
   */ 
@@ -74,8 +87,6 @@ typedef enum {
     RC_WRONG_DATA,
 } RC_InfoType;
 
-
-/* Exported macro ------------------------------------------------------------*/
 /**
   * @brief  Remote controller channel value offset
   */ 
@@ -117,10 +128,13 @@ typedef enum {
 #define RC_MOUSE_Y_MAX          ((uint16_t)40)
 #define RC_MONITOR_MAX          ((uint16_t)100)
 
+/**
+  * @}
+  */
 
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup Remote Controller Initialization and Configuration
+/** @defgroup   Initialization
+  * @note       Remote Controller Initialization and Configuration
+  * @ingroup    RC
   * @{
   */
 
@@ -143,7 +157,9 @@ void RC_ReceiverChecker(void);
   */
 
 
-/** @defgroup Remote Controller Event Callbacks
+/** @defgroup   Callbacks
+  * @note       Remote Controller Event Callbacks
+  * @ingroup    RC
   * @{
   */
 
@@ -158,7 +174,9 @@ void RC_OnBusIdle(void);
   */
 
 
-/** @defgroup Remote Controller User Interface
+/** @defgroup   UserAPI
+  * @note       Remote Controller  Interface
+  * @ingroup    RC
   * @{
   */
 
@@ -172,6 +190,14 @@ uint16_t RC_GetState(RC_DataType* recv);
   * @}
   */
 
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 #ifdef __cplusplus
 }

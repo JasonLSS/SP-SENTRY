@@ -13,16 +13,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "sp_dma.h"
-#include "sp_conf.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
 
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
+
 spDMA_SelectorType spDMA_Mem2Mem[] = {
     {DMA2_Stream6, DMA_Channel_3},
     {DMA2_Stream7, DMA_Channel_0},
@@ -49,7 +42,10 @@ spDMA_SelectorType spDMA_Mem2Mem[] = {
     {DMA2_Stream7, DMA_Channel_6}
 };
 
-/* Exported functions --------------------------------------------------------*/
+
+
+
+
 
 void DMA_ClearStreamFlagBit(DMA_Stream_TypeDef* stream, uint32_t flag) {
     uint8_t id = 0;
@@ -168,9 +164,6 @@ DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t l
     return NULL;
 }
 
-/**
-  * @}
-  */
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

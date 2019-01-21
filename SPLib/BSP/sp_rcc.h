@@ -23,12 +23,23 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_rcc.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/** @defgroup RCC_Peripherals
-  * @brief    Interrupt Handlers for CAN1/CAN2
+/** @addtogroup SP
+  * @brief      SuperPower
   * @{
   */
+
+/** @defgroup RCC
+  * @brief    RCC Module
+  * @{
+  */
+
+
+/** @defgroup RCC_Peripherals
+  * @brief    Interrupt Handlers for CAN1/CAN2
+  * @ingroup  RCC
+  * @{
+  */
+
 #define RCC_GPIOA             RCC_AHB1Periph_GPIOA
 #define RCC_GPIOB             RCC_AHB1Periph_GPIOB
 #define RCC_GPIOC             RCC_AHB1Periph_GPIOC
@@ -114,14 +125,16 @@
 #define RCC_DFSDM2            RCC_APB2Periph_DFSDM2
 #define RCC_UART9             RCC_APB2Periph_UART9
 #define RCC_UART10            RCC_APB2Periph_UART10
-/**
-  * @}
-  */
+/** @} */
 
 
-/** @defgroup Peripheral RCC config remap
+
+/** @defgroup Peripheral_Remap
+  * @brief    Peripheral RCC config remap
+  * @ingroup  RCC
   * @{
   */
+
 /** 
   * @brief    Redefine @func RCC_SetPeripheral to a easier usage
   */
@@ -291,13 +304,17 @@
 //#define spRCC_Set_GPIOx(gpio) \
 //    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_#gpio, ENABLE)
 
+/** @} */
+
+
 /**
   * @}
   */
 
-/* Exported functions --------------------------------------------------------*/
-
-
+/**
+  * @}
+  */
+  
 #ifdef __cplusplus
 }
 #endif

@@ -20,10 +20,24 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+#include "sp_pid.h"
 #include "sp_conf.h"
 
-/* Exported types ------------------------------------------------------------*/
+
+/** @addtogroup SP
+  * @{
+  */
+
+/** @addtogroup Utility
+  * @{
+  */
+
+/** @defgroup   Definations
+  * @note       Utility Exported Macros And Definations
+  * @ingroup    Utility
+  * @{
+  */
+  
 typedef struct {
     uint8_t             changed:1;
     uint8_t             stopping:4;
@@ -36,13 +50,8 @@ typedef struct {
 //    uint32_t        counter;            // for test
 } PWMFriction_Type;
 
-/* Exported variables --------------------------------------------------------*/
 extern float speeder;
 
-
-
-
-/* Exported macro ------------------------------------------------------------*/
 #define LASER_ON()          GPIO_SetBits(GPIOG,GPIO_Pin_13)
 #define LASER_OFF()         GPIO_ResetBits(GPIOG,GPIO_Pin_13)
 
@@ -70,9 +79,14 @@ extern float speeder;
 #define BUZZER_ON(a)        TIM_SetCompare1(TIM12, a);
 #define BUZZER_OFF()        TIM_SetCompare1(TIM12, 0);
 
+/**
+  * @}
+  */
 
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup Utility of System General Basic Functions
+
+/** @defgroup   BasicFunc
+  * @note       Utility of System General Basic Functions
+  * @ingroup    Utility
   * @{
   */
 /**
@@ -92,7 +106,9 @@ extern void NVIC_IRQDisable(uint8_t irq);
   */
 
 
-/** @defgroup Utility of General BSP Initializations
+/** @defgroup   BSPInit
+  * @note       Utility of General BSP Initializations
+  * @ingroup    Utility
   * @{
   */
 void Buzzer_Init(void);
@@ -104,7 +120,9 @@ void TIM6_Configuration(void);
   */
 
 
-/** @defgroup Utility of General Algorithm Functions
+/** @defgroup   Algorithm
+  * @note       Utility of General Algorithm Functions
+  * @ingroup    Utility
   * @{
   */
 /**
@@ -136,12 +154,26 @@ void CHASIS_Move(int16_t speedX, int16_t speedY, int16_t rad);
   * @}
   */
 
-
-
+/** @defgroup   FrictionOpe
+  * @note       Friction Operations
+  * @ingroup    Utility
+  * @{
+  */
 void Friction_Init(void);
 void Friction_Looper(uint32_t target);
+/**
+  * @}
+  */
 
 
+/**
+  * @}
+  */
+  
+/**
+  * @}
+  */
+  
 #ifdef __cplusplus
 }
 #endif

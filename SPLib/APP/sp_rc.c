@@ -16,6 +16,15 @@
 #include "sp_rc.h"
 #include "sp_utility.h"
 
+/** @addtogroup SP
+  * @{
+  */
+
+/** @defgroup   RC
+  * @{
+  */
+
+
 /* Private typedef -----------------------------------------------------------*/
 #pragma pack(1)
 typedef struct {
@@ -45,24 +54,15 @@ typedef struct {
     uint8_t                         valid:1;                    /*!< If curent frame valid*/
 } RC_ManagerType;
 
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
+RC_ManagerType                      RC_Manager;                 /*!< Remote controll data manager */
+
 #define RC_VALIDATE_CHANNEL(val)                (((val)<=RC_CH_VALUE_MAX) && ((val)>=RC_CH_VALUE_MIN))
 #define RC_VALIDATE_SWITCH(val)                 (((val)==RC_SW_UP)      || \
                                                  ((val)==RC_SW_MID)     || \
                                                  ((val)==RC_SW_DOWN))
 
-/* Private variables ---------------------------------------------------------*/
-RC_ManagerType                      RC_Manager;                 /*!< Remote controll data manager */
 
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 
-/** @defgroup Remote Controller Internal Functions
-  * @{
-  */
 
 /**
   * @brief  Convert raw RC data to user-friendly format
@@ -193,14 +193,11 @@ bool RC_ReceiverInit(void) {
     return true;
 }
 
-/**
-  * @}
-  */
 
 
-/** @defgroup Remote Controller User Interface
-  * @{
-  */
+
+
+
 uint16_t RC_GetState(RC_DataType* recv) {
     if(RC_Manager.valid) {
         DMA_Stream_TypeDef* dmas = DMA_CopyMem2Mem((uint32_t)recv, 
@@ -212,6 +209,11 @@ uint16_t RC_GetState(RC_DataType* recv) {
         return 0;
     }
 }
+
+/**
+  * @}
+  */
+
 /**
   * @}
   */

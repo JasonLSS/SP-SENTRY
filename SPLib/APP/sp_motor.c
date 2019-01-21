@@ -61,16 +61,10 @@ __STATIC_INLINE float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float val
 //        (value < -__motor->control.target_limit)?-__motor->control.target_limit:value;
 //}
 
-/**
-  * @}
-  */
 
 
 
-/** @defgroup Motor Class Member Function Implement
-  * @brief    Implement member functions for @ref MOTOR_CrtlType_CAN
-  * @{
-  */
+
 /**
   * @brief  Enable a motor and request its resouce
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
@@ -388,12 +382,6 @@ void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, void* motor) {
 
 
 
-/* Exported functions ---------------------------------------------------------*/
-/** @defgroup Motor User Interface API
-  * @brief    For system motor resources management.
-  * @{
-  */
-
 MOTOR_CrtlType_CAN* MOTOR_RM_GetInstance(MOTOR_RM_Types type) {
     uint8_t i, size = sizeof(MOTORs)/sizeof(MOTORs[0]);
     for(i=0; i<size; i++) {
@@ -433,15 +421,8 @@ void MOTOR_SetDataResolve(MOTOR_CrtlType_CAN* motor, tFuncMemberNoParam func) {
 }
 
 
-/**
-  * @}
-  */
 
 
-/** @defgroup Motor Control Functions
-  * @brief    For system motor resources management.
-  * @{
-  */
 
 /** 
   * @brief    Low-layer motor control loop.
@@ -482,8 +463,5 @@ void MOTOR_ControlLooper(void) {
     }
 }
 
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

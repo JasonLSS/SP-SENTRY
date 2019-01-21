@@ -1,5 +1,5 @@
+#include <math.h>
 #include "mpu6500.h"
-#include "inv_mpu.h"
 #include "ist8310driver.h"
 #include "ist8310driver_middleware.h"
 
@@ -54,6 +54,12 @@ uint8_t mpu_data_buffer[64] = {0x00};
 bool getDeviceID(void){
     return (bool)(MPU_ReadByte(MPU_WHO_AM_I) == MPU_ID);
 }
+
+
+#ifdef USING_MPU_DMP
+
+#include "inv_mpu.h"
+
 /* Starting sampling rate. */
 static signed char gyro_orientation[9] = {-1, 0, 0,
                                            0,-1, 0,
@@ -84,8 +90,6 @@ static inline void run_self_test(void)
 }
 
 void inv_mpu_init(void) {
-
-#ifdef USING_MPU_DMP
     if(!mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL))    //设置需要的传感器
         printf("mpu_set_sensor complete ......\r\n");
     if(!mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL)) //设置fifo
@@ -103,39 +107,39 @@ void inv_mpu_init(void) {
     if(!dmp_set_fifo_rate(DEFAULT_MPU_HZ))    //设置速率
         printf("dmp_set_fifo_rate complete ......\r\n");
     run_self_test();                          //自检
-#else
-    int result;
-    /* Set up gyro.
-     * Every function preceded by mpu_ is a driver function and can be found
-     * in inv_mpu.h.
-     */
-    result = mpu_init(NULL);
-    /* If you're not using an MPU9150 AND you're not using DMP features, this
-     * function will place all slaves on the primary bus.
-     * mpu_set_bypass(1);
-     */
-    /* Get/set hardware configuration. Start gyro. */
-    /* Wake up all sensors. */
-    mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-    /* Push both gyro and accel data into the FIFO. */
-    mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-    mpu_set_sample_rate(DEFAULT_MPU_HZ);
-//    /* Read back configuration in case it was set improperly. */
-//    mpu_get_sample_rate(&gyro_rate);
-//    mpu_get_gyro_fsr(&gyro_fsr);
-//    mpu_get_accel_fsr(&accel_fsr);
+    
+////    int result;
+//    /* Set up gyro.
+//     * Every function preceded by mpu_ is a driver function and can be found
+//     * in inv_mpu.h.
+//     */
+//    mpu_init(NULL);
+//    /* If you're not using an MPU9150 AND you're not using DMP features, this
+//     * function will place all slaves on the primary bus.
+//     * mpu_set_bypass(1);
+//     */
+//    /* Get/set hardware configuration. Start gyro. */
+//    /* Wake up all sensors. */
+//    mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+//    /* Push both gyro and accel data into the FIFO. */
+//    mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
+//    mpu_set_sample_rate(DEFAULT_MPU_HZ);
+////    /* Read back configuration in case it was set improperly. */
+////    mpu_get_sample_rate(&gyro_rate);
+////    mpu_get_gyro_fsr(&gyro_fsr);
+////    mpu_get_accel_fsr(&accel_fsr);
 
-//    /* Initialize HAL state variables. */
-//    memset(&hal, 0, sizeof(hal));
-//    hal.sensors = ACCEL_ON | GYRO_ON;
-//    hal.report = PRINT_QUAT;
+////    /* Initialize HAL state variables. */
+////    memset(&hal, 0, sizeof(hal));
+////    hal.sensors = ACCEL_ON | GYRO_ON;
+////    hal.report = PRINT_QUAT;
 
-#endif
-    if(!mpu_set_dmp_state(1))                 //使能
-        printf("mpu_set_dmp_state complete ......\r\n");
-//    hal.dmp_on = 1;
+
+//    if(!mpu_set_dmp_state(1))                 //使能
+//        printf("mpu_set_dmp_state complete ......\r\n");
+////    hal.dmp_on = 1;
 }
-
+#endif
 
 
 typedef enum {
@@ -285,11 +289,7 @@ void ist8310_get_data(float* mag ) {
 
 
 
-
-
-
-
-void MPU6500_Read(void){
+int MPU6500_Read(void){
     uint8_t buf[14];
 
     MPU_Read(MPU_ACCEL_XOUT_H,buf,14);
@@ -314,7 +314,8 @@ void MPU6500_Read(void){
 
     mpu6500_raw_data.Gyro_Z=(short)((buf[12])<<8 )| buf[13];
     mpu6500_real_data.Gyro_Z=mpu6500_raw_data.Gyro_Z/GYRO_SEN -offset_z;
-
+    
+    return 0;
 }
 
 void MPU6500_Stream(float* gyro, float* accel, float* temp, float* mag){
@@ -402,7 +403,7 @@ void gyro_offset(){
         gyro_x=(short)((buf[0])<<8 )| buf[1];
         gyro_y=(short)((buf[2])<<8 )| buf[3];
         gyro_z=(short)((buf[4])<<8 )| buf[5];
-        if(fabs(gyro_x-last_x)>100||fabs(gyro_y-last_y)>100||fabs(gyro_z-last_z)>100){
+        if(abs(gyro_x-last_x)>100||abs(gyro_y-last_y)>100||abs(gyro_z-last_z)>100){
             static unsigned int num=0;
             num+=i;
             i=0;
@@ -468,9 +469,9 @@ uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len){
 
 
 
-
-void MPU_SetSampleRate(uint32_t rate);
-void MPU6500_Init(void) {
+int MPU6500_Init(void) {
+    
+    int result = 0;
     
     SPI5_Init();
     
@@ -484,10 +485,7 @@ void MPU6500_Init(void) {
     exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;
     EXTI_Init(&exit_initer);
 //    NVIC_IRQEnable(EXTI9_5_IRQn, 1, 3);
-    
-    
-    // inv_mpu_init();
-    
+
 //    uint8_t i = 16;
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_1);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_2);delay_ms(10);
@@ -502,9 +500,13 @@ void MPU6500_Init(void) {
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_FIFO_EN);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_USER_CTRL);delay_ms(10);
     
+#ifdef USING_MPU_DMP
+    inv_mpu_init();
+#else
     {
-    // SPI5_DMA();
-    uint8_t i = 0, data, result;
+//    SPI5_DMA();
+//    uint8_t i = 0;
+    uint8_t data;
     /* MPU working mode configurations */
     if(getDeviceID()) {
         delay_ms(10);
@@ -597,6 +599,8 @@ void MPU6500_Init(void) {
         MPU_WriteByte(MPU_INT_ENABLE, data);delay_ms(10);
     }
     }
+#endif
+
 //    uint8_t i = 0;
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_1);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_2);delay_ms(10);
@@ -610,4 +614,6 @@ void MPU6500_Init(void) {
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_INT_ENABLE);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_FIFO_EN);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_USER_CTRL);delay_ms(10);
+
+    return result;
 }

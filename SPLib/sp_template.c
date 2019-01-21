@@ -17,14 +17,34 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_template.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
+
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup Template 
+  * @brief    CAN Module
+  * @{
+  */
+
+
+
+/** @defgroup Definations
+  * @brief    Exported Macros And Definations 
+  * @ingroup  Template
+  * @{
+  */
+/** @} */
+
+
+/** @defgroup Declarations
+  * @brief    Exported Function Declaration
+  * @ingroup  Template
+  * @{
+  */
+/** @} */
+
 
 /**
   * @brief  
@@ -36,6 +56,15 @@ void SP_Template_Init(void)
 {    	 
     
 }
+
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

@@ -27,21 +27,13 @@
   ******************************************************************************
   */
 
-/* Includes ------------------------------------------------------------------*/
 #include "sp_usart.h"
 #include "sp_conf.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/** @defgroup   Print Support Function Override
-  * @brief      Override inner @ref printf() to suppoer UASRT printf without MicroLIB
+/** @defgroup Override_MicroLIBs
+  * @brief    Override inner @ref printf() to suppoer UASRT printf without MicroLIB
   * @{
   */
-
 #if 1
 #if defined ( __CC_ARM )
 #pragma import(__use_no_semihosting_swi)
@@ -160,25 +152,9 @@ int fputc(int ch, FILE *f) {
 }
 #endif
 
-/**
-  * @}
-  */
+/** @} */
 
 
-/** @defgroup   Print Support Function Override
-  * @brief      Override inner @ref printf() to suppoer UASRT printf without MicroLIB
-  * @{
-  */
-
-
-/**
-  * @}
-  */
-
-
-
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 
 void USART_SetBaudrate(USART_TypeDef* usart, uint32_t baudrate) {
     uint32_t tmpreg = 0x00, apbclock = 0x00;

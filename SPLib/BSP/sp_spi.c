@@ -1,11 +1,23 @@
-#include "spi.h"
+/**
+  ******************************************************************************
+  * @file       sp_spi.c
+  * @author     YTom
+  * @version    v0.1
+  * @date       2019.Jan.21
+  * @brief      CAN-bus module controller
+  ******************************************************************************
+  * @license
+  *
+  ******************************************************************************
+  */
 
-// PE4  SPI4_MOSI
-// PE5  SPI4_MISO
-// PE6  SPI4_NSS
-// PE12 SPI4_SCK
+#include "sp_spi.h"
+
+
 
 extern uint8_t mpu_data_buffer[14];
+
+
 void SPI5_Init(void){
     SPI_InitTypeDef     spi_initer;
     
@@ -98,4 +110,7 @@ uint8_t SPI5_ReadWriteByte(uint8_t data) {
     }
     return SPI5->DR;
 }
+
+
+/************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
 

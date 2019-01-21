@@ -64,7 +64,6 @@ int main(void)
     
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);     /* 4 bits for pre-emption priority
                                                            0 bits for subpriority */
-    
     Power_Configuration();
     spRCC_Set_RNG();    RNG_Cmd(ENABLE);
     TASK_GlobalInit();

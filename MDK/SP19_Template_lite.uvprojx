@@ -10,9 +10,9 @@
       <TargetName>SP19_Template_lite</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pArmCC>5060750::V5.06 update 6 (build 750)::ARMCC</pArmCC>
-      <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
-      <uAC6>0</uAC6>
+      <pArmCC>6090000::V6.9::.\ARMCLANG</pArmCC>
+      <pCCUsed>6090000::V6.9::.\ARMCLANG</pCCUsed>
+      <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F427IIHx</Device>
@@ -312,7 +312,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>7</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -321,14 +321,14 @@
             <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
-            <wLevel>2</wLevel>
+            <wLevel>3</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <uGnu>1</uGnu>
             <useXO>0</useXO>
             <v6Lang>3</v6Lang>
-            <v6LangP>4</v6LangP>
+            <v6LangP>3</v6LangP>
             <vShortEn>1</vShortEn>
             <vShortWch>1</vShortWch>
             <v6Lto>0</v6Lto>
@@ -397,11 +397,6 @@
               <FileType>1</FileType>
               <FilePath>..\User\sp_task.c</FilePath>
             </File>
-            <File>
-              <FileName>config.template</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\config.template</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -433,6 +428,11 @@
           <GroupName>AAL</GroupName>
           <Files>
             <File>
+              <FileName>sp_math.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\AAL\sp_math.c</FilePath>
+            </File>
+            <File>
               <FileName>sp_pid.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\AAL\sp_pid.c</FilePath>
@@ -453,11 +453,6 @@
               <FilePath>..\SPLib\ASM\sp_delay.s</FilePath>
             </File>
             <File>
-              <FileName>sp_can.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_can.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_usart.c</FilePath>
@@ -473,9 +468,14 @@
               <FilePath>..\SPLib\BSP\sp_dma.c</FilePath>
             </File>
             <File>
-              <FileName>spi.c</FileName>
+              <FileName>sp_spi.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\spi.c</FilePath>
+              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\BSP\sp_can.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -488,14 +488,9 @@
               <FilePath>..\SPLib\eMPL\mpu6500.c</FilePath>
             </File>
             <File>
-              <FileName>inv_mpu.c</FileName>
+              <FileName>tm_stm32_ahrs_imu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\inv_mpu.c</FilePath>
-            </File>
-            <File>
-              <FileName>ml.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\ml.c</FilePath>
+              <FilePath>..\SPLib\eMPL\tm_stm32_ahrs_imu.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -563,19 +558,24 @@
           <GroupName>DOC</GroupName>
           <Files>
             <File>
+              <FileName>config.template</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\config.template</FilePath>
+            </File>
+            <File>
               <FileName>DMA_Channels.md</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Doc\DMA_Channels.md</FilePath>
+              <FilePath>..\SPLib\DMA_Channels.md</FilePath>
             </File>
             <File>
               <FileName>MPU6050_RegDesc.md</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Doc\MPU6050_RegDesc.md</FilePath>
+              <FilePath>..\SPLib\MPU6050_RegDesc.md</FilePath>
             </File>
             <File>
               <FileName>MPU6500_Desc.md</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Doc\MPU6500_Desc.md</FilePath>
+              <FilePath>..\SPLib\MPU6500_Desc.md</FilePath>
             </File>
           </Files>
         </Group>

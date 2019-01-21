@@ -17,38 +17,19 @@
 #include "sp_chasis.h"
 #include "sp_filter.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
- #define USING_FRICTION_FILTER                    /* Using input filter */
 
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-
-
-// RM6623
-//if(motor205) {
-//    motor205->control.speed_pid->Kp = 3.f;
-//    motor205->control.speed_pid->Ki = 0.2f;
-//    motor205->control.speed_pid->Kd = 0;
-//    motor205->control.speed_pid->intergration_limit = 500;
-//    motor205->control.speed_pid->intergration_separation = 500;
-//    motor205->control.speed_pid->functions.input_filter = MovingAverageFilter_f32;
-//    motor205->control.speed_pid->functions.output_filter = MovingAverageFilter_f32;
-//    
-//    motor205->control.position_pid->Kp = 3.5f;
-//    motor205->control.position_pid->Ki = 0;
-//    motor205->control.position_pid->Kd = 0.05f;
-//    
-//    motor205->control.output_limit = 8000;
-//}
-
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup Utility of System General Basic Functions
+/** @addtogroup SP
   * @{
   */
+
+/** @defgroup   Utility
+  * @{
+  */
+
+
+#define USING_FRICTION_FILTER                    /*<! Using input filter */
+
+
 
 __INLINE void NVIC_IRQEnable(uint8_t irq, uint8_t pri, uint8_t subpri) {
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -66,15 +47,8 @@ __INLINE void NVIC_IRQDisable(uint8_t irq) {
     NVIC_Init(&NVIC_InitStructure);
 }
 
-/**
-  * @}
-  */
 
 
-
-/** @defgroup Utility of General BSP Initializations
-  * @{
-  */
 void Buzzer_Init(void) {
     //PB4
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -161,19 +135,12 @@ void TIM6_Configuration(void) {
     TIM_Cmd(TIM6, ENABLE);
 }
 
-/**
-  * @}
-  */
 
 
 
 
-/** @defgroup Utility of General Algorithm Functions
-  * @{
-  */
-/** @defgroup Utility of CRC
-  * @{
-  */
+
+
 uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size) {
     CRC_ResetDR();
     return CRC_CalcBlockCRC(buffer, size);
@@ -210,19 +177,10 @@ void CHASIS_Move(int16_t speedX, int16_t speedY, int16_t rad) {
     CHASIS_SetMotorSpeed(Motor203, fspeed[2][0]);
     CHASIS_SetMotorSpeed(Motor204, fspeed[3][0]);
 }
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 
 
-/** @defgroup Utility of Specific Testing Module Functions
-  * @{
-  */
+
 PWMFriction_Type    Friction_CH1;
 PWMFriction_Type    Friction_CH2;
 
@@ -234,34 +192,6 @@ PWMFriction_Type    Friction_CH2;
   * @retval 
   */ 
 void PulseCapture(void) {
-    
-//    __TIM2_CLK_ENABLE();
-//    __GPIOA_CLK_ENABLE();
-//    
-//    GPIO_InitTypeDef  gpio_init;
-//    gpio_init.GPIO_Pin = GPIO_Pin_0;
-//    gpio_init.GPIO_Mode = GPIO_Mode_AF;
-//    gpio_init.GPIO_Speed = GPIO_Speed_100MHz;
-//    GPIO_Init(GPIOA, &gpio_init);
-//    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM2);
-
-//    tim2_handler.Instance = TIM2;        // APB1=84MHz
-//    tim2_handler.Init.Prescaler = 84-1;
-//    tim2_handler.Init.Period = 1000000;
-//    tim2_handler.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-//    tim2_handler.Init.CounterMode = TIM_COUNTERMODE_UP;
-//    tim2_handler.Init.RepetitionCounter = 0;
-//    HAL_TIM_IC_Init(&tim2_handler);
-//    
-//    TIM_IC_InitTypeDef tim2_icinit;
-//    tim2_icinit.ICPolarity = TIM_ICPOLARITY_RISING;
-//    tim2_icinit.ICSelection = TIM_ICSELECTION_DIRECTTI;
-//    tim2_icinit.ICPrescaler = TIM_ICPSC_DIV1;
-//    tim2_icinit.ICFilter = 0;
-//    HAL_TIM_IC_ConfigChannel(&tim2_handler, &tim2_icinit, TIM_CHANNEL_1);
-//    
-//    HAL_TIM_IC_Start_IT(&tim2_handler, TIM_CHANNEL_1);
-    
     
     GPIO_InitTypeDef  GPIO_InitStructure;
 
@@ -311,11 +241,6 @@ void PulseCapture(void) {
     TIM_DMACmd(TIM2, TIM_DMA_CC1|TIM_DMA_CC2, ENABLE);
     TIM_SetCounter(TIM2, 0);
 
-//    NVIC_InitStructure.NVIC_IRQChannel=TIM2_IRQn; //定时器3中断
-//    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0x00; //抢占优先级1
-//    NVIC_InitStructure.NVIC_IRQChannelSubPriority=0x02; //子优先级2
-//    NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
-//    NVIC_Init(&NVIC_InitStructure);
 //    NVIC_IRQEnable(TIM2_IRQn, 0, 2);
     
     /* -------------- Configure DMA -----------------------------------------*/
@@ -349,15 +274,7 @@ void PulseCapture(void) {
     DMA_ITConfig(DMA1_Stream6,DMA_IT_TC,ENABLE);
     DMA_Cmd(DMA1_Stream6,ENABLE);
     
-//    NVIC_InitStructure.NVIC_IRQChannel=DMA1_Stream5_IRQn;
-//    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0x00;
-//    NVIC_InitStructure.NVIC_IRQChannelSubPriority=0x01;
-//    NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
-//    NVIC_Init(&NVIC_InitStructure);
 //    NVIC_IRQEnable(DMA1_Stream5_IRQn, 0, 1);
-    
-//    NVIC_InitStructure.NVIC_IRQChannel=DMA1_Stream6_IRQn;
-//    NVIC_Init(&NVIC_InitStructure);
 //    NVIC_IRQEnable(DMA1_Stream6_IRQn, 0, 1);
     
     TIM_Cmd(TIM2, ENABLE);
@@ -590,5 +507,8 @@ void Friction_Looper(uint32_t target) {
   * @}
   */
 
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

@@ -13,13 +13,9 @@
   ******************************************************************************
   */
 
-/* Includes ------------------------------------------------------------------*/
 #include "sp_can.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
+
 /**
   * @brief  CAN1/CAN2 exchangers
   */
@@ -28,19 +24,6 @@ CAN_Receiver*                   __can2_receivers[CAN2_POOLSIZE] = {0x00};
 CAN_Transmitter*                __can1_transmitters[CAN1_POOLSIZE] = {0x00};
 CAN_Transmitter*                __can2_transmitters[CAN1_POOLSIZE] = {0x00};
 
-
-/**
-  * @brief  CAN1/CAN2 received message buffer
-  */
-
-/* Private function prototypes -----------------------------------------------*/
-void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger);
-    
-/* Private functions ---------------------------------------------------------*/
-/** @defgroup Private CANx Interruput Handlers
-  * @brief    Interruput Handlers for CAN1/CAN2
-  * @{
-  */
 
 /**
   * @brief  CAN1 receive interrupt handler
@@ -105,7 +88,7 @@ void CAN2_RX1_IRQHandler(void) {
   * @param  exchanger: @ref CAN_Exchanger appoint an exchanger
   * @note   Only used for send once message. INNER use;
   */ 
-inline void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
+static inline void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
 
     CanTxMsg TxMessage;
     
@@ -117,17 +100,11 @@ inline void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
     CAN_Transmit(canx, &TxMessage);
 }
 
-/**
-  * @}
-  */
 
 
 
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup CAN Initialization Functions
-  * @brief    Initialize CAN
-  * @{
-  */
+
+
 void CAN1_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode) {
     
     GPIO_InitTypeDef            GPIO_InitStructure; 
@@ -211,30 +188,30 @@ void CAN2_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode)
     GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_CAN2); //GPIOB13复用为CAN2
         
     //CAN单元设置
-    CAN_InitStructure.CAN_TTCM=DISABLE;    //非时间触发通信模式   
-    CAN_InitStructure.CAN_ABOM=ENABLE;//    DISABLE;    //软件自动离线管理      
-    CAN_InitStructure.CAN_AWUM=DISABLE;//睡眠模式通过软件唤醒(清除CAN->MCR的SLEEP位)
-    CAN_InitStructure.CAN_NART=ENABLE;    //禁止报文自动传送 
-    CAN_InitStructure.CAN_RFLM=DISABLE;    //报文不锁定,新的覆盖旧的  
-    CAN_InitStructure.CAN_TXFP=DISABLE;    //优先级由报文标识符决定 
-    CAN_InitStructure.CAN_Mode= mode;     //模式设置 
-    CAN_InitStructure.CAN_SJW=tsjw;    //重新同步跳跃宽度(Tsjw)为tsjw+1个时间单位 CAN_SJW_1tq~CAN_SJW_4tq
-    CAN_InitStructure.CAN_BS1=tbs1; //Tbs1范围CAN_BS1_1tq ~CAN_BS1_16tq
-    CAN_InitStructure.CAN_BS2=tbs2;//Tbs2范围CAN_BS2_1tq ~    CAN_BS2_8tq
-    CAN_InitStructure.CAN_Prescaler=brp;  //分频系数(Fdiv)为brp+1    
-    CAN_Init(CAN2, &CAN_InitStructure);   // 初始化CAN2 
+    CAN_InitStructure.CAN_TTCM=DISABLE;     //非时间触发通信模式
+    CAN_InitStructure.CAN_ABOM=ENABLE;      //软件自动离线管理
+    CAN_InitStructure.CAN_AWUM=DISABLE;     //睡眠模式通过软件唤醒(清除CAN->MCR的SLEEP位)
+    CAN_InitStructure.CAN_NART=ENABLE;      //禁止报文自动传送 
+    CAN_InitStructure.CAN_RFLM=DISABLE;     //报文不锁定,新的覆盖旧的  
+    CAN_InitStructure.CAN_TXFP=DISABLE;     //优先级由报文标识符决定 
+    CAN_InitStructure.CAN_Mode= mode;       //模式设置 
+    CAN_InitStructure.CAN_SJW=tsjw;         //重新同步跳跃宽度(Tsjw)为tsjw+1个时间单位 CAN_SJW_1tq~CAN_SJW_4tq
+    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1范围CAN_BS1_1tq ~CAN_BS1_16tq
+    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2范围CAN_BS2_1tq ~    CAN_BS2_8tq
+    CAN_InitStructure.CAN_Prescaler=brp;    //分频系数(Fdiv)为brp+1    
+    CAN_Init(CAN2, &CAN_InitStructure);     // 初始化CAN2 
 
     //配置过滤器
-    CAN_FilterInitStructure.CAN_FilterNumber=14;      //过滤器1
+    CAN_FilterInitStructure.CAN_FilterNumber=14;                        //过滤器1
     CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask; 
-    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit; //32位 
-    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;////32位ID
+    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;      //32位 
+    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;                    //32位ID
     CAN_FilterInitStructure.CAN_FilterIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;//32位MASK
+    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;                //32位MASK
     CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;//过滤器0关联到FIFO1
-    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE; //激活过滤器1
-    CAN_FilterInit(&CAN_FilterInitStructure);//滤波器初始化
+    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;  //过滤器0关联到FIFO1
+    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;                //激活过滤器1
+    CAN_FilterInit(&CAN_FilterInitStructure);                           //滤波器初始化
 
     CAN_ITConfig(CAN2,CAN_IT_FMP1,ENABLE);//FIFO1消息挂号中断允许.            
   
@@ -266,15 +243,9 @@ void CAN2_MsgSendLoop(void)
 }
 
 
-/**
-  * @}
-  */
 
 
-/** @defgroup CAN User Interface APIs
-  * @brief    Implement CAN communications
-  * @{
-  */
+
 bool CAN_RegistReceiver(CAN_TypeDef* canx, CAN_Receiver* receiver) {
     if(canx == CAN1) {
         uint8_t i, size=sizeof(__can1_receivers)/sizeof(__can1_receivers[0]);
@@ -325,10 +296,6 @@ void CAN_SendMsg(CAN_Transmitter* transmitter) {
 void CAN_SubmitChange(CAN_Transmitter* transmitter) {
     transmitter->tx.changed = true;
 }
-
-/**
-  * @}
-  */
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

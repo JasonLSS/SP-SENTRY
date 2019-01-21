@@ -23,7 +23,7 @@
 
 
 /* User-defined interfaces */
-#include "spi.h"
+#include "sp_spi.h"
 #define i2c_write(a, b, c, d)       MPU_Write(b, d, c)
 #define i2c_read(a, b, c, d)        MPU_Read(b, d, c)
 #define get_ms                      TASK_GetMicrosecondPtr

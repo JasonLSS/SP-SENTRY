@@ -14,14 +14,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_gpio.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 
 void GPIO_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef Modex, 
     GPIOOType_TypeDef OTyperx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
@@ -73,5 +65,7 @@ void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
         GPIO_InitStructure.GPIO_PuPd    =       GPIO_PuPd_NOPULL;
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
+
+
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

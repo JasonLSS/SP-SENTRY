@@ -23,6 +23,8 @@
 #include "sp_rc.h"
 #include "mpu6500.h"
 
+#include <math.h>
+
 #include "sp_can.h"
 #include "sp_pid.h"
 
@@ -321,10 +323,9 @@ void TASK_ControlLooper() {
     
     task_counter++;
     
-    static uint32_t speed_count = 0;
     static RC_DataType recv;
     static RC_DataType recv_ex;
-    static float speed = 0;
+    
     
     /** 
       * @brief  Sundries and uiltilies looper
@@ -343,11 +344,13 @@ void TASK_ControlLooper() {
             
         } else if(task_counter%10 == 3) {
           #ifdef USING_TEST42
+            static float speed = 0;
             CHASIS_SetMotorSpeed(Motor207, speed);
             CHASIS_SetMotorSpeed(Motor208, -speed);
           #endif
             
           #ifdef USING_TEST17
+            static float speed = 0;
             static uint32_t target = 0;
             // static uint32_t posicount = 0;
             static float delta = 1366;
@@ -400,13 +403,13 @@ void TASK_ControlLooper() {
         } else if(task_counter%10 == 5) {
           #ifdef USING_CHASIS
             CHASIS_Move(
-                recv.rc.ch0=fabs(recv.rc.ch0)<20?0:recv.rc.ch0, 
-                recv.rc.ch1=fabs(recv.rc.ch1)<20?0:recv.rc.ch1, 
-                recv.rc.ch2=fabs(recv.rc.ch2)<20?0:recv.rc.ch2);
+                recv.rc.ch0=abs(recv.rc.ch0)<20?0:recv.rc.ch0, 
+                recv.rc.ch1=abs(recv.rc.ch1)<20?0:recv.rc.ch1, 
+                recv.rc.ch2=abs(recv.rc.ch2)<20?0:recv.rc.ch2);
           #endif
           
           #ifdef USING_SENTRY
-            int16_t speed = (fabs(recv.rc.ch0)<20?0:recv.rc.ch0)*5;
+            int16_t speed = (abs(recv.rc.ch0)<20?0:recv.rc.ch0)*5;
             CHASIS_SetMotorSpeed(Motor201, speed);
             CHASIS_SetMotorSpeed(Motor202, speed);
           #endif
@@ -418,8 +421,8 @@ void TASK_ControlLooper() {
             printf("%.4f,%.4f\r\n", Friction_CH1.speed[0], Friction_CH2.speed[0]);
           #endif 
           #ifdef USING_SENTRY
-            static MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
-            static MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
+            const MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
+            const MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
             printf("%d,%d\r\n", motor201->state.speed, motor202->state.speed);
           #endif
 
@@ -431,13 +434,13 @@ void TASK_ControlLooper() {
             CHASIS_SetMotorPosition(Motor205, recv.rc.ch1);         // Pitch
             
             int16_t speed = (int16_t)gm6020->control.output;
-            if(GM_ID<=4) {
+            #if GM_ID<=4 
                 gm_data.raw_data[2*GM_ID-2] = (speed>>8)&0xff;
                 gm_data.raw_data[2*GM_ID-1] = speed&0xff;
-            } else {
+            #else
                 gm_data.raw_data[2*(GM_ID-4)-2] = (speed>>8)&0xff;
                 gm_data.raw_data[2*(GM_ID-4)-1] = speed&0xff;
-            }
+            #endif
             CAN_SubmitChange(&gm_data.transmitter);
             
             uint8_t len = sprintf(uart6_buff,"%d,%d,%f\r\n", gm6020->state.current, gm6020->state.speed,
@@ -483,16 +486,16 @@ void TASK_ControlLooper() {
 void SysTick_Handler(void) {
     if(!task_inited){
         static uint16_t tick_init = 0;
-        static uint16_t pass_flag = 0;
-        
         tick_init ++;
         
         #ifndef USING_DM6020
+        
         if(tick_init>= 3000) {
             task_inited = true;
             TASK_Enable();
         }
         #else
+        static uint16_t pass_flag = 0;
         if(pass_flag>= 3000) {
             task_inited = true;
             TASK_Enable();
@@ -518,18 +521,18 @@ void SysTick_Handler(void) {
                 CHASIS_ControlLooper();
                 
                 int16_t speed = (int16_t)gm6020->control.output;
-                if(GM_ID<=4) {
+                #if GM_ID<=4
                     gm_data.raw_data[2*GM_ID-2] = (speed>>8)&0xff;
                     gm_data.raw_data[2*GM_ID-1] = speed&0xff;
-                } else {
+                #else
                     gm_data.raw_data[2*(GM_ID-4)-2] = (speed>>8)&0xff;
                     gm_data.raw_data[2*(GM_ID-4)-1] = speed&0xff;
-                }
+                #endif
                 CAN_SubmitChange(&gm_data.transmitter);
             }
             
-            if(fabs(motor206->state.__motor_angel_curr - 7620)<20 &&
-               fabs(gm6020->state.__motor_angel_curr - 4800)<10 ) {
+            if(abs(motor206->state.__motor_angel_curr - 7620)<20 &&
+               abs(gm6020->state.__motor_angel_curr - 4800)<10 ) {
                 pass_flag ++;
             } else {
                 pass_flag = 0;
@@ -580,7 +583,6 @@ void spCLOCK_Configuration(void) {
     TIM_Cmd(spCLOCK, ENABLE);
 }
 
-static uint32_t timcount = 0;
 void spClock_IRQHandler(void) {
     if(TIM_GetITStatus(spCLOCK,TIM_IT_Update) == SET) {
         spClock.ms ++;

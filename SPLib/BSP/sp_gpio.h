@@ -19,13 +19,26 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup GPIO
+  * @brief    GPIO Module
+  * @{
+  */
+
 #include "stm32f4xx_gpio.h"
 #include "sp_rcc.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
+
+/** @defgroup Declarations
+  * @brief    Exported Function Declarations
+  * @ingroup  GPIO
+  * @{
+  */
+
 /** 
   * @brief  General GPIO config
   * @param  GPIOx   where x can be (A..K) to select the GPIO peripheral for STM32F405xx/407xx and STM32F415xx/417xx devices
@@ -110,7 +123,15 @@ void GPIO_AF_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx,
   * @note   Use as alternative of @func GPIO_Config
   */
 void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx);
+/** @} */
 
+/**
+  * @}
+  */
+  
+/**
+  * @}
+  */
 
 #ifdef __cplusplus
 }

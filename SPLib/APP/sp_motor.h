@@ -22,15 +22,12 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+
 #include "string.h"
 #include "sp_can.h"
 #include "sp_pid.h"
 
-/* Exported types ------------------------------------------------------------*/
-/** 
-  * @brief  Motor control type
-  */
+
 /**
   * @brief  Motor types for RM motros
   */
@@ -137,14 +134,13 @@ typedef enum {
 } CAN_MOTORx;
 
 
-/* Exported macro ------------------------------------------------------------*/
 /** 
   * @brief   Pool size of motors, means how many motors will be used.
   */ 
 #define MOTOR_POOLSIZE          8
 
 
-/* Exported functions --------------------------------------------------------*/
+
 /**
   * @brief  Get an instance of RM motor @ref MOTOR_CrtlType_CAN
   * @retval Pointer of an instance of @ref MOTOR_CrtlType
@@ -209,11 +205,6 @@ void MOTOR_SetDataResolve(MOTOR_CrtlType_CAN* motor, tFuncMemberNoParam func);
 
 
 
-/** @defgroup Motor Low-layer Control Function
-  * @brief    Implement basic layer motor control.
-  * @note     SHOULD NOT call by users.
-  * @{
-  */
 
 /**
   * @brief  Init motor control module
@@ -225,10 +216,6 @@ void MOTOR_ControlInit(void);
   * @note   Periodic invoke by SYSTEM.
   */
 void MOTOR_ControlLooper(void);
-
-/**
-  * @}
-  */
 
 
 

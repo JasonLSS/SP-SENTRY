@@ -7,5 +7,6 @@ Doc/*
 Debug/*
 Debug++/*
 SPLib/Legacy
+SPLib/dev
 /SPLib/Test/
 !/SPLib/Test/sp19dev/src/*

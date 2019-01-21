@@ -20,16 +20,37 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup DMA
+  * @brief    DMA Module
+  * @{
+  */
+
+
 #include "stm32f4xx_dma.h"
 #include "sp_type.h"
 #include "sp_rcc.h"
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/** @defgroup DMA_Stream_FlagBits
+#include "sp_conf.h"
+
+
+/** @defgroup Definations
+  * @brief    Exported Macros And Definations
+  * @ingroup  DMA
   * @{
   */
+/** 
+  * @brief  DMA stream and channel selectin pair type
+  */
+ typedef struct {
+    DMA_Stream_TypeDef*             stream;         /*<! DMA stream selection as DMA[0,1]_Stream[0~7] */
+    uint32_t                        channel;        /*<! DMA channel selection as DMA_Channel_[0~7] */
+} spDMA_SelectorType;
+
 /** 
   * @brief  Basic flag mask for a DMA stream, 
   *         should use @func DMA_ClearStreamFlagBit to make it useful
@@ -40,14 +61,221 @@
 #define DMA_CR_CDMEIFx          ((uint32_t)0x04)
 #define DMA_CR_CFEIFx           ((uint32_t)0x01)
 #define DMA_CRx                 (DMA_CR_CTCIFx|DMA_CR_CHTIFx|DMA_CR_CTEIFx|DMA_CR_CDMEIFx|DMA_CR_CFEIFx)
-/**
-  * @}
+/** @} */
+
+
+/** @defgroup ChannelConfiguration
+  * @brief    DMA Stream and Channel Configuration
+  * @ingroup  DMA
+  * @{
   */
 
+/**
+  * @brief    DMA for USARTx
+  */
+#define spDMA_USART1_tx_stream      DMA2_Stream7
+#define spDMA_USART1_tx_chnl        DMA_Channel_4
+// 2,2,4 2,5,4
+#define spDMA_USART1_rx_stream      DMA2_Stream5
+#define spDMA_USART1_rx_chnl        DMA_Channel_4
 
 
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
+#define spDMA_USART2_tx_stream      DMA1_Stream6
+#define spDMA_USART2_tx_chnl        DMA_Channel_4
+#define spDMA_USART2_rx_stream      DMA1_Stream5
+#define spDMA_USART2_rx_chnl        DMA_Channel_4
+
+
+#define spDMA_USART3_tx_stream      DMA1_Stream3
+#define spDMA_USART3_tx_chnl        DMA_Channel_4
+#define spDMA_USART3_rx_stream      DMA1_Stream1
+#define spDMA_USART3_rx_chnl        DMA_Channel_4
+
+
+#define spDMA_UAR_4_tx_stream       DMA1_Stream4
+#define spDMA_UART4_tx_chnl         DMA_Channel_4
+#define spDMA_UART4_rx_stream       DMA1_Stream2
+#define spDMA_UART4_rx_chnl         DMA_Channel_4
+
+
+#define spDMA_UART5_tx_stream       DMA1_Stream7
+#define spDMA_UART5_tx_chnl         DMA_Channel_4
+#define spDMA_UART5_rx_stream       DMA1_Stream0
+#define spDMA_UART5_rx_chnl         DMA_Channel_4
+
+
+// 2,6,5 2,7,5
+#define spDMA_USART6_tx_stream      DMA2_Stream6
+#define spDMA_USART6_tx_chnl        DMA_Channel_5
+// 2,1,5 2,2,5
+#define spDMA_USART6_rx_stream      DMA2_Stream1
+#define spDMA_USART6_rx_chnl        DMA_Channel_5
+
+
+#define spDMA_UART7_tx_stream       DMA1_Stream1
+#define spDMA_UART7_tx_chnl         DMA_Channel_5
+#define spDMA_UART7_rx_stream       DMA1_Stream3
+#define spDMA_UART7_rx_chnl         DMA_Channel_5
+
+
+#define spDMA_UART8_tx_stream       DMA1_Stream0
+#define spDMA_UART8_tx_chnl         DMA_Channel_5
+#define spDMA_UART8_rx_stream       DMA1_Stream6
+#define spDMA_UART8_rx_chnl         DMA_Channel_5
+
+/**
+  * @brief    DMA for ADCx
+  */
+#define spDMA_ACD1_stream_1         DMA2_Stream0
+#define spDMA_ACD1_chnl_1           DMA_Channel_0
+#define spDMA_ACD1_stream_2         DMA2_Stream4
+#define spDMA_ACD1_chnl_2           DMA_Channel_0
+#define spDMA_ACD2_stream_1         DMA2_Stream2
+#define spDMA_ACD2_chnl_1           DMA_Channel_1
+#define spDMA_ACD2_stream_2         DMA2_Stream3
+#define spDMA_ACD2_chnl_2           DMA_Channel_1
+#define spDMA_ACD3_stream_1         DMA2_Stream0
+#define spDMA_ACD3_chnl_1           DMA_Channel_2
+#define spDMA_ACD3_stream_2         DMA2_Stream1
+#define spDMA_ACD3_chnl_2           DMA_Channel_2
+
+/**
+  * @brief    DMA for TIMx
+  */
+#define spDMA_TIM1_UP_stream        DMA2_Stream5
+#define spDMA_TIM1_UP_chnl          DMA_Channel_6
+#define spDMA_TIM1_CH1_stream       DMA2_Stream6
+#define spDMA_TIM1_CH1_chnl         DMA_Channel_0 // DMA2_Stream1 DMA_Channel_6 DMA2_Stream3 DMA_Channel_6
+#define spDMA_TIM1_CH2_stream       DMA2_Stream6
+#define spDMA_TIM1_CH2_chnl         DMA_Channel_0 // DMA2_Stream2 DMA_Channel_6
+#define spDMA_TIM1_CH3_stream       DMA2_Stream6
+#define spDMA_TIM1_CH3_chnl         DMA_Channel_0 // DMA2_Stream4 DMA_Channel_6
+#define spDMA_TIM1_CH4_stream       DMA2_Stream4
+#define spDMA_TIM1_CH4_chnl         DMA_Channel_6
+#define spDMA_TIM1_RXIG_stream      DMA2_Stream0
+#define spDMA_TIM1_RXIG_chnl        DMA_Channel_6 // DMA2_Stream4 DMA_Channel_6
+#define spDMA_TIM1_COM_stream       DMA2_Stream4
+#define spDMA_TIM1_COM_chnl         DMA_Channel_6
+
+#define spDMA_TIM2_UP_stream        DMA1_Stream1
+#define spDMA_TIM2_UP_chnl          DMA_Channel_3 // DMA1_Stream7  DMA_Chaneel_3
+#define spDMA_TIM2_CH3_stream       DMA1_Stream1
+#define spDMA_TIM2_CH3_chnl         DMA_Channel_3
+#define spDMA_TIM2_CH1_stream       DMA1_Stream5
+#define spDMA_TIM2_CH1_chnl         DMA_Channel_3
+#define spDMA_TIM2_CH2_stream       DMA1_Stream6
+#define spDMA_TIM2_CH2_chnl         DMA_Channel_3
+#define spDMA_TIM2_CH4_stream       DMA1_Stream6
+#define spDMA_TIM2_CH4_chnl         DMA_Channel_3 // DMA1_Stream7 DMA_Chaneel_3
+//#define spDMA_TIM2_UP_stream        DMA1_Stream7
+//#define spDMA_TIM2_UP_chnl          DMA_Channel_3
+
+#define spDMA_TIM3_UP_stream        DMA1_Stream2
+#define spDMA_TIM3_UP_chnl          DMA_Channel_5
+#define spDMA_TIM3_CH1_stream       DMA1_Stream4
+#define spDMA_TIM3_CH1_chnl         DMA_Channel_5
+#define spDMA_TIM3_CH2_stream       DMA1_Stream5
+#define spDMA_TIM3_CH2_chnl         DMA_Channel_5
+#define spDMA_TIM3_CH3_stream       DMA1_Stream7
+#define spDMA_TIM3_CH3_chnl         DMA_Channel_5
+#define spDMA_TIM3_CH4_stream       DMA1_Stream2
+#define spDMA_TIM3_CH4_chnl         DMA_Channel_5
+#define spDMA_TIM3_RXIG_stream      DMA1_Stream4
+#define spDMA_TIM3_RXIG_chnl        DMA_Channel_5
+
+#define spDMA_TIM4_UP_stream        DMA1_Stream6
+#define spDMA_TIM4_UP_chnl          DMA_Channel_2
+#define spDMA_TIM4_CH1_stream       DMA1_Stream0
+#define spDMA_TIM4_CH1_chnl         DMA_Channel_2
+#define spDMA_TIM4_CH2_stream       DMA1_Stream3
+#define spDMA_TIM4_CH2_chnl         DMA_Channel_2
+#define spDMA_TIM4_CH3_stream       DMA1_Stream7
+#define spDMA_TIM4_CH3_chnl         DMA_Channel_2
+
+#define spDMA_TIM5_UP_stream        DMA1_Stream0
+#define spDMA_TIM5_UP_chnl          DMA_Channel_6 // DMA1_Stream6 DMA_Channel_6
+#define spDMA_TIM5_CH1_stream       DMA1_Stream2
+#define spDMA_TIM5_CH1_chnl         DMA_Channel_6
+#define spDMA_TIM5_CH2_stream       DMA1_Stream4
+#define spDMA_TIM5_CH2_chnl         DMA_Channel_6
+#define spDMA_TIM5_CH3_stream       DMA1_Stream0
+#define spDMA_TIM5_CH3_chnl         DMA_Channel_6
+#define spDMA_TIM5_CH4_stream       DMA1_Stream1
+#define spDMA_TIM5_CH4_chnl         DMA_Channel_6 // DMA1_Stream3 DMA_Channel_6
+#define spDMA_TIM5_RXIG_stream      DMA1_Stream1
+#define spDMA_TIM5_RXIG_chnl        DMA_Channel_6 // DMA1_Stream3 DMA_Channel_6
+
+#define spDMA_TIM6_UP_stream        DMA1_Stream1
+#define spDMA_TIM6_UP_chnl          DMA_Channel_7
+
+#define spDMA_TIM7_UP_stream        DMA1_Stream2
+#define spDMA_TIM7_UP_chnl          DMA_Channel_1 // DMA1_Stream4 DMA_Chaneel_1
+
+#define spDMA_TIM8_UP_stream        DMA2_Stream1
+#define spDMA_TIM8_UP_chnl          DMA_Channel_7
+#define spDMA_TIM8_CH1_stream       DMA2_Stream2
+#define spDMA_TIM8_CH1_chnl         DMA_Channel_0 // DMA2_Stream2 DMA_Channel_7
+#define spDMA_TIM8_CH2_stream       DMA2_Stream2
+#define spDMA_TIM8_CH2_chnl         DMA_Channel_0 // DMA2_Stream3 DMA_Channel_7
+#define spDMA_TIM8_CH3_stream       DMA2_Stream2
+#define spDMA_TIM8_CH3_chnl         DMA_Channel_0 // DMA2_Stream4 DMA_Channel_7
+#define spDMA_TIM8_CH4_stream       DMA2_Stream7
+#define spDMA_TIM8_CH4_chnl         DMA_Channel_7
+#define spDMA_TIM8_RXIG_stream      DMA2_Stream7
+#define spDMA_TIM8_RXIG_chnl        DMA_Channel_7
+#define spDMA_TIM8_COM_stream       DMA2_Stream7
+#define spDMA_TIM8_COM_chnl         DMA_Channel_7
+
+/**
+  * @brief    DMA for SPIx
+  */
+#define spDMA_SPI1_rx_stream        DMA1_Stream0 // DMA1_Stream2 DMA_Channel_3
+#define spDMA_SPI1_rx_chnl          DMA_Channel_3
+#define spDMA_SPI1_tx_stream        DMA1_Stream3 // DMA1_Stream5 DMA_Channel_3
+#define spDMA_SPI1_tx_chnl          DMA_Channel_3
+
+#define spDMA_SPI2_rx_stream        DMA1_Stream3
+#define spDMA_SPI2_rx_chnl          DMA_Channel_0
+#define spDMA_SPI2_tx_stream        DMA1_Stream4
+#define spDMA_SPI2_tx_chnl          DMA_Channel_0
+
+#define spDMA_SPI3_rx_stream        DMA1_Stream0 // DMA1_Stream2 DMA_Channel_0
+#define spDMA_SPI3_rx_chnl          DMA_Channel_0
+#define spDMA_SPI3_tx_stream        DMA1_Stream5 // DMA1_Stream7 DMA_Channel_0
+#define spDMA_SPI3_tx_chnl          DMA_Channel_0
+
+#define spDMA_SPI4_rx_stream        DMA1_Stream0 // DMA1_Stream3 DMA_Channel_4
+#define spDMA_SPI4_rx_chnl          DMA_Channel_4
+#define spDMA_SPI4_tx_stream        DMA1_Stream1 // DMA1_Stream4 DMA_Channel_4
+#define spDMA_SPI4_tx_chnl          DMA_Channel_4
+
+#define spDMA_SPI5_rx_stream        DMA2_Stream3 // DMA2_Stream5 DMA_Channel_7
+#define spDMA_SPI5_rx_chnl          DMA_Channel_2
+#define spDMA_SPI5_tx_stream        DMA2_Stream4 // DMA2_Stream6 DMA_Channel_7
+#define spDMA_SPI5_tx_chnl          DMA_Channel_2
+
+#define spDMA_SPI6_rx_stream        DMA1_Stream3
+#define spDMA_SPI6_rx_chnl          DMA_Channel_2
+#define spDMA_SPI6_tx_stream        DMA1_Stream4
+#define spDMA_SPI6_tx_chnl          DMA_Channel_2
+
+/**
+  * @brief    DMA for Non-specific Usage
+  * @note     List: 110 111 112 131 160 107 156 176
+  *                 201 207 213 222 243 244 255 270 276
+  */
+//extern spDMA_SelectorType spDMA_Mem2Mem[];
+//#define spDMA_NULL_stream           DMA2_Stream0
+//#define spDMA_NULL_chnl             DMA_Channel_0
+
+/** @} */
+
+
+/** @defgroup Decalarations
+  * @brief    Exported Function Decalarations
+  * @ingroup  DMA
+  * @{
+  */
 ///** 
 //  * @brief  Enable DMA with given data size
 //  * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
@@ -115,6 +343,17 @@ void DMA_SendOnce(DMA_Stream_TypeDef * stream, uint32_t target, uint32_t buffer,
   * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
   */
 DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len);
+/** @} */
+
+
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 
 #ifdef __cplusplus

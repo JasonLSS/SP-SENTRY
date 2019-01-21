@@ -10,16 +10,16 @@
                     ##### About CAN configuration #####
   ==============================================================================
     # Speed Config
-    (+)tsjw:ÖØĞÂÍ¬²½ÌøÔ¾Ê±¼äµ¥Ôª. @ref CAN_synchronisation_jump_width    ·¶Î§: CAN_SJW_1tq ~ CAN_SJW_4tq
-    (+)tbs2:Ê±¼ä¶Î2µÄÊ±¼äµ¥Ôª.    @ref CAN_time_quantum_in_bit_segment_2 ·¶Î§: CAN_BS2_1tq ~ CAN_BS2_8tq
-    (+)tbs1:Ê±¼ä¶Î1µÄÊ±¼äµ¥Ôª.    @ref CAN_time_quantum_in_bit_segment_1 ·¶Î§: CAN_BS1_1tq ~ CAN_BS1_16tq
-    (+)brp :²¨ÌØÂÊ·ÖÆµÆ÷.·¶Î§:1~1024;(Êµ¼ÊÒª¼Ó1,Ò²¾ÍÊÇ1~1024) tq=(brp)*tpclk1
-        ²¨ÌØÂÊ=Fpclk1/((tsjw+tbs1+tbs2+3)*brp);
-    (+)mode: @ref CAN_operating_mode ·¶Î§£ºCAN_Mode_Normal,ÆÕÍ¨Ä£Ê½;CAN_Mode_LoopBack,»Ø»·Ä£Ê½;
-    (+)Fpclk1µÄÊ±ÖÓÔÚ³õÊ¼»¯µÄÊ±ºòÉèÖÃÎª36M,Èç¹ûÉèÖÃCAN_Normal_Init(CAN_SJW_1tq,CAN_BS2_6tq,CAN_BS1_7tq,6,CAN_Mode_LoopBack);
-        Ôò²¨ÌØÂÊÎª:42M/((1+6+7)*6)=500Kbps
-        ·µ»ØÖµ:0,³õÊ¼»¯OK;
-        ÆäËû,³õÊ¼»¯Ê§°Ü;
+    (+)tsjw:é‡æ–°åŒæ­¥è·³è·ƒæ—¶é—´å•å…ƒ. @ref CAN_synchronisation_jump_width    èŒƒå›´: CAN_SJW_1tq ~ CAN_SJW_4tq
+    (+)tbs2:æ—¶é—´æ®µ2çš„æ—¶é—´å•å…ƒ.    @ref CAN_time_quantum_in_bit_segment_2 èŒƒå›´: CAN_BS2_1tq ~ CAN_BS2_8tq
+    (+)tbs1:æ—¶é—´æ®µ1çš„æ—¶é—´å•å…ƒ.    @ref CAN_time_quantum_in_bit_segment_1 èŒƒå›´: CAN_BS1_1tq ~ CAN_BS1_16tq
+    (+)brp :æ³¢ç‰¹ç‡åˆ†é¢‘å™¨.èŒƒå›´:1~1024;(å®é™…è¦åŠ 1,ä¹Ÿå°±æ˜¯1~1024) tq=(brp)*tpclk1
+        æ³¢ç‰¹ç‡=Fpclk1/((tsjw+tbs1+tbs2+3)*brp);
+    (+)mode: @ref CAN_operating_mode èŒƒå›´ï¼šCAN_Mode_Normal,æ™®é€šæ¨¡å¼;CAN_Mode_LoopBack,å›ç¯æ¨¡å¼;
+    (+)Fpclk1çš„æ—¶é’Ÿåœ¨åˆå§‹åŒ–çš„æ—¶å€™è®¾ç½®ä¸º36M,å¦‚æœè®¾ç½®CAN_Normal_Init(CAN_SJW_1tq,CAN_BS2_6tq,CAN_BS1_7tq,6,CAN_Mode_LoopBack);
+        åˆ™æ³¢ç‰¹ç‡ä¸º:42M/((1+6+7)*6)=500Kbps
+        è¿”å›å€¼:0,åˆå§‹åŒ–OK;
+        å…¶ä»–,åˆå§‹åŒ–å¤±è´¥;
     # Attention
         System time config can affect CAN's communication vary much.
   
@@ -38,7 +38,17 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup CAN 
+  * @brief    CAN Module
+  * @{
+  */
+
 #include "stm32f4xx.h"
 #include "stm32f4xx_can.h"
 #include "stm32f4xx_gpio.h"
@@ -48,7 +58,11 @@
 #include "sp_type.h"
 
 
-/* Exported types ------------------------------------------------------------*/
+/** @defgroup Definations
+  * @brief    Exported CANx Macros And Definations 
+  * @ingroup  CAN
+  * @{
+*/
 /**
   * @brief  CAN data transmit/receive manager
   */
@@ -83,20 +97,16 @@ typedef struct {
 //    void(*call_back)(CanRxMsg*, void*);
 } CAN_Transmitter;
 
-
-/* Exported macro ------------------------------------------------------------*/
 #define CAN1_POOLSIZE            8      /*!< How many message receiver can mount on CAN12 */
 #define CAN2_POOLSIZE            8      /*!< How many message receiver can mount on CAN12 */
+/** @} */
 
 
-/* Exported parameters -------------------------------------------------------*/
-
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup CANx Basic Control Function
-  * @brief    Implement basic CAN functions
+/** @defgroup Declarations
+  * @brief    Exported CANx Function Declarations
+  * @ingroup  CAN
   * @{
   */
-
 /**
   * @brief  Register a receiver to CAN bus
   * @param  canx: @ref CAN_TypeDef select @arg CAN1 or @arg CAN2 to send message
@@ -127,36 +137,12 @@ void CAN_SubmitChange(CAN_Transmitter* transmitter);
   * @note   Only used for send once message.
   */ 
 void CAN_SendMsg(CAN_Transmitter* exchanger);
+/** @} */
 
 
-///**
-//  * @brief  Send control value to motor via CAN1
-//  * @param  id: @ref CAN_MOTORx
-//  * @param  candata: -16384~0~16384 stand for -20A~20A control current
-//  */ 
-//void        CAN1_MotorSend(CAN_MOTORx id, int16_t candata);
-///**
-//  * @brief  Send control value to motor via CAN2
-//  * @param  id: @ref CAN_MOTORx
-//  * @param  candata: -16384~0~16384 stand for -20A~20A control current
-//  */ 
-//void        CAN2_MotorSend(CAN_MOTORx id, int16_t candata);
-///**
-//  * @brief  CAN2 periodic sending
-//  * @param  canx:
-//  * @param  id:
-//  * @param  candata:
-//  */ 
-//void        CAN_GeneralSend(CAN_TypeDef *canx, uint16_t id, int16_t candata);
-/**
-  * @}
-  */
-
-
-
-/** @defgroup CANx Basic Control Function
-  * @brief    Implement basic CAN functions
-  * @note     SHOULD NOT call by users.
+/** @defgroup Control
+  * @brief    Exported CANx Basic Control Function
+  * @ingroup  CAN
   * @{
   */
 /**
@@ -181,6 +167,12 @@ void        CAN2_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_
   * @note   Should be periodicly called
   */ 
 void        CAN2_MsgSendLoop(void);
+/** @} */
+
+
+/**
+  * @}
+  */
 
 /**
   * @}
@@ -192,8 +184,3 @@ void        CAN2_MsgSendLoop(void);
 #endif
 
 #endif /*__SP_CAN_H */
-
-/************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
-
-
-
