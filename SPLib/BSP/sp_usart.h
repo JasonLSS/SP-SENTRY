@@ -39,6 +39,21 @@
 
 #include "sp_conf.h"
 
+
+/** @defgroup Definations
+  * @brief    USART Exported Macros and Definations
+  * @ingroup  USART
+  * @{
+  */
+typedef struct {
+    uint8_t*    buffer;
+    uint16_t    size;
+    uint16_t    curr_ptr;
+    uint16_t    last_ptr;
+} UsartBuffer_t;
+/** @} */
+
+
 /** @defgroup ResourceConfiguration
   * @brief    USART Resource Configuration
   * @ingroup  USART
@@ -49,7 +64,7 @@
   * @brief  USART RCC config
   */
 #define spUSART1_RCC_GPIO()     spRCC_Set_GPIOB()
-#define spUSART2_RCC_GPIO()     spRCC_Set_GPIO
+#define spUSART2_RCC_GPIO()     spRCC_Set_GPIOD()
 #define spUSART3_RCC_GPIO()     spRCC_Set_GPIOG()
 #define spUART4_RCC_GPIO()      spRCC_Set_GPIO
 #define spUART5_RCC_GPIO()      spRCC_Set_GPIO
@@ -70,12 +85,12 @@
 #endif
 
 #ifdef USING_SP_USART2_TX
-#define spUSART2_GPIO_TX        GPIO
-#define spUSART2_TX_Source      GPIO_PinSource
+#define spUSART2_GPIO_TX        GPIOD
+#define spUSART2_TX_Source      GPIO_PinSource5
 #endif
 #ifdef USING_SP_USART2_RX
-#define spUSART2_GPIO_RX        GPIO
-#define spUSART2_RX_Source      GPIO_PinSource
+#define spUSART2_GPIO_RX        GPIOD
+#define spUSART2_RX_Source      GPIO_PinSource6
 #endif
 
 #ifdef USING_SP_USART3_TX

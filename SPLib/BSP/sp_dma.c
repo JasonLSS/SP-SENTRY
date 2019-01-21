@@ -133,23 +133,40 @@ bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize) {
 }
 
 
-void DMA_SendOnce(DMA_Stream_TypeDef * stream, uint32_t target, uint32_t buffer, uint16_t len) {
+bool DMA_Start(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len) {
     /* DMA is transfering */
     if(DMA_GetCmdStatus(stream)==ENABLE){
-        return;
+        return false;
     }
 //    DMA_Cmd(stream, DISABLE);
 //    while(DMA_GetCmdStatus(stream)!=DISABLE);
-    stream->PAR = (uint32_t)buffer;
-    stream->M0AR = (uint32_t)target;
+    stream->PAR = (uint32_t)periph_buffer;
+    stream->M0AR = (uint32_t)mem_target;
     stream->NDTR = len;
     if(stream->CR & DMA_SxCR_CIRC) {
         stream->CR &= ~DMA_SxCR_CIRC;       /* Disable circular mode. */
     }
     DMA_ClearStreamFlagBit(stream, DMA_CRx);
     DMA_Cmd(stream, ENABLE);
+    return true;
 }
 
+bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len) {
+    /* DMA is transfering */
+    uint16_t overtime = 2000;
+    DMA_Cmd(stream, DISABLE);
+    while(DMA_GetCmdStatus(stream)!=DISABLE && overtime>0) overtime--;
+    if(overtime <= 0) {
+        return  false;
+    }
+    
+    stream->PAR = (uint32_t)periph_buffer;
+    stream->M0AR = (uint32_t)mem_target;
+    stream->NDTR = len;
+    DMA_ClearStreamFlagBit(stream, DMA_CRx);
+    DMA_Cmd(stream, ENABLE);
+    return false;
+}
 
 DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len) {
     /* Select DMA stream */
@@ -157,7 +174,7 @@ DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t l
     for(i=0; i<size; i++) {
         if((spDMA_Mem2Mem[i].stream->CR&DMA_SxCR_CHSEL_Msk)==spDMA_Mem2Mem[i].channel && 
             DMA_GetCmdStatus(spDMA_Mem2Mem[i].stream)==DISABLE) {
-                DMA_SendOnce(spDMA_Mem2Mem[i].stream, target, buffer, len);
+                DMA_Start(spDMA_Mem2Mem[i].stream, target, buffer, len);
                 return spDMA_Mem2Mem[i].stream;
             }
     }

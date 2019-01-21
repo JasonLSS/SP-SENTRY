@@ -211,10 +211,10 @@ void PulseCapture(void) {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2|RCC_APB1Periph_TIM3,ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA|RCC_AHB1Periph_DMA1, ENABLE);
 
-    GPIO_PinAFConfig(GPIOA,GPIO_PinSource0,GPIO_AF_TIM2);
     GPIO_PinAFConfig(GPIOA,GPIO_PinSource1,GPIO_AF_TIM2);
+    GPIO_PinAFConfig(GPIOA,GPIO_PinSource3,GPIO_AF_TIM2);
     
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_3;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -227,22 +227,23 @@ void PulseCapture(void) {
     TIM_TimeBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1;
     TIM_TimeBaseInit(TIM2,&TIM_TimeBaseStructure);
     
-    TIM_ICInitStructure.TIM_Channel = TIM_Channel_1;
+    TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
     TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
     TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
     TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV4;
     TIM_ICInitStructure.TIM_ICFilter = 0x10;        // Attention
     TIM_ICInit(TIM2, &TIM_ICInitStructure);
     
-    TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
+    TIM_ICInitStructure.TIM_Channel = TIM_Channel_4;
     TIM_ICInit(TIM2, &TIM_ICInitStructure);
     
-    TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);  //TIM_IT_CC1
-    TIM_DMACmd(TIM2, TIM_DMA_CC1|TIM_DMA_CC2, ENABLE);
+    TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
+    TIM_DMACmd(TIM2, TIM_DMA_CC2|TIM_DMA_CC4, ENABLE);
     TIM_SetCounter(TIM2, 0);
 
 //    NVIC_IRQEnable(TIM2_IRQn, 0, 2);
     
+    //TODO: TIM2_CH2/4 IRQ
     /* -------------- Configure DMA -----------------------------------------*/
     DMA_InitTypeDef dma;
     DMA_DeInit(DMA1_Stream5);
@@ -261,9 +262,9 @@ void PulseCapture(void) {
     dma.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
     dma.DMA_MemoryBurst = DMA_Mode_Normal;
     dma.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-    DMA_Init(DMA1_Stream5, &dma);
-    DMA_ITConfig(DMA1_Stream5,DMA_IT_TC,ENABLE);
-    DMA_Cmd(DMA1_Stream5,ENABLE);
+//    DMA_Init(DMA1_Stream5, &dma);
+//    DMA_ITConfig(DMA1_Stream5,DMA_IT_TC,ENABLE);
+//    DMA_Cmd(DMA1_Stream5,ENABLE);
     
     DMA_DeInit(DMA1_Stream6);                     
     dma.DMA_Channel = DMA_Channel_3;    // TIM2_CH2
@@ -431,16 +432,16 @@ void looperUpdateFriction(PWMFriction_Type* friction) {
 }
 
 
-void DMA1_Stream5_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA1_Stream5, DMA_IT_TCIF5)) {
-        
-        dmaFrictionUpdata(&Friction_CH1);
-        
-        DMA_ClearFlag(DMA1_Stream5, DMA_IT_TCIF5);
-        DMA_ClearITPendingBit(DMA1_Stream5, DMA_IT_TCIF5);
-    }
-}
+//void DMA1_Stream5_IRQHandler(void)
+//{
+//    if(DMA_GetITStatus(DMA1_Stream5, DMA_IT_TCIF5)) {
+//        
+//        dmaFrictionUpdata(&Friction_CH1);
+//        
+//        DMA_ClearFlag(DMA1_Stream5, DMA_IT_TCIF5);
+//        DMA_ClearITPendingBit(DMA1_Stream5, DMA_IT_TCIF5);
+//    }
+//}
 
 void DMA1_Stream6_IRQHandler(void)
 {

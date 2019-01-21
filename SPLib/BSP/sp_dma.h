@@ -46,10 +46,17 @@
 /** 
   * @brief  DMA stream and channel selectin pair type
   */
- typedef struct {
+typedef struct {
     DMA_Stream_TypeDef*             stream;         /*<! DMA stream selection as DMA[0,1]_Stream[0~7] */
     uint32_t                        channel;        /*<! DMA channel selection as DMA_Channel_[0~7] */
 } spDMA_SelectorType;
+
+typedef struct {
+    DMA_Stream_TypeDef*             stream;         /*<! DMA stream selection as DMA[0,1]_Stream[0~7] */
+    uint32_t                        channel;        /*<! DMA channel selection as DMA_Channel_[0~7] */
+    uint8_t*                        buffer;         /*<! Data buffer pointer */
+    uint16_t                        size;           /*<! Data buffer capacity */
+} spDMA_RequestType;
 
 /** 
   * @brief  Basic flag mask for a DMA stream, 
@@ -314,7 +321,7 @@ bool DMA_GetStreamFlagBit(DMA_Stream_TypeDef* stream, uint32_t flag);
   * @param  addr_from   Address of source data, can be @arg NULL
   * @param  addr_to     Address of destination data, can be @arg NULL
   * @param  buffsize    Size of data for transfering, can be @arg NULL/0/0x00 etc.
-  * @note   Use @func DMA_SendOnce() to start new transfer.
+  * @note   Use @func DMA_Start() to start new transfer.
   */
 bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize);
 
@@ -322,16 +329,16 @@ bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize);
   * @brief  Start once DMA transmission
   * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
   *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
-  * @param  target  DMA target address
-  * @param  buffer  Sending data via DMA
+  * @param  target  DMA target address ()
+  * @param  buffer  Sending data via DMA ()
   * @param  len    Size of the sending data
   * @retval If DMA transfer started.
   * @note   Default sending from @arg target(MEMORY) to @arg buffer(PHERIPHERAL)
   *         Actually from where to where depends on DMA stream setting.
   * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
   */
-void DMA_SendOnce(DMA_Stream_TypeDef * stream, uint32_t target, uint32_t buffer, uint16_t len);
-
+bool DMA_Start(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
+bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
 
 /** 
   * @brief  Start once DMA transmission between memory and memory
@@ -343,6 +350,7 @@ void DMA_SendOnce(DMA_Stream_TypeDef * stream, uint32_t target, uint32_t buffer,
   * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
   */
 DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len);
+
 /** @} */
 
 

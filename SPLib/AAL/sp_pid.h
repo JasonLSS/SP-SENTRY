@@ -36,6 +36,10 @@
 #define PID_SYSTEMSCALE                 16000       /* System scale means what's the order of magnitude 
                                                        of the input/output value. */
 
+#define PID_SetGainP(pid, x)       (pid)->Kp = (x)
+#define PID_SetGainI(pid, x)       (pid)->Ki = (x)
+#define PID_SetGainD(pid, x)       (pid)->Kd = (x)
+
 /* Exported types ------------------------------------------------------------*/
 /**
   * @brief  PID type structure

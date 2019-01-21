@@ -8,8 +8,6 @@
 #include "sp_spi.h"
 #include "sp_conf.h"
 
-#include "sp_kalman.h"
-
 /* Invensense DMP and MPL library */
 #ifdef USING_MPU_DMP
 #define mpu6500_SPI_read_write_byte(x)      SPI5_ReadWriteByte(x)
@@ -49,7 +47,7 @@ typedef enum {
 
 typedef struct {
     float Pitch, Roll, Yaw;
-    KALMAM_Type mpu_kalman;
+    // KALMAM_Type mpu_kalman;
     float timestamp;
     bool inited;
     uint32_t count;

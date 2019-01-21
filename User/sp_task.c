@@ -27,6 +27,8 @@
 
 #include "sp_can.h"
 #include "sp_pid.h"
+#include "gimbal.h"
+#include "Auto_aim.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -70,20 +72,14 @@ void TASK_TimerInit(void) {
   */
 inline void TASK_Start(void) {
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;           /* Enbale systick */
+    spCLOCK_Configuration();
+    
+    extern void sendtoComputerInit(void);
+    sendtoComputerInit();
 }
 
 
-MOTOR_CrtlType_CAN* motor205;
-#define GM_ID       5
-static struct {
-    CAN_Transmitter         transmitter;
-    uint8_t                 raw_data[8];
-} gm_data;
-PID_Type                    gm_spd;
-PID_Type                    gm_pos;
-MOTOR_CrtlType_CAN*         gm6020;
-MOTOR_CrtlType_CAN*         motor206;
-int32_t                     gm_target = 0;
+
 
 /**
   * @brief  Init modules in system layer control
@@ -109,6 +105,15 @@ void TASK_GlobalInit() {
         USART_RX_Config(UART8, 115200);
         USART_Cmd(UART8, ENABLE);
         
+//        // Start general USART8 for general communication
+//        extern uint8_t referee_buffer[128];
+//        USART_RX_Config(USART6, 115200);
+//        DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
+//        USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+//        DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
+//        DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
+//        USART_Cmd(USART6, ENABLE);
+        
         // Enable Remote Controller Receiver
         RC_ReceiverInit();
         /* Start basis functions */
@@ -129,6 +134,7 @@ void TASK_GlobalInit() {
       * @brief  System layer initialize
       */
     {
+        
     }
     
     /** 
@@ -137,6 +143,23 @@ void TASK_GlobalInit() {
     {
         MOTOR_ControlInit();
         CHASIS_ControlInit();
+        
+    #ifdef USING_DM6020
+        /* For view communication via USART2 */
+        extern UsartBuffer_t view_buffer;
+        USART_RX_Config(USART2, 115200);
+        DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer, view_buffer.size, false);
+        
+        USART_TX_Config(USART2, 115200);
+        DMA_USART_TX_Config(USART2);
+        
+        USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
+        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
+        DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
+        USART_Cmd(USART2, ENABLE);
+        
+        GIMBAL_ControlInit();
+    #endif
         
     #ifdef USING_CHASIS
         MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3508_P19, false);
@@ -212,7 +235,7 @@ void TASK_GlobalInit() {
     
     #ifdef USING_TEST17
         MOTOR_CrtlType_CAN* motor205 = CHASIS_EnableMotor(Motor205, RM_2006_P36, true);
-        MOTOR_CrtlType_CAN* motor206 = CHASIS_EnableMotor(Motor206, RM_2006_P36, false);
+        MOTOR_CrtlType_CAN* gimbal_pitch_motor = CHASIS_EnableMotor(Motor206, RM_2006_P36, false);
         Friction_Init();
         
         if(motor205) {
@@ -229,52 +252,15 @@ void TASK_GlobalInit() {
             motor205->control.output_limit = 8000;
         }
         
-        if(motor206) {
-            motor206->control.speed_pid->Kp = 7.f;
-            motor206->control.speed_pid->Ki = 5.f;
-            motor206->control.speed_pid->Kd = 0.06f;
-            motor206->control.speed_pid->intergration_limit = 500;
-            motor206->control.speed_pid->intergration_separation = 400;
+        if(gimbal_pitch_motor) {
+            gimbal_pitch_motor->control.speed_pid->Kp = 7.f;
+            gimbal_pitch_motor->control.speed_pid->Ki = 5.f;
+            gimbal_pitch_motor->control.speed_pid->Kd = 0.06f;
+            gimbal_pitch_motor->control.speed_pid->intergration_limit = 500;
+            gimbal_pitch_motor->control.speed_pid->intergration_separation = 400;
             
-            motor206->control.output_limit = 8000;
+            gimbal_pitch_motor->control.output_limit = 8000;
         }
-    #endif
-
-    #ifdef USING_DM6020
-
-        /* Init new motor */
-        gm6020  = MOTOR_RM_GetInstance(RM_6623_YAW);
-        gm6020->implement.set_target(gm6020, 0);
-        gm6020->implement.set_outputlimit(gm6020, 20000);
-        
-//        PID_ControllerInit(&gm_spd, 200, 0xFFFF, 16000, 0.01);
-//        PID_SetGains(&gm_spd, 1.5f, 0, 0);
-        PID_ControllerInit(&gm_pos, 500, 0xFFFF, 8000, 0.01);
-        PID_SetGains(&gm_pos, 8.0f, 20, 0.15f);     // For init
-        gm_pos.intergration_separation = 100;
-        gm6020->implement.set_speed_pid(gm6020, NULL);
-        gm6020->implement.set_position_pid(gm6020, &gm_pos);
-
-        gm6020->implement.mount_can(gm6020, CAN1, 0x204+GM_ID);
-        if(GM_ID<=4)
-            gm_data.transmitter.std_id = 0x1FF;
-        else
-            gm_data.transmitter.std_id = 0x2FF;
-        /* Mount mortor201~mortor204 to CAN chasis control */
-        gm_data.transmitter.tx.addr = gm_data.raw_data;
-        gm_data.transmitter.tx.size = sizeof(gm_data.raw_data)/sizeof(gm_data.raw_data[0]);
-        CAN_RegistTransmitter(CAN1, &gm_data.transmitter);
-        
-        
-        
-        motor206 = CHASIS_EnableMotor(Motor205, GM_3510, true);
-        // PID_SetGains(motor206->control.speed_pid, 1.2f, 0, 0);
-        motor206->implement.set_speed_pid(motor206, NULL);
-        motor206->control.position_pid->intergration_separation = 100;
-        motor206->control.position_pid->intergration_limit = 400;
-        motor206->control.position_pid->output_limit = 8000;
-        PID_SetGains(motor206->control.position_pid, 8.f, 15.0f, 0.4f);
-
     #endif
     }
     /** 
@@ -326,6 +312,7 @@ void TASK_ControlLooper() {
     static RC_DataType recv;
     static RC_DataType recv_ex;
     
+    RC_GetState(&recv);
     
     /** 
       * @brief  Sundries and uiltilies looper
@@ -339,8 +326,6 @@ void TASK_ControlLooper() {
       */
     {
         if(task_counter%10 == 1) {
-            
-            RC_GetState(&recv);
             
         } else if(task_counter%10 == 3) {
           #ifdef USING_TEST42
@@ -413,8 +398,6 @@ void TASK_ControlLooper() {
             CHASIS_SetMotorSpeed(Motor201, speed);
             CHASIS_SetMotorSpeed(Motor202, speed);
           #endif
-            
-            CHASIS_ControlLooper();
         } else if(task_counter%10 == 7) {
           #ifdef USING_TEST17
             extern PWMFriction_Type Friction_CH1, Friction_CH2;
@@ -425,32 +408,29 @@ void TASK_ControlLooper() {
             const MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
             printf("%d,%d\r\n", motor201->state.speed, motor202->state.speed);
           #endif
-
-          #ifdef USING_DM6020
-            // POS0: 3510-7620 6020-
-            // -1200~1000
-            
-            gm6020->implement.set_target(gm6020, recv.rc.ch0);      // Yaw
-            CHASIS_SetMotorPosition(Motor205, recv.rc.ch1);         // Pitch
-            
-            int16_t speed = (int16_t)gm6020->control.output;
-            #if GM_ID<=4 
-                gm_data.raw_data[2*GM_ID-2] = (speed>>8)&0xff;
-                gm_data.raw_data[2*GM_ID-1] = speed&0xff;
-            #else
-                gm_data.raw_data[2*(GM_ID-4)-2] = (speed>>8)&0xff;
-                gm_data.raw_data[2*(GM_ID-4)-1] = speed&0xff;
-            #endif
-            CAN_SubmitChange(&gm_data.transmitter);
-            
-            uint8_t len = sprintf(uart6_buff,"%d,%d,%f\r\n", gm6020->state.current, gm6020->state.speed,
-                gm6020->state.angle);
-            DMA_SendOnce(spDMA_UART7_tx_stream, (uint32_t)&uart6_buff, (uint32_t)&UART7->DR, len);
-          #endif
-
         }  else if(task_counter%10 == 9) {
             recv_ex = recv;
         }
+        
+      #ifdef USING_DM6020
+        if(task_counter%5 == 2) {
+            extern void sendtoComputer(void);
+            sendtoComputer();
+        }
+        if(task_counter%10 == 8) {   
+            if(recv.rc.s2==RC_SW_UP) {
+                auto_aim_flag = 0; small_power_flag = 0xff;
+            } else if(recv.rc.s2==RC_SW_DOWN) {
+                auto_aim_flag = 0xff; small_power_flag = 0;
+                GIMBAL_Update( recv.rc.ch1 , recv.rc.ch0*4.0f);
+            } else {
+                GIMBAL_Update(0, 0);
+                auto_aim_flag = 0; small_power_flag = 0;
+            }
+        }
+      #endif
+        
+        recv_ex = recv;
     }
     /** 
       * @brief  System layer looper
@@ -489,62 +469,33 @@ void SysTick_Handler(void) {
         tick_init ++;
         
         #ifndef USING_DM6020
-        
         if(tick_init>= 3000) {
             task_inited = true;
             TASK_Enable();
         }
         #else
-        static uint16_t pass_flag = 0;
-        if(pass_flag>= 3000) {
+        if(GIMBAL_MiddleLooper(tick_init)) {
             task_inited = true;
             TASK_Enable();
-            
-            motor206->state.angle = 0;
-            CHASIS_SetMotorPosition(Motor205, 0);
-            motor206->control.position_pid->Ki = 10.f;
-            
-            gm6020->state.angle = 0;
-            gm6020->control.target = 0;
-            gm6020->control.position_pid->Ki = 10.f;
-            
-        } else {
-            
-            if(tick_init%10==1) {
-                if(gm6020->state.__motor_angel_last!=-1) {
-                    gm6020->implement.set_target(gm6020, (4800 - gm6020->state.__motor_angel_first));
-                }
-                if(motor206->state.__motor_angel_last!=-1) {
-                    CHASIS_SetMotorPosition(Motor205, (7620 - motor206->state.__motor_angel_first));
-                }
-                
-                CHASIS_ControlLooper();
-                
-                int16_t speed = (int16_t)gm6020->control.output;
-                #if GM_ID<=4
-                    gm_data.raw_data[2*GM_ID-2] = (speed>>8)&0xff;
-                    gm_data.raw_data[2*GM_ID-1] = speed&0xff;
-                #else
-                    gm_data.raw_data[2*(GM_ID-4)-2] = (speed>>8)&0xff;
-                    gm_data.raw_data[2*(GM_ID-4)-1] = speed&0xff;
-                #endif
-                CAN_SubmitChange(&gm_data.transmitter);
-            }
-            
-            if(abs(motor206->state.__motor_angel_curr - 7620)<20 &&
-               abs(gm6020->state.__motor_angel_curr - 4800)<10 ) {
-                pass_flag ++;
-            } else {
-                pass_flag = 0;
-            }
         }
         #endif
     }else{
         TASK_ControlLooper();
     }
     
+
     /* System background */
+    uint32_t ctime = TASK_GetMicrosecond();
+    
     RC_ReceiverChecker();
+    if(ctime%10 == 0) {
+    #ifdef USING_DM6020
+        GIMBAL_ControlLooper();
+    #endif
+    }
+    if(ctime%10 == 0) {
+        CHASIS_ControlLooper();
+    }
     CAN1_MsgSendLoop();
     CAN2_MsgSendLoop();
 }

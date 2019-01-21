@@ -17,7 +17,6 @@
 #include <string.h>
 #include "mpu6500.h"
 #include "sp_utility.h"
-#include "sp_kalman.h"
 #include "mpu6500.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,6 +67,15 @@ void DMA1_Stream1_IRQHandler(void)
 
 
 
+void DMA1_Stream5_IRQHandler(void)
+{
+    if(DMA_GetITStatus(DMA1_Stream5, DMA_IT_TCIF5)) {
+        
+        DMA_ClearITPendingBit(DMA1_Stream5, DMA_IT_TCIF5);
+    }
+}
+
+
 void TIM6_DAC_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update)) {
@@ -84,7 +92,48 @@ void USART1_IRQHandler (void) {
         USART_ClearITPendingBit(USART1, USART_IT_IDLE);
     }
 }
+
+#include "Auto_aim.h"
+// View-USART2
+static uint8_t __view_buffer[128];
+UsartBuffer_t view_buffer = {
+    .buffer = __view_buffer,
+    .size = 128,
+    .curr_ptr = 0,
+    .last_ptr = 0
+};
 void USART2_IRQHandler (void) {
+    if(USART_GetITStatus(USART2, USART_IT_IDLE)) {
+//        uint16_t size;
+//        uint8_t buffer[128];
+//        view_buffer.curr_ptr = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
+//        if(view_buffer.curr_ptr > view_buffer.last_ptr) {
+//            size = view_buffer.curr_ptr - view_buffer.last_ptr;
+//            DMA_CopyMem2Mem(
+//                (uint32_t)buffer, 
+//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
+//                size);
+//        } else if(view_buffer.curr_ptr < view_buffer.last_ptr) {
+//            size = view_buffer.size - view_buffer.last_ptr;
+//            DMA_CopyMem2Mem(
+//                (uint32_t)buffer, 
+//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
+//                size);
+//            DMA_CopyMem2Mem(
+//                (uint32_t)(&buffer[size]), 
+//                (uint32_t)(view_buffer.buffer), 
+//                view_buffer.curr_ptr);
+//            size += view_buffer.curr_ptr;
+//        }
+//        view_buffer.last_ptr = view_buffer.curr_ptr;
+    
+        uint16_t size = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
+        DMA_Restart(spDMA_USART2_rx_stream, (uint32_t)view_buffer.buffer, 
+             (uint32_t)&USART2->DR, view_buffer.size);
+        Auto_aim(view_buffer.buffer, size);
+        
+        USART_ClearITPendingBit(USART2, USART_IT_IDLE);
+    }
 }
 void USART3_IRQHandler (void) {
 }
@@ -92,7 +141,17 @@ void UART4_IRQHandler (void) {
 }
 void UART5_IRQHandler (void) {
 }
+
+
+extern uint8_t referee_buffer[128];
+void Referee_OnBusIdle(void) {
+    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
+}
 void USART6_IRQHandler (void) {
+    if(USART_GetITStatus(USART6, USART_IT_IDLE)) {
+        Referee_OnBusIdle();
+        USART_ClearITPendingBit(USART6, USART_IT_IDLE);
+    }
 }
 void UART7_IRQHandler (void) {
     if(USART_GetITStatus(UART7, USART_IT_IDLE)) {

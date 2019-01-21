@@ -21,7 +21,9 @@
  extern "C" {
 #endif
 
-
+#if !defined(SP19)
+    #error "Please define SP19 in your porject!"
+#endif
 
 /** @defgroup Commonly Used Macros
   * @{
@@ -132,11 +134,11 @@
 //    <h> USART2
 //      <c1> USING_SP_USART2_TX
 //        <i> Enable USART2 transmit
-//#define USING_SP_USART2_TX
+#define USING_SP_USART2_TX
 //      </c>
 //      <c1> USING_SP_USART2_RX
 //        <i> Enable USART2 read
-//#define USING_SP_USART2_RX
+#define USING_SP_USART2_RX
 //      </c>
 //    </h>
 
