@@ -73,6 +73,10 @@
 //    <i> Enable USB
 #define USING_USB
 //  </c>
+//  <c1> USING_GM3510Test
+//    <i> Enable GM3510 test
+//#define USING_GM3510Test
+//  </c>
 //  <c1> USING_MPU_DMP
 //    <i> Enable MPU with DMP
 //#define USING_MPU_DMP

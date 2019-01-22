@@ -105,6 +105,12 @@ void TASK_GlobalInit() {
         USART_RX_Config(UART8, 115200);
         USART_Cmd(UART8, ENABLE);
         
+        // Start USART and DMA for send data
+        USART_TX_Config(UART7, 115200);
+        DMA_USART_TX_Config(UART7);
+        USART_Cmd(UART7, ENABLE);
+        
+        
 //        // Start general USART8 for general communication
 //        extern uint8_t referee_buffer[128];
 //        USART_RX_Config(USART6, 115200);
@@ -161,6 +167,17 @@ void TASK_GlobalInit() {
         GIMBAL_ControlInit();
     #endif
         
+    #ifdef USING_GM3510Test
+        MOTOR_CrtlType_CAN*         gm3510;
+        gm3510 = CHASIS_EnableMotor(Motor205, GM_3510, true);
+        // PID_SetGains(gm3510->control.speed_pid, 1.2f, 0, 0);
+        gm3510->implement.set_speed_pid(gm3510, NULL);
+        gm3510->control.position_pid->intergration_separation = 100;
+        gm3510->control.position_pid->intergration_limit = 400;
+        gm3510->control.position_pid->output_limit = 8000;
+        PID_SetGains(gm3510->control.position_pid, 4.f, 10.0f, 0.4f);
+    #endif
+    
     #ifdef USING_CHASIS
         MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3508_P19, false);
         MOTOR_CrtlType_CAN* motor202 = CHASIS_EnableMotor(Motor202, RM_3508_P19, false);
@@ -417,7 +434,7 @@ void TASK_ControlLooper() {
             extern void sendtoComputer(void);
             sendtoComputer();
         }
-        if(task_counter%10 == 8) {   
+        if(task_counter%10 == 8) {
             if(recv.rc.s2==RC_SW_UP) {
                 auto_aim_flag = 0; small_power_flag = 0xff;
             } else if(recv.rc.s2==RC_SW_DOWN) {
@@ -427,9 +444,20 @@ void TASK_ControlLooper() {
                 GIMBAL_Update(0, 0);
                 auto_aim_flag = 0; small_power_flag = 0;
             }
+            
+            extern frame fram; 
+            uint8_t size = sprintf(uart6_buff, "%f,%f\r\n", gimbal_yaw_motor->state.angle, 
+                -fram.yaw/0.04394f);
+            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
+            
         }
       #endif
         
+      #ifdef USING_GM3510Test
+        static float pose = 0.f;
+        CHASIS_SetMotorPosition(Motor205, pose);
+      #endif
+      
         recv_ex = recv;
     }
     /** 
@@ -464,6 +492,8 @@ void TASK_ControlLooper() {
   * @brief  Systick interrupt handler for task control
   */
 void SysTick_Handler(void) {
+    RC_ReceiverChecker();
+    
     if(!task_inited){
         static uint16_t tick_init = 0;
         tick_init ++;
@@ -486,14 +516,12 @@ void SysTick_Handler(void) {
 
     /* System background */
     uint32_t ctime = TASK_GetMicrosecond();
+    MOTOR_ControlLooper();
     
-    RC_ReceiverChecker();
     if(ctime%10 == 0) {
     #ifdef USING_DM6020
         GIMBAL_ControlLooper();
     #endif
-    }
-    if(ctime%10 == 0) {
         CHASIS_ControlLooper();
     }
     CAN1_MsgSendLoop();

@@ -215,9 +215,6 @@ void CHASIS_ControlInit() {
 }
 
 void CHASIS_ControlLooper(void) {
-    /*  */
-    MOTOR_ControlLooper();
-    
     int16_t speed;
     // uint8_t i, size=sizeof(__CAHSIS_Manager.motors)/sizeof(__CAHSIS_Manager.motors[0]);
     for(uint8_t i=0; i<4; i++) {

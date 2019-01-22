@@ -490,8 +490,8 @@ bool DMA_USART_TX_Config(USART_TypeDef* usart) {
   #endif
   #ifdef USING_SP_UART8_TX
     if(usart == UART8) {
-        dma_tx_stream = spDMA_UART7_tx_stream;
-        dma_tx_channel = spDMA_UART7_tx_chnl;
+        dma_tx_stream = spDMA_UART8_tx_stream;
+        dma_tx_channel = spDMA_UART8_tx_chnl;
         goto uart_configuration;
     }
   #endif
