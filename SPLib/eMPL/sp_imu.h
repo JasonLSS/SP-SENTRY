@@ -1,66 +1,131 @@
-#ifndef _MPU_H
-#define _MPU_H
+/**
+  ******************************************************************************
+  * @file       sp_imu.h
+  * @author     YTom
+  * @version    v0.1
+  * @date       2019.Jan.23
+  * @brief      IMU(MPU6500 & IST8310) module
+  * @usage      
+  ******************************************************************************
+  * @license
+  *
+  ******************************************************************************
+  */
+
+#ifndef __SP_IMU_H
+#define __SP_IMU_H
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup IMU
+  * @brief    IMU Module
+  * @{
+  */
+
 #include "sp_spi.h"
 #include "sp_conf.h"
-
-/* Invensense DMP and MPL library */
-#ifdef USING_MPU_DMP
-#define mpu6500_SPI_read_write_byte(x)      SPI5_ReadWriteByte(x)
-#define mpu6500_read_single_reg(r)          MPU_ReadByte(r) 
-#define  mpu6500_write_muli_reg(r,b,l)      MPU_Write(r,b,l)
-#define mpu6500_read_muli_reg(r,b,l)        MPU_Read(r,b,l)
-
-#include "ml.h"
-#include "inv_mpu.h"
-#include "inv_mpu_dmp_motion_driver.h"
-#endif
+#include "AHRS.h"
+#include "kalman.h"
 
 typedef struct {
-    short Accel_X;  //寄存器原生X轴加速度表示值
-    short Accel_Y;  //寄存器原生Y轴加速度表示值
-    short Accel_Z;  //寄存器原生Z轴加速度表示值
-    short Temp;     //寄存器原生温度表示值
-    short Gyro_X;   //寄存器原生X轴陀螺仪表示值
-    short Gyro_Y;   //寄存器原生Y轴陀螺仪表示值
-    short Gyro_Z;   //寄存器原生Z轴陀螺仪表示值
-} MPU_RAW_DATA;
+    float q[4];
+    float gyro[3];
+    float accel[3];
+    float mag[3];
+    float temp;
+    float r,p,y;
+} AHRS_t;
 
-typedef struct {
-    float Accel_X;  //转换成实际的X轴加速度，
-    float Accel_Y;  //转换成实际的Y轴加速度，
-    float Accel_Z;  //转换成实际的Z轴加速度，
-    float Temp;     //转换成实际的温度，单位为摄氏度
-    float Gyro_X;   //转换成实际的X轴角加速度，
-    float Gyro_Y;   //转换成实际的Y轴角加速度，
-    float Gyro_Z;   //转换成实际的Z轴角加速度
-} MPU_REAL_DATA;
 
-typedef enum {
-    MPU_Fail = 0,
-    MPU_Success
-} MPU_RetStatus;
 
-typedef struct {
-    float Pitch, Roll, Yaw;
-    // KALMAM_Type mpu_kalman;
-    float timestamp;
-    bool inited;
-    uint32_t count;
-} MPU_Angles_Type;
+/** @defgroup Declarations
+  * @brief    Exported Function Declaration
+  * @ingroup  IMU
+  * @{
+  */
+/** 
+  * @brief  IMU Controller
+  */
+extern struct IMU_Controllers_Type {
+    /** 
+      * @brief  IMU control operations
+      */
+    struct {
+        /** 
+          * @brief  Initialize MPU6500
+          * @retval NULL
+          */
+        int (*init)(void);
+        /** 
+          * @brief  Reset MPU6500 data FIFOs
+          * @retval NULL
+          */
+        uint16_t (*fifo_reset)(void);
+        /** 
+          * @brief  Read data from MPU6500 FIFOs
+          * @retval NULL
+          */
+        uint16_t (*fifo_read)(void);
+        /** 
+          * @brief  Read data stream from MPU6500 from FIFO
+          * @param  gyro: 3*1 gyroscope output array
+          * @param  accel: 3*1 accelerometer output array
+          * @retval NULL
+          */
+        uint16_t (*fifo_read_stream)(short* gyro, short* accel);
+        /** 
+          * @brief  Read data stream from MPU6500
+          * @param  gyro: 3*1 gyroscope output array
+          * @param  accel: 3*1 accelerometer output array
+          * @param  temp: temprature output pointer
+          * @param  mag: 3*1 magnetnometer output array
+          */
+        void (*read_stream)(float* gyro, float* accel, float* temp, float* mag);
+    } operations;
 
-extern MPU_RAW_DATA     mpu6500_raw_data;
-extern MPU_REAL_DATA    mpu6500_real_data;
+    /** 
+      * @brief  IMU informations
+      */
+    struct {
+        AHRS_t          ahrs;                       /*!< AHRS converted data */
+        Kalman_t        kalman;
+        bool            inited;                     /*!< If AHRS data initialized */
+        
+        float           temp;                       /*!< Temprature value from MPU6500 */
+        float           timestamp;                  /*!< IMU data timestamp */
+        float           freq;                       /*!< IMU realtime reading frequency */
+        uint32_t        count;                      /*!< IMU data package counters */
+    } imu_state;
+    
+} IMU_Controllers;
 
+/**
+  * @brief  MPU sampling frequency
+  */ 
+#define DEFAULT_MPU_HZ              (200)
+
+/**
+  * @brief  Gyroscope, accelerometer and magnetometer's precision.s
+  */ 
 extern const float ACCEL_SEN;
 extern const float GYRO_SEN;
 extern const float MAG_SEN;
+/** @} */
 
-//mpu Reg -- Map
+
+
+/** @defgroup RegisterMap
+  * @brief    Register map of MPU6500
+  * @ingroup  IMU
+  * @{
+  */
 #define MPU_SELF_TEST_XG                            (0x00)
 #define MPU_SELF_TEST_YG                            (0x01)
 #define MPU_SELF_TEST_ZG                            (0x02)
@@ -270,76 +335,22 @@ extern const float MAG_SEN;
 #define MPU_ZA_OFFSET_H                             (0x7D)
 #define MPU_ZA_OFFSET_L                             (0x7E)
 
-
 #define MPU_ID                                      (0x70)
-
-int MPU6500_Init(void);
-int MPU6500_Read(void);
-uint16_t MPU6500_Reset_FIFO(void);
-uint16_t MPU6500_Read_FIFO(void);
-uint16_t MPU6500_Read_FIFO_Stream(short* gyro, short* accel);
-void MPU6500_Stream(float* gyro, float* accel, float* temp, float* mag);
-void gyro_offset(void);
-
-
-/** @defgroup Declarations
-  * @brief    Exported Function Declaration
-  * @ingroup  SPI
-  * @{
-  */
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-void SPI5_Init(void);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-uint8_t SPI5_ReadWriteByte(uint8_t TxData);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-void SPI5_DMA(void);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-uint8_t MPU_ReadByte(uint8_t reg);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-uint8_t MPU_Read(uint8_t reg,uint8_t *buf,uint8_t len);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-uint8_t MPU_WriteByte(uint8_t reg,uint8_t data);
-
-/**
-  * @brief  
-  * @param  
-  * @retval 
-  */
-uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len);
 /** @} */
 
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /*__MPU6500_H */
+
+/************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

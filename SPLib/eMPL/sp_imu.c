@@ -1,147 +1,54 @@
+/**
+  ******************************************************************************
+  * @file       sp_imu.h
+  * @author     YTom
+  * @version    v0.1
+  * @date       2019.Jan.23
+  * @brief      IMU(MPU6500 & IST8310) module
+  * @usage      
+  ******************************************************************************
+  * @license
+  *
+  ******************************************************************************
+  */
+
 #include <math.h>
-#include "mpu6500.h"
+#include "sp_imu.h"
 #include "ist8310driver.h"
 #include "ist8310driver_middleware.h"
 
-/* Data requested by client. */
-#define PRINT_ACCEL     (0x01)
-#define PRINT_GYRO      (0x02)
-#define PRINT_QUAT      (0x04)
 
-#define ACCEL_ON        (0x01)
-#define GYRO_ON         (0x02)
-
-#define MOTION          (0)
-#define NO_MOTION       (1)
-
-/* Starting sampling rate. */
-#define DEFAULT_MPU_HZ  (500)
-
-#define FLASH_SIZE      (512)
-#define FLASH_MEM_START ((void*)0x1800)
-struct rx_s {
-    unsigned char header[3];
-    unsigned char cmd;
-};
-struct hal_s {
-    unsigned char sensors;
-    unsigned char dmp_on;
-    unsigned char wait_for_tap;
-    volatile unsigned char new_gyro;
-    unsigned short report;
-    unsigned short dmp_features;
-    unsigned char motion_int_mode;
-    struct rx_s rx;
-};
+/*!< MPU data reading buffer */
+uint8_t mpu_data_buffer[64] = {0x00};
 
 
-// SCK  PF7
-// MOSI PF9
-// MISO PF8
-// NSS  PF6
-// INT  PB8
+/* Internal Parameters */
+#define INTERNAL_SAMPRATE           1000
 
 const float ACCEL_SEN = 16384.0f;   //
 const float GYRO_SEN = 1880.0f;     //  
-const float MAG_SEN = 0.3f;         // uT
-MPU_RAW_DATA mpu6500_raw_data;
-MPU_REAL_DATA mpu6500_real_data;
+const float MAG_SEN = 0.3f;         //
 
-// All 45.47 Hz peak
-// DLPF_CFG(0) -> (5*n)Hz peak
-float offset_x=0,offset_y=0,offset_z=0;
-uint8_t mpu_data_buffer[64] = {0x00};
-bool getDeviceID(void){
-    return (bool)(MPU_ReadByte(MPU_WHO_AM_I) == MPU_ID);
-}
+/* External Declarations */
+extern void SPI5_Init(void);
+extern void SPI5_DMA(void);
+extern  uint8_t SPI5_ReadWriteByte(uint8_t TxData);
 
-
-#ifdef USING_MPU_DMP
-
-#include "inv_mpu.h"
-
-/* Starting sampling rate. */
-static signed char gyro_orientation[9] = {-1, 0, 0,
-                                           0,-1, 0,
-                                           0, 0, 1};
-static inline void run_self_test(void)
-{
-    int result;
-    long gyro[3], accel[3];
-
-    result = mpu_run_self_test(gyro, accel);
-    if (result == 0x7) {
-        /* Test passed. We can trust the gyro data here, so let's push it down
-         * to the DMP.
-         */
-        float sens;
-        unsigned short accel_sens;
-        mpu_get_gyro_sens(&sens);
-        gyro[0] = (long)(gyro[0] * sens);
-        gyro[1] = (long)(gyro[1] * sens);
-        gyro[2] = (long)(gyro[2] * sens);
-        dmp_set_gyro_bias(gyro);
-        mpu_get_accel_sens(&accel_sens);
-        accel[0] *= accel_sens;
-        accel[1] *= accel_sens;
-        accel[2] *= accel_sens;
-        dmp_set_accel_bias(accel);
-    }
-}
-
-void inv_mpu_init(void) {
-    if(!mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL))    //设置需要的传感器
-        printf("mpu_set_sensor complete ......\r\n");
-    if(!mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL)) //设置fifo
-        printf("mpu_configure_fifo complete ......\r\n");
-    if(!mpu_set_sample_rate(DEFAULT_MPU_HZ))              //设置采集样率
-        printf("mpu_set_sample_rate complete ......\r\n");
-    if(!dmp_load_motion_driver_firmware())                //加载dmp固件
-        printf("dmp_load_motion_driver_firmware complete ......\r\n");
-    if(!dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation)))
-        printf("dmp_set_orientation complete ......\r\n"); //设置陀螺仪方向
-    if(!dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
-        DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_CAL_GYRO |
-        DMP_FEATURE_GYRO_CAL))
-        printf("dmp_enable_feature complete ......\r\n");
-    if(!dmp_set_fifo_rate(DEFAULT_MPU_HZ))    //设置速率
-        printf("dmp_set_fifo_rate complete ......\r\n");
-    run_self_test();                          //自检
-    
-////    int result;
-//    /* Set up gyro.
-//     * Every function preceded by mpu_ is a driver function and can be found
-//     * in inv_mpu.h.
-//     */
-//    mpu_init(NULL);
-//    /* If you're not using an MPU9150 AND you're not using DMP features, this
-//     * function will place all slaves on the primary bus.
-//     * mpu_set_bypass(1);
-//     */
-//    /* Get/set hardware configuration. Start gyro. */
-//    /* Wake up all sensors. */
-//    mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-//    /* Push both gyro and accel data into the FIFO. */
-//    mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);
-//    mpu_set_sample_rate(DEFAULT_MPU_HZ);
-////    /* Read back configuration in case it was set improperly. */
-////    mpu_get_sample_rate(&gyro_rate);
-////    mpu_get_gyro_fsr(&gyro_fsr);
-////    mpu_get_accel_fsr(&accel_fsr);
-
-////    /* Initialize HAL state variables. */
-////    memset(&hal, 0, sizeof(hal));
-////    hal.sensors = ACCEL_ON | GYRO_ON;
-////    hal.report = PRINT_QUAT;
+/* Internal Declarations */
+uint8_t MPU_ReadByte(uint8_t reg);
+uint8_t MPU_Read(uint8_t reg,uint8_t *buf,uint8_t len);
+uint8_t MPU_WriteByte(uint8_t reg,uint8_t data);
+uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len);
 
 
-//    if(!mpu_set_dmp_state(1))                 //使能
-//        printf("mpu_set_dmp_state complete ......\r\n");
-////    hal.dmp_on = 1;
-}
-#endif
-
-
+/* 
+DECLARATIONS:
+    Following IST driver code are copied from DJI's project 
+    <RM Standard Robot Open Source Code> with some of my modification
+    and comments. (by YTom)
+    DJI All Right Reserved.
+*/
+/* IST Register map */
 typedef enum {
     IST8310_WHO_AM_I           = 0x00,
     IST8310_ODR_MODE           = 0x01,
@@ -159,7 +66,7 @@ typedef enum {
     IST8310_AVGCNTL            = 0x41,
     IST8310_PDCNTL             = 0x42,
 } IST8310_REG;
-
+/* Read register data from IST83110 */
 static uint8_t ist8310_read_reg(uint8_t addr) {
     MPU_WriteByte(MPU_I2C_SLV4_REG, addr);
     delay_ms(10);
@@ -170,7 +77,7 @@ static uint8_t ist8310_read_reg(uint8_t addr) {
     delay_ms(10);
     return data;
 }
-
+/* Write data to IST83110 register*/
 static uint8_t ist8310_write_reg(uint8_t addr, uint8_t data) {
     MPU_WriteByte(MPU_I2C_SLV1_CTRL, 0x00);     // Turn off slave 1 at first
     delay_ms(2);
@@ -183,7 +90,7 @@ static uint8_t ist8310_write_reg(uint8_t addr, uint8_t data) {
     delay_ms(10);
     return 1;
 }
-
+/* Config IST83110 via MPU */
 static void mpu_read_ist_config(uint8_t device_address, uint8_t reg_base_addr, uint8_t data_num) {
     // Use slave 1 to automatically transmit single measure mode
     MPU_WriteByte(MPU_I2C_SLV1_ADDR, device_address);
@@ -210,8 +117,7 @@ static void mpu_read_ist_config(uint8_t device_address, uint8_t reg_base_addr, u
     MPU_WriteByte(MPU_I2C_SLV0_CTRL, 0x80 | data_num);
     delay_ms(2);
 }
-
-/* Static function for IST8310 */
+/* Initialize IST83110 */
 uint8_t ist8310_INIT(void) {
     // Enable the I2C Master I/F module, Reset I2C Slave module
     MPU_WriteByte(MPU_USER_CTRL, 0x30);
@@ -273,8 +179,7 @@ uint8_t ist8310_INIT(void) {
     delay_ms(100);
     return 1;
 }
-
-
+/* Get data from IST8310 */
 void ist8310_get_data(float* mag ) {
     if(mag) {
         uint8_t ist_buff[6];
@@ -288,147 +193,15 @@ void ist8310_get_data(float* mag ) {
 
 
 
-
-int MPU6500_Read(void){
-    uint8_t buf[14];
-
-    MPU_Read(MPU_ACCEL_XOUT_H,buf,14);
-
-    mpu6500_raw_data.Accel_X=(short)((buf[0])<<8) | buf[1];
-    mpu6500_real_data.Accel_X=mpu6500_raw_data.Accel_X/ACCEL_SEN;
-
-    mpu6500_raw_data.Accel_Y=(short)((buf[2])<<8 )| buf[3];
-    mpu6500_real_data.Accel_Y=mpu6500_raw_data.Accel_Y/ACCEL_SEN;
-
-    mpu6500_raw_data.Accel_Z=(short)((buf[4])<<8 )| buf[5];
-    mpu6500_real_data.Accel_Z=mpu6500_raw_data.Accel_Z/ACCEL_SEN;
-
-    mpu6500_raw_data.Temp=(short)((buf[6])<<8 )| buf[7];
-    mpu6500_real_data.Temp=mpu6500_raw_data.Temp;
-
-    mpu6500_raw_data.Gyro_X=(short)((buf[8])<<8 )| buf[9];
-    mpu6500_real_data.Gyro_X=mpu6500_raw_data.Gyro_X/GYRO_SEN -offset_x;
-
-    mpu6500_raw_data.Gyro_Y=(short)((buf[10])<<8 )| buf[11];
-    mpu6500_real_data.Gyro_Y=mpu6500_raw_data.Gyro_Y/GYRO_SEN -offset_y;
-
-    mpu6500_raw_data.Gyro_Z=(short)((buf[12])<<8 )| buf[13];
-    mpu6500_real_data.Gyro_Z=mpu6500_raw_data.Gyro_Z/GYRO_SEN -offset_z;
-    
-    return 0;
+/* Check MPU device ID */
+bool mpuCheckDeviceID(void){
+    return (bool)(MPU_ReadByte(MPU_WHO_AM_I) == MPU_ID);
 }
-
-void MPU6500_Stream(float* gyro, float* accel, float* temp, float* mag){
-    MPU_Read(MPU_ACCEL_XOUT_H, mpu_data_buffer, 14);
-    if(accel) {
-        accel[0] = (short)(((mpu_data_buffer[0])<<8)|mpu_data_buffer[1]) /ACCEL_SEN;
-        accel[1] = (short)(((mpu_data_buffer[2])<<8)|mpu_data_buffer[3]) /ACCEL_SEN;
-        accel[2] = (short)(((mpu_data_buffer[4])<<8)|mpu_data_buffer[5]) /ACCEL_SEN;
-    }
-    if(temp) *temp= (short)(((mpu_data_buffer[6])<<8)|mpu_data_buffer[7])/340.f+36.53f;
-    if(gyro){
-        gyro[0] = (short)(((mpu_data_buffer[8])<<8)|mpu_data_buffer[9]) /GYRO_SEN;
-        gyro[1] = (short)(((mpu_data_buffer[10])<<8)|mpu_data_buffer[11]) /GYRO_SEN;
-        gyro[2] = (short)(((mpu_data_buffer[12])<<8)|mpu_data_buffer[13]) /GYRO_SEN;
-    }
-    ist8310_get_data(mag);
-}
-
-void MPU_ReadACCEL(void){
-    uint8_t buf[6];
-    MPU_Read(MPU_ACCEL_XOUT_H,buf,6);
-    mpu6500_raw_data.Accel_X=(short)((buf[0])<<8) | buf[1];
-    mpu6500_real_data.Accel_X=mpu6500_raw_data.Accel_X/ACCEL_SEN;
-    mpu6500_raw_data.Accel_Y=(short)((buf[2])<<8 )| buf[3];
-    mpu6500_real_data.Accel_Y=mpu6500_raw_data.Accel_Y/ACCEL_SEN;
-    mpu6500_raw_data.Accel_Z=(short)((buf[4])<<8 )| buf[5];
-    mpu6500_real_data.Accel_Z=mpu6500_raw_data.Accel_Z/ACCEL_SEN;
-}
-
-void MPU_ReadGYRO(void){
-    uint8_t buf[6];
-    MPU_Read(MPU_GYRO_XOUT_H,buf,6);
-    mpu6500_raw_data.Gyro_X=(short)((buf[0])<<8 )| buf[1];
-    mpu6500_real_data.Gyro_X=mpu6500_raw_data.Gyro_X/GYRO_SEN - offset_x;
-    mpu6500_raw_data.Gyro_Y=(short)((buf[2])<<8 )| buf[3];
-    mpu6500_real_data.Gyro_Y=mpu6500_raw_data.Gyro_Y/GYRO_SEN - offset_y;
-    mpu6500_raw_data.Gyro_Z=(short)((buf[4])<<8 )| buf[5];
-    mpu6500_real_data.Gyro_Z=mpu6500_raw_data.Gyro_Z/GYRO_SEN - offset_z;
-}
-
-static uint8 len = 12;
-
-uint16_t MPU6500_Read_FIFO(void){
-    MPU_Read(MPU_FIFO_R_W, mpu_data_buffer, len);
-    return 0;
-}
-
-uint16_t MPU6500_Read_FIFO_Stream(short* gyro, short* accel){
-    MPU6500_Read_FIFO();
-    accel[0] = (short)(((mpu_data_buffer[0])<<8)|mpu_data_buffer[1]);
-    accel[1] = (short)(((mpu_data_buffer[2])<<8)|mpu_data_buffer[3]);
-    accel[2] = (short)(((mpu_data_buffer[4])<<8)|mpu_data_buffer[5]);
-    gyro[0] = (short)(((mpu_data_buffer[6])<<8)|mpu_data_buffer[7]);
-    gyro[1] = (short)(((mpu_data_buffer[8])<<8)|mpu_data_buffer[9]);
-    gyro[2] = (short)(((mpu_data_buffer[10])<<8)|mpu_data_buffer[11]);
-    return 0;
-}
-
-uint16_t MPU6500_Reset_FIFO(void){
-    uint8_t data = MPU_ReadByte(MPU_USER_CTRL);
-    delay_us(20);
-    data |= MPU_USER_CTRL_FIFO_RST;
-    MPU_WriteByte(MPU_USER_CTRL, data);
-    delay_us(100);
-    return 0;
-}
-
-
-#define INTERNAL_SAMPRATE           1000
-void MPU_SetSampleRate(uint32_t rate) {
+/* Set MPU sampling rate */
+void mpuSetSampleRate(uint32_t rate) {
     uint8_t samp_div = INTERNAL_SAMPRATE/rate-1;
     MPU_WriteByte(MPU_SMPLRT_DIV, MPU_SMPLRT_DIV_(samp_div));
 }
-
-
-void gyro_offset(){
-    uint8_t buf[6];
-    short last_x=0,last_y=0,last_z=0;
-    short gyro_x,gyro_y,gyro_z;
-    long x_add=0,y_add=0,z_add=0;
-    unsigned short i;
-
-    for(i=0;i<1000;i++){
-        MPU_Read(MPU_GYRO_XOUT_H,buf,6);
-        gyro_x=(short)((buf[0])<<8 )| buf[1];
-        gyro_y=(short)((buf[2])<<8 )| buf[3];
-        gyro_z=(short)((buf[4])<<8 )| buf[5];
-        if(abs(gyro_x-last_x)>100||abs(gyro_y-last_y)>100||abs(gyro_z-last_z)>100){
-            static unsigned int num=0;
-            num+=i;
-            i=0;
-            last_x=last_y=last_z=0;
-            x_add=y_add=z_add=0;
-            if(num>500){
-                return ;
-            }
-            continue;
-        }
-        x_add+=gyro_x;
-        y_add+=gyro_y;
-        z_add+=gyro_z;
-        last_x=gyro_x;
-        last_y=gyro_y;
-        last_z=gyro_z;
-        delay_ms(1);
-    }
-    offset_x=x_add/1000.f/GYRO_SEN;
-    offset_y=y_add/1000.f/GYRO_SEN;
-    offset_z=z_add/1000.f/GYRO_SEN;
-
-}
-
-
 
 uint8_t MPU_ReadByte(uint8_t reg){
     uint8_t res;
@@ -469,13 +242,54 @@ uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len){
 
 
 
+void MPU6500_Stream(float* gyro, float* accel, float* temp, float* mag){
+    MPU_Read(MPU_ACCEL_XOUT_H, mpu_data_buffer, 14);
+    if(accel) {
+        accel[0] = (short)(((mpu_data_buffer[0])<<8)|mpu_data_buffer[1]) /ACCEL_SEN;
+        accel[1] = (short)(((mpu_data_buffer[2])<<8)|mpu_data_buffer[3]) /ACCEL_SEN;
+        accel[2] = (short)(((mpu_data_buffer[4])<<8)|mpu_data_buffer[5]) /ACCEL_SEN;
+    }
+    if(temp) *temp= (short)(((mpu_data_buffer[6])<<8)|mpu_data_buffer[7])/340.f+36.53f;
+    if(gyro){
+        gyro[0] = (short)(((mpu_data_buffer[8])<<8)|mpu_data_buffer[9]) /GYRO_SEN;
+        gyro[1] = (short)(((mpu_data_buffer[10])<<8)|mpu_data_buffer[11]) /GYRO_SEN;
+        gyro[2] = (short)(((mpu_data_buffer[12])<<8)|mpu_data_buffer[13]) /GYRO_SEN;
+    }
+    if(mag) ist8310_get_data(mag);
+}
+
+static uint8 len = 12;
+uint16_t MPU6500_Read_FIFO_Stream(short* gyro, short* accel){
+    MPU_Read(MPU_FIFO_R_W, mpu_data_buffer, len);
+    accel[0] = (short)(((mpu_data_buffer[0])<<8)|mpu_data_buffer[1]);
+    accel[1] = (short)(((mpu_data_buffer[2])<<8)|mpu_data_buffer[3]);
+    accel[2] = (short)(((mpu_data_buffer[4])<<8)|mpu_data_buffer[5]);
+    gyro[0] = (short)(((mpu_data_buffer[6])<<8)|mpu_data_buffer[7]);
+    gyro[1] = (short)(((mpu_data_buffer[8])<<8)|mpu_data_buffer[9]);
+    gyro[2] = (short)(((mpu_data_buffer[10])<<8)|mpu_data_buffer[11]);
+    return 0;
+}
+
+uint16_t MPU6500_Reset_FIFO(void){
+    uint8_t data = MPU_ReadByte(MPU_USER_CTRL);
+    delay_us(20);
+    data |= MPU_USER_CTRL_FIFO_RST;
+    MPU_WriteByte(MPU_USER_CTRL, data);
+    delay_us(100);
+    return 0;
+}
+
+
+#include "ahrs.h"
 int MPU6500_Init(void) {
     
     int result = 0;
     
     SPI5_Init();
+//    SPI5_DMA();
     
     /* Condif EXIT for MPU interrupt */
+    spRCC_Set_SYSCFG();
     GPIO_IN_Config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
     SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
     EXTI_InitTypeDef            exit_initer;
@@ -499,16 +313,11 @@ int MPU6500_Init(void) {
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_INT_ENABLE);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_FIFO_EN);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_USER_CTRL);delay_ms(10);
-    
-#ifdef USING_MPU_DMP
-    inv_mpu_init();
-#else
+
     {
-//    SPI5_DMA();
-//    uint8_t i = 0;
     uint8_t data;
     /* MPU working mode configurations */
-    if(getDeviceID()) {
+    if(mpuCheckDeviceID()) {
         delay_ms(10);
         /*----------------------------------------*/
         /* BASIS CONFIGURATION */
@@ -529,7 +338,7 @@ int MPU6500_Init(void) {
         MPU_WriteByte(MPU_PWR_MGMT_2, data);delay_ms(10);
 
         /* Config sample rate */
-        MPU_SetSampleRate(200);
+        mpuSetSampleRate(DEFAULT_MPU_HZ);
         /* Config gyrpscope and temperature snesor */
         /* GYRO DLPF:none[bandwidth=8800Hz][delay=0.064ms][Fs=32kHz] */
         /* TEMP DLPF:none[bandwidth=4000Hz][delay=0.04ms] */
@@ -599,7 +408,6 @@ int MPU6500_Init(void) {
         MPU_WriteByte(MPU_INT_ENABLE, data);delay_ms(10);
     }
     }
-#endif
 
 //    uint8_t i = 0;
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_1);delay_ms(10);
@@ -614,6 +422,44 @@ int MPU6500_Init(void) {
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_INT_ENABLE);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_FIFO_EN);delay_ms(10);
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_USER_CTRL);delay_ms(10);
-
+    
+//    AHRS_Config(&IMU_Controllers.imu_state.ahrs, 0.5f, 0.5f);
+    // TM_AHRSIMU_Init(&IMU_Controllers.imu_state.ahrs, 0.1f, DEFAULT_MPU_HZ*1.f, 0.f);
+    
     return result;
 }
+
+
+/* Config operation functions */
+struct IMU_Controllers_Type IMU_Controllers = {
+    .operations = {
+        .init = MPU6500_Init,
+        .fifo_reset = MPU6500_Reset_FIFO,
+        .fifo_read_stream = MPU6500_Read_FIFO_Stream,
+        .read_stream = MPU6500_Stream
+    },
+    .imu_state.kalman = {
+        .xk= {
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+        },
+        .pk= {
+            1.f, 0, 0,
+            0, 1.f, 0,
+            0, 0, 1.f,
+        },
+        .R= {
+            0.5f, 0, 0,
+            0, 0.5f, 0,
+            0, 0, 0.01f,
+        },
+        .Q= {
+            0.005f, 0, 0,
+            0, 0.005f, 0,
+            0, 0, 0.001f
+        },
+    }
+};
+
+/************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

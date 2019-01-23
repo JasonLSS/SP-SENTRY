@@ -67,7 +67,7 @@
 //  </c>
 //  <c1> USING_DM6020
 //    <i> USING DM6020 test part
-#define USING_DM6020
+//#define USING_DM6020
 //  </c>
 //  <c1> USING_USB
 //    <i> Enable USB

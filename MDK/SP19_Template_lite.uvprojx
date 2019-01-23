@@ -478,11 +478,6 @@
               <FilePath>..\SPLib\BSP\sp_dma.c</FilePath>
             </File>
             <File>
-              <FileName>sp_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_can.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_can.c</FilePath>
@@ -493,14 +488,29 @@
           <GroupName>MPL</GroupName>
           <Files>
             <File>
-              <FileName>mpu6500.c</FileName>
+              <FileName>sp_spi.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\mpu6500.c</FilePath>
+              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
             </File>
             <File>
-              <FileName>tm_stm32_ahrs_imu.c</FileName>
+              <FileName>sp_imu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\tm_stm32_ahrs_imu.c</FilePath>
+              <FilePath>..\SPLib\eMPL\sp_imu.c</FilePath>
+            </File>
+            <File>
+              <FileName>AHRS.lib</FileName>
+              <FileType>4</FileType>
+              <FilePath>..\SPLib\eMPL\AHRS.lib</FilePath>
+            </File>
+            <File>
+              <FileName>AHRS_middleware.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\eMPL\AHRS_middleware.c</FilePath>
+            </File>
+            <File>
+              <FileName>kalman.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\eMPL\kalman.c</FilePath>
             </File>
           </Files>
         </Group>

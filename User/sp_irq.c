@@ -15,9 +15,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_conf.h"
 #include <string.h>
-#include "mpu6500.h"
+#include "sp_imu.h"
 #include "sp_utility.h"
-#include "mpu6500.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -28,11 +27,59 @@
 /* Exported variables --------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-uint32_t count = 0;
+#include "sp_imu.h"
 
 void EXTI9_5_IRQHandler(void) {
     if(EXTI_GetITStatus(EXTI_Line8)) {
-
+        // Read IMU
+        //mag: -37.8 37.2 42.5
+        IMU_Controllers.operations.read_stream(
+            IMU_Controllers.imu_state.ahrs.gyro, 
+            IMU_Controllers.imu_state.ahrs.accel,
+            &IMU_Controllers.imu_state.ahrs.temp, 
+            IMU_Controllers.imu_state.ahrs.mag);
+//        static float data[10];
+//        IMU_Controllers.operations.read_stream(data+3, data, &temp, data+6);
+        float time = TASK_GetSecond();
+        float dt = time - IMU_Controllers.imu_state.timestamp;
+        IMU_Controllers.imu_state.freq = 1.f/dt;
+        // Calculate AHRS
+        //TM_AHRSIMU_UpdateAHRS(&IMU_Controllers.imu_state.ahrs, gyro[0], gyro[1], gyro[2],
+        //    accel[0], accel[1], accel[2], mag[0], mag[1], mag[2]);
+        if(!IMU_Controllers.imu_state.inited) {
+//            Madgwick_Init(&IMU_Controllers.imu_state.mad, 0.1f, 200.f);
+//            AHRS_init(IMU_Controllers.imu_state.ahrs.q, 
+//                IMU_Controllers.imu_state.ahrs.accel, 
+//                IMU_Controllers.imu_state.ahrs.mag);
+            IMU_Controllers.imu_state.inited = true;
+        } else {
+            KalmanFilter(&IMU_Controllers.imu_state.kalman,
+                IMU_Controllers.imu_state.ahrs.gyro,
+                IMU_Controllers.imu_state.ahrs.accel, 
+                IMU_Controllers.imu_state.ahrs.mag, dt);
+//            AHRS_update(IMU_Controllers.imu_state.ahrs.q, 
+//                IMU_Controllers.imu_state.freq,
+//                IMU_Controllers.imu_state.ahrs.gyro, 
+//                IMU_Controllers.imu_state.ahrs.accel, 
+//                IMU_Controllers.imu_state.ahrs.mag);
+//            get_angle(IMU_Controllers.imu_state.ahrs.q, &IMU_Controllers.imu_state.ahrs.y, 
+//                &IMU_Controllers.imu_state.ahrs.p, &IMU_Controllers.imu_state.ahrs.r);
+//            Madgwick_update(&IMU_Controllers.imu_state.mad,
+//                IMU_Controllers.imu_state.ahrs.gyro[0],
+//                IMU_Controllers.imu_state.ahrs.gyro[1],
+//                IMU_Controllers.imu_state.ahrs.gyro[2],
+//                IMU_Controllers.imu_state.ahrs.accel[0],
+//                IMU_Controllers.imu_state.ahrs.accel[1],
+//                IMU_Controllers.imu_state.ahrs.accel[2],
+//                IMU_Controllers.imu_state.ahrs.mag[0],
+//                IMU_Controllers.imu_state.ahrs.mag[1],
+//                IMU_Controllers.imu_state.ahrs.mag[2]);
+//            Madgwick_computeAngles(&IMU_Controllers.imu_state.mad);
+        }
+        // Make log
+        IMU_Controllers.imu_state.timestamp = time;
+        IMU_Controllers.imu_state.count ++;
+        
         EXTI_ClearITPendingBit(EXTI_Line8);
     }
 }
@@ -80,8 +127,8 @@ void TIM6_DAC_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update)) {
 
+        TIM_ClearITPendingBit(TIM6, TIM_IT_Update);
     }
-    TIM_ClearITPendingBit(TIM6, TIM_IT_Update);
 }
 
 

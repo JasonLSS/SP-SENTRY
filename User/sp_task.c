@@ -21,7 +21,7 @@
 #include "sp_chasis.h"
 #include "sp_utility.h"
 #include "sp_rc.h"
-#include "mpu6500.h"
+#include "sp_imu.h"
 
 #include <math.h>
 
@@ -74,6 +74,16 @@ inline void TASK_Start(void) {
     SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;           /* Enbale systick */
     spCLOCK_Configuration();
     
+    NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 2);
+    NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 2);
+    NVIC_IRQEnable(USART1_IRQn, 0, 2);          // RC
+    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
+    NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
+    NVIC_IRQEnable(EXTI9_5_IRQn, 0, 3);         // MPU int
+//    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);
+//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
+//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
+    
     extern void sendtoComputerInit(void);
     sendtoComputerInit();
 }
@@ -109,8 +119,7 @@ void TASK_GlobalInit() {
         USART_TX_Config(UART7, 115200);
         DMA_USART_TX_Config(UART7);
         USART_Cmd(UART7, ENABLE);
-        
-        
+
 //        // Start general USART8 for general communication
 //        extern uint8_t referee_buffer[128];
 //        USART_RX_Config(USART6, 115200);
@@ -122,14 +131,9 @@ void TASK_GlobalInit() {
         
         // Enable Remote Controller Receiver
         RC_ReceiverInit();
-        /* Start basis functions */
-        NVIC_IRQEnable(DMA2_Stream5_IRQn, 1, 0);    // RC
         
         // IMU module init
-        MPU6500_Init();
-
-        // Init DMA null stream for memory-to-memory transfer
-        DMA_InitNull(NULL, NULL, 0);
+        IMU_Controllers.operations.init();
         
     #ifdef USING_USB
         USB_TaskInit();
@@ -301,7 +305,6 @@ void TASK_Enable() {
         NVIC_IRQEnable(TIM2_IRQn, 0, 2);            // Friction
         NVIC_IRQEnable(DMA1_Stream5_IRQn, 0, 1);    // Friction pulse capture
         NVIC_IRQEnable(DMA1_Stream6_IRQn, 0, 1);    // Friction pulse capture
-        NVIC_IRQEnable(EXTI9_5_IRQn, 1, 3);         // MPU int
         
 //        NVIC_IRQEnable(USART1_IRQn, 1, 1);
 //        NVIC_IRQEnable(USART2_IRQn, 1, 1);

@@ -26,13 +26,13 @@
 #include "tm_stm32_ahrs_imu.h"
 
 /* Calculate 1/sqrt(x) with magic number support */
-static
-float oneOverSqrt(float x) {
-    return 1.0f / (float) sqrt(x);
+#include "sp_math.h"
+static float oneOverSqrt(float x) {
+//    return 1.0f / (float) sqrt(x);
+    return InvSqrt(x);
 }
 
-static
-void calculateAngles(TM_AHRSIMU_t* AHRSIMU) {
+static void calculateAngles(TM_AHRSIMU_t* AHRSIMU) {
     AHRSIMU->Roll = (float) atan2(AHRSIMU->_q0 * AHRSIMU->_q1 + AHRSIMU->_q2 * AHRSIMU->_q3, 0.5f - AHRSIMU->_q1 * AHRSIMU->_q1 - AHRSIMU->_q2 * AHRSIMU->_q2);
     AHRSIMU->Pitch = (float) asin(-2.0f * (AHRSIMU->_q1 * AHRSIMU->_q3 - AHRSIMU->_q0 * AHRSIMU->_q2));
     AHRSIMU->Yaw = (float) atan2(AHRSIMU->_q1 * AHRSIMU->_q2 + AHRSIMU->_q0 * AHRSIMU->_q3, 0.5f - AHRSIMU->_q2 * AHRSIMU->_q2 - AHRSIMU->_q3 * AHRSIMU->_q3);

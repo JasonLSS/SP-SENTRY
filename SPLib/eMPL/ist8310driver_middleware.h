@@ -19,7 +19,7 @@
 #ifndef IST8310DRIVER_MIDDLEWARE_H
 #define IST8310DRIVER_MIDDLEWARE_H
 
-#include "mpu6500.h"
+#include "sp_imu.h"
 #include "sp_conf.h"
 
 #define IST8310_IIC_ADDRESS     0x0E  //IST8310µÄIICµØÖ·

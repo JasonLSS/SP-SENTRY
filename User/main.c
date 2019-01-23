@@ -74,16 +74,6 @@ int main(void)
     BUZZER_ON(1500); delay_ms(500); BUZZER_OFF();
     LED_G_ON();LED_R_OFF();
     TASK_Start();
-    
-    NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 1);
-    NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 1);
-    NVIC_IRQEnable(USART1_IRQn, 0, 2);    // RC
-    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
-    NVIC_IRQEnable(USART2_IRQn, 0, 2);    // View-USART2
-    
-//    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);
-//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
-//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
 
     __enable_irq();
 

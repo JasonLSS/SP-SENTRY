@@ -23,7 +23,7 @@ void memset_f32(float* array, float value, uint16_t size) {
     }
 }
 
-float InvSqrt(float x) {
+float invSqrt(float x) {
     float xhalf = 0.5f * x;
     int i = *(int*)&x;              // get bits for floating value
     i = 0x5f375a86 - (i >> 1);      // gives initial guess y0

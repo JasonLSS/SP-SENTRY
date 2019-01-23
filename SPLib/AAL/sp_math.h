@@ -49,7 +49,7 @@ extern __inline void memset_f32(float* array, float value, uint16_t size);
 /**
   * @brief  Carmack's Unusual Inverse Square Root
   */
-extern __inline float InvSqrt(float x);
+extern __inline float invSqrt(float x);
 
 /** 
   * @}
