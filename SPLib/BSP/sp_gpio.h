@@ -36,7 +36,7 @@
 #define spGPIO_PinFromPinSource(ps)        (0x0001<<(ps))
 
 
-/** @defgroup Declarations
+/** @defgroup GPIO_Declarations
   * @brief    Exported Function Declarations
   * @ingroup  GPIO
   * @{

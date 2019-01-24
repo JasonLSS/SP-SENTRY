@@ -8,6 +8,8 @@ This is the library and template project of STM32F427II by Super Power Robomaste
 ## v0.1.2
 - Add Kalman filter for IMU [tested].
 - Add LPF for Kalman.
+- Add ADIS1647 module.
+- Modified SPI operations.
 ## v0.1.1-2
 - Test for gimbal control.
 - Add communication with view via USART2.

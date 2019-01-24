@@ -463,6 +463,11 @@
               <FilePath>..\SPLib\ASM\sp_delay.s</FilePath>
             </File>
             <File>
+              <FileName>sp_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
+            </File>
+            <File>
               <FileName>sp_usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_usart.c</FilePath>
@@ -487,11 +492,6 @@
         <Group>
           <GroupName>MPL</GroupName>
           <Files>
-            <File>
-              <FileName>sp_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
-            </File>
             <File>
               <FileName>imu_kalman.c</FileName>
               <FileType>1</FileType>

@@ -38,7 +38,7 @@
 #include "sp_conf.h"
 
 
-/** @defgroup Definations
+/** @defgroup DMA_Definations
   * @brief    Exported Macros And Definations
   * @ingroup  DMA
   * @{
@@ -71,7 +71,7 @@ typedef struct {
 /** @} */
 
 
-/** @defgroup ChannelConfiguration
+/** @defgroup DMA_ChannelConfiguration
   * @brief    DMA Stream and Channel Configuration
   * @ingroup  DMA
   * @{
@@ -278,7 +278,7 @@ typedef struct {
 /** @} */
 
 
-/** @defgroup Decalarations
+/** @defgroup DMA_Decalarations
   * @brief    Exported Function Decalarations
   * @ingroup  DMA
   * @{

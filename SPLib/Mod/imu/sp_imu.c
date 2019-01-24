@@ -26,10 +26,6 @@ const float ACCEL_SEN = 16384.0f;   //
 const float GYRO_SEN = 1880.0f;     //  
 const float MAG_SEN = 0.3f;         //
 
-/* External Declarations */
-extern void SPI5_Init(void);
-extern void SPI5_DMA(void);
-extern  uint8_t SPI5_ReadWriteByte(uint8_t TxData);
 
 /* Internal Declarations */
 uint8_t MPU_ReadByte(uint8_t reg);
@@ -189,6 +185,46 @@ void ist8310_get_data(float* mag ) {
 
 
 
+/* MPU device operations vis SPI5 */
+uint8_t MPU_ReadByte(uint8_t reg){
+    uint8_t res;
+    spSPI_Controllers.select(&SPI5_Pins);
+    spSPI_Controllers.read_write_b(SPI5_Pins.this, reg|0x80);
+    res = spSPI_Controllers.read_write_b(SPI5_Pins.this, 0xff);
+    spSPI_Controllers.release(&SPI5_Pins);
+    return res;
+}
+uint8_t MPU_Read(uint8_t reg,uint8_t *buf,uint8_t len){
+    uint8_t i;
+    spSPI_Controllers.select(&SPI5_Pins);
+    spSPI_Controllers.read_write_b(SPI5_Pins.this, reg|0x80);
+    for(i=0;i<len;i++){
+        *buf = spSPI_Controllers.read_write_b(SPI5_Pins.this, 0xff);
+        buf++;
+    }
+    spSPI_Controllers.release(&SPI5_Pins);
+    return 0;
+}
+uint8_t MPU_WriteByte(uint8_t reg,uint8_t data){
+    spSPI_Controllers.select(&SPI5_Pins);
+    spSPI_Controllers.read_write_b(SPI5_Pins.this, reg);
+    spSPI_Controllers.read_write_b(SPI5_Pins.this, data);
+    spSPI_Controllers.release(&SPI5_Pins);
+    return 0;
+}
+uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len){
+    spSPI_Controllers.select(&SPI5_Pins);
+    spSPI_Controllers.read_write_b(SPI5_Pins.this, reg);
+    while(len--){
+        spSPI_Controllers.read_write_b(SPI5_Pins.this, *buf++);
+    }
+    spSPI_Controllers.release(&SPI5_Pins);
+    delay_ms(1);
+    return 0;
+}
+
+
+
 
 /* Check MPU device ID */
 bool mpuCheckDeviceID(void){
@@ -200,42 +236,6 @@ void mpuSetSampleRate(uint32_t rate) {
     MPU_WriteByte(MPU_SMPLRT_DIV, MPU_SMPLRT_DIV_(samp_div));
 }
 
-uint8_t MPU_ReadByte(uint8_t reg){
-    uint8_t res;
-    SPI5_NSS_Select;
-    SPI5_ReadWriteByte(reg|0x80);
-    res=SPI5_ReadWriteByte(0xff);
-    SPI5_NSS_Release;
-    return res;
-}
-uint8_t MPU_Read(uint8_t reg,uint8_t *buf,uint8_t len){
-    uint8_t i;
-    SPI5_NSS_Select;
-    SPI5_ReadWriteByte(reg|0x80);
-    for(i=0;i<len;i++){
-        *buf=SPI5_ReadWriteByte(0xff);
-        buf++;
-    }
-    SPI5_NSS_Release;
-    return 0;
-}
-uint8_t MPU_WriteByte(uint8_t reg,uint8_t data){
-    SPI5_NSS_Select;
-    SPI5_ReadWriteByte(reg);
-    SPI5_ReadWriteByte(data);
-    SPI5_NSS_Release;
-    return 0;
-}
-uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len){
-    SPI5_NSS_Select;
-    SPI5_ReadWriteByte(reg);
-    while(len--){
-        SPI5_ReadWriteByte(*buf++);
-    }
-    SPI5_NSS_Release;
-    delay_us(1000);
-    return 0;
-}
 
 
 
@@ -281,6 +281,7 @@ int MPU6500_Init(void) {
     
     int result = 0;
     
+    extern void SPI5_Init(void);
     SPI5_Init();
 //    SPI5_DMA();
     

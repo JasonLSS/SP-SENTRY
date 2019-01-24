@@ -29,7 +29,7 @@
   * @{
   */
 
-/** @defgroup RegisterMap
+/** @defgroup MPU6500_Register_Map
   * @brief    Register map of MPU6500
   * @ingroup  IMU
   * @{

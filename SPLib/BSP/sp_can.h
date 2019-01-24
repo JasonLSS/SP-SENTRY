@@ -58,7 +58,7 @@
 #include "sp_type.h"
 
 
-/** @defgroup Definations
+/** @defgroup CNA_Definations
   * @brief    Exported CANx Macros And Definations 
   * @ingroup  CAN
   * @{
@@ -102,7 +102,7 @@ typedef struct {
 /** @} */
 
 
-/** @defgroup Declarations
+/** @defgroup CNA_Declarations
   * @brief    Exported CANx Function Declarations
   * @ingroup  CAN
   * @{
@@ -140,7 +140,7 @@ void CAN_SendMsg(CAN_Transmitter* exchanger);
 /** @} */
 
 
-/** @defgroup Control
+/** @defgroup CNA_Control
   * @brief    Exported CANx Basic Control Function
   * @ingroup  CAN
   * @{

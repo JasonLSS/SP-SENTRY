@@ -40,7 +40,7 @@
 #include "sp_conf.h"
 
 
-/** @defgroup Definations
+/** @defgroup USART_Definations
   * @brief    USART Exported Macros and Definations
   * @ingroup  USART
   * @{
@@ -54,7 +54,7 @@ typedef struct {
 /** @} */
 
 
-/** @defgroup ResourceConfiguration
+/** @defgroup USART_Resource_Configuration
   * @brief    USART Resource Configuration
   * @ingroup  USART
   * @{
@@ -150,7 +150,7 @@ typedef struct {
 
 
 
-/** @defgroup Initialization
+/** @defgroup USART_Initialization
   * @brief    General USART Initialization and Configuration
   * @ingroup  USART
   * @{
@@ -205,7 +205,7 @@ void USART_SetBaudrate(USART_TypeDef* usart, uint32_t baudrate);
   
   
   
-/** @defgroup User APIs
+/** @defgroup USART_User_APIs
   * @brief    USART User Interfaces
   * @ingroup  USART
   * @{
