@@ -38,6 +38,19 @@ void EXTI9_5_IRQHandler(void) {
             IMU_Controllers.imu_state.ahrs.accel,
             &IMU_Controllers.imu_state.ahrs.temp, 
             IMU_Controllers.imu_state.ahrs.mag);
+        
+        if(IMU_Controllers.imu_state.kalman.pass_filter.lpf_enbale) {
+            IMU_Controllers.imu_state.ahrs.accel[0] = 
+                LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+0,
+                IMU_Controllers.imu_state.ahrs.accel[0]);
+            IMU_Controllers.imu_state.ahrs.accel[1] = 
+                LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+1,
+                IMU_Controllers.imu_state.ahrs.accel[1]);
+            IMU_Controllers.imu_state.ahrs.accel[2] = 
+                LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+2,
+                IMU_Controllers.imu_state.ahrs.accel[2]);
+        }
+        
 //        static float data[10];
 //        IMU_Controllers.operations.read_stream(data+3, data, &temp, data+6);
         float time = TASK_GetSecond();

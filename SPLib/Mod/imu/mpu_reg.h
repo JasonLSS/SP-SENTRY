@@ -12,8 +12,8 @@
   ******************************************************************************
   */
 
-#ifndef __SP_IMU_H
-#define __SP_IMU_H
+#ifndef __MPU_REG_H
+#define __MPU_REG_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -28,98 +28,6 @@
   * @brief    IMU Module
   * @{
   */
-
-#include "sp_spi.h"
-#include "sp_conf.h"
-#include "AHRS.h"
-#include "kalman.h"
-
-typedef struct {
-    float q[4];
-    float gyro[3];
-    float accel[3];
-    float mag[3];
-    float temp;
-    float r,p,y;
-} AHRS_t;
-
-
-
-/** @defgroup Declarations
-  * @brief    Exported Function Declaration
-  * @ingroup  IMU
-  * @{
-  */
-/** 
-  * @brief  IMU Controller
-  */
-extern struct IMU_Controllers_Type {
-    /** 
-      * @brief  IMU control operations
-      */
-    struct {
-        /** 
-          * @brief  Initialize MPU6500
-          * @retval NULL
-          */
-        int (*init)(void);
-        /** 
-          * @brief  Reset MPU6500 data FIFOs
-          * @retval NULL
-          */
-        uint16_t (*fifo_reset)(void);
-        /** 
-          * @brief  Read data from MPU6500 FIFOs
-          * @retval NULL
-          */
-        uint16_t (*fifo_read)(void);
-        /** 
-          * @brief  Read data stream from MPU6500 from FIFO
-          * @param  gyro: 3*1 gyroscope output array
-          * @param  accel: 3*1 accelerometer output array
-          * @retval NULL
-          */
-        uint16_t (*fifo_read_stream)(short* gyro, short* accel);
-        /** 
-          * @brief  Read data stream from MPU6500
-          * @param  gyro: 3*1 gyroscope output array
-          * @param  accel: 3*1 accelerometer output array
-          * @param  temp: temprature output pointer
-          * @param  mag: 3*1 magnetnometer output array
-          */
-        void (*read_stream)(float* gyro, float* accel, float* temp, float* mag);
-    } operations;
-
-    /** 
-      * @brief  IMU informations
-      */
-    struct {
-        AHRS_t          ahrs;                       /*!< AHRS converted data */
-        Kalman_t        kalman;
-        bool            inited;                     /*!< If AHRS data initialized */
-        
-        float           temp;                       /*!< Temprature value from MPU6500 */
-        float           timestamp;                  /*!< IMU data timestamp */
-        float           freq;                       /*!< IMU realtime reading frequency */
-        uint32_t        count;                      /*!< IMU data package counters */
-    } imu_state;
-    
-} IMU_Controllers;
-
-/**
-  * @brief  MPU sampling frequency
-  */ 
-#define DEFAULT_MPU_HZ              (200)
-
-/**
-  * @brief  Gyroscope, accelerometer and magnetometer's precision.s
-  */ 
-extern const float ACCEL_SEN;
-extern const float GYRO_SEN;
-extern const float MAG_SEN;
-/** @} */
-
-
 
 /** @defgroup RegisterMap
   * @brief    Register map of MPU6500

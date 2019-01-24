@@ -81,9 +81,9 @@
             <nStopB2X>0</nStopB2X>
           </BeforeMake>
           <AfterMake>
-            <RunUserProg1>0</RunUserProg1>
+            <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name></UserProg1Name>
+            <UserProg1Name>$K\ARM\ARMCC\bin\fromelf.exe --text -a -c --output=@L.asm "!L"</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP19</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\eMPL;..\SPLib\USB;..\User;..\User\Config;..\SPLib\View2MCU_ComProtocal</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\User;..\User\Config;..\SPLib\View2MCU_ComProtocal</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -493,24 +493,14 @@
               <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
             </File>
             <File>
+              <FileName>imu_kalman.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\imu\imu_kalman.c</FilePath>
+            </File>
+            <File>
               <FileName>sp_imu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\sp_imu.c</FilePath>
-            </File>
-            <File>
-              <FileName>AHRS.lib</FileName>
-              <FileType>4</FileType>
-              <FilePath>..\SPLib\eMPL\AHRS.lib</FilePath>
-            </File>
-            <File>
-              <FileName>AHRS_middleware.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\AHRS_middleware.c</FilePath>
-            </File>
-            <File>
-              <FileName>kalman.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\eMPL\kalman.c</FilePath>
+              <FilePath>..\SPLib\Mod\imu\sp_imu.c</FilePath>
             </File>
           </Files>
         </Group>

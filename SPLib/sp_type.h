@@ -22,18 +22,28 @@
 /* Includes ------------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include "stm32f4xx.h"
 
 /* Exported types ------------------------------------------------------------*/
 
-#ifndef __cplusplus
-/**
- * @brief   User-implemented bool type.
- */
-typedef enum {
-    false = 0,
-    true = 1
-} bool;
-#endif
+//#ifndef __cplusplus
+///**
+// * @brief   User-implemented bool type.
+// */
+//typedef enum {
+//    false = 0,
+//    true = 1
+//} bool;
+//#endif
+
+
+typedef struct {
+    GPIO_TypeDef*       gpio;
+    uint32_t            pin_source;
+} spPinSet;
+static const spPinSet spNullPin = {NULL};
+
 
 
 /** @defgroup General Implement Functions Type

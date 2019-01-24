@@ -5,7 +5,6 @@
   * @version    v0.1
   * @date       2019.Jan.23
   * @brief      IMU(MPU6500 & IST8310) module
-  * @usage      
   ******************************************************************************
   * @license
   *
@@ -14,8 +13,6 @@
 
 #include <math.h>
 #include "sp_imu.h"
-#include "ist8310driver.h"
-#include "ist8310driver_middleware.h"
 
 
 /*!< MPU data reading buffer */
@@ -280,7 +277,6 @@ uint16_t MPU6500_Reset_FIFO(void){
 }
 
 
-#include "ahrs.h"
 int MPU6500_Init(void) {
     
     int result = 0;
@@ -426,6 +422,11 @@ int MPU6500_Init(void) {
 //    AHRS_Config(&IMU_Controllers.imu_state.ahrs, 0.5f, 0.5f);
     // TM_AHRSIMU_Init(&IMU_Controllers.imu_state.ahrs, 0.1f, DEFAULT_MPU_HZ*1.f, 0.f);
     
+    for(uint8_t i=0; i<sizeof(IMU_Controllers.imu_state.kalman.pass_filter.lpf)/
+        sizeof(IMU_Controllers.imu_state.kalman.pass_filter.lpf[0]); i++) {
+        LPF_FirstOrder_Init(IMU_Controllers.imu_state.kalman.pass_filter.lpf+i, 10.f, 200.f); 
+    }
+    
     return result;
 }
 
@@ -438,7 +439,7 @@ struct IMU_Controllers_Type IMU_Controllers = {
         .fifo_read_stream = MPU6500_Read_FIFO_Stream,
         .read_stream = MPU6500_Stream
     },
-    .imu_state.kalman = {
+    .imu_state.kalman.param = {
         .xk= {
             0, 0, 0,
             0, 0, 0,
@@ -459,7 +460,12 @@ struct IMU_Controllers_Type IMU_Controllers = {
             0, 0.005f, 0,
             0, 0, 0.001f
         },
+    },
+    .imu_state.kalman.pass_filter = {
+        .lpf_enbale = true,
+        .hpf_enbale = false,
     }
 };
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
+

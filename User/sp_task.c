@@ -135,6 +135,18 @@ void TASK_GlobalInit() {
         // IMU module init
         IMU_Controllers.operations.init();
         
+        extern void SPI4_Init(void);
+        SPI4_Init();
+        delay_ms(1);
+        uint16_t prod_id[24];
+        
+        for(uint8_t i=0; i<24; i++) {
+            spSPI_Controllers.select(&SPI4_Pins);
+            prod_id[i] = spSPI_Controllers.read_write_b(SPI4, 0x7200);
+            spSPI_Controllers.release(&SPI4_Pins);
+            delay_us(20);
+        }
+        
     #ifdef USING_USB
         USB_TaskInit();
     #endif

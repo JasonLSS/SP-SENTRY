@@ -1,4 +1,4 @@
-#include "kalman.h"
+#include "imu_kalman.h"
 
 static const float I[]= {
     1.f, 0, 0,
@@ -66,16 +66,16 @@ void KalmanFilter(
         const float mag[3], float dt) {
     uint8_t i, j;
     
-    AngleFromAccelMag(accel, mag, kalman->mag_angle);
+    AngleFromAccelMag(accel, mag, kalman->param.mag_angle);
     float Uk[9] = {
         gyro[0]*dt, 0, 0,
         0, gyro[1]*dt, 0,
         0, 0, gyro[2]*dt,
     };
     float xnew[9] = {
-        kalman->mag_angle[0], 0, 0,
-        0, kalman->mag_angle[1], 0,
-        0, 0, kalman->mag_angle[2],
+        kalman->param.mag_angle[0], 0, 0,
+        0, kalman->param.mag_angle[1], 0,
+        0, 0, kalman->param.mag_angle[2],
     };
             
     float yk[9];
@@ -88,14 +88,14 @@ void KalmanFilter(
     float sdet;
 
     //xk = xk + uk
-    matrix_add(kalman->xk, Uk, kalman->xk);
+    matrix_add(kalman->param.xk, Uk, kalman->param.xk);
     //pk = pk + Q
-    matrix_add(kalman->pk, kalman->Q, kalman->pk);
+    matrix_add(kalman->param.pk, kalman->param.Q, kalman->param.pk);
     //yk = xnew - xk
-    matrix_sub(xnew, kalman->xk, yk);
+    matrix_sub(xnew, kalman->param.xk, yk);
     //S=Pk + R
-    matrix_add(kalman->pk, kalman->R, S);
-    //S求逆invert
+    matrix_add(kalman->param.pk, kalman->param.R, S);
+    //S invert
     sdet = S[0] * S[4] * S[8] + S[1] * S[5] * S[6] + S[2] * S[3] * S[7] - 
         S[2] * S[4] * S[6] - S[5] * S[7] * S[0] - S[8] * S[1] * S[3];
     S_invert[0] = (S[4] * S[8] - S[5] * S[7]) / sdet;
@@ -108,22 +108,22 @@ void KalmanFilter(
     S_invert[7] = (S[1] * S[6] - S[0] * S[7]) / sdet;
     S_invert[8] = (S[0] * S[4] - S[1] * S[3]) / sdet;
     //K = Pk * S_invert
-    matrix_multi(kalman->pk, S_invert, K);
+    matrix_multi(kalman->param.pk, S_invert, K);
     //xk = xk + K * yk
     matrix_multi(K, yk, KxYk);
-    matrix_add(kalman->xk, KxYk, kalman->xk);
+    matrix_add(kalman->param.xk, KxYk, kalman->param.xk);
     //pk = (I - K)*(pk)
     matrix_sub(I, K, I_K);
-    matrix_multi(I_K, kalman->pk, pk_new);
+    matrix_multi(I_K, kalman->param.pk, pk_new);
     //update pk
     //pk = pk_new;
     for (i = 0; i < 3; i++) {
         for (j = 0; j < 3; j++) {
-            kalman->pk[i * 3 + j] = pk_new[i * 3 + j];
+            kalman->param.pk[i * 3 + j] = pk_new[i * 3 + j];
         }
     }
     
-    kalman->roll = IMU_RAD2DEG(kalman->xk[0]);
-    kalman->pitch = IMU_RAD2DEG(kalman->xk[4]);
-    kalman->yaw = IMU_RAD2DEG(kalman->xk[8]);
+    kalman->euler.roll = IMU_RAD2DEG(kalman->param.xk[0]);
+    kalman->euler.pitch = IMU_RAD2DEG(kalman->param.xk[4]);
+    kalman->euler.yaw = IMU_RAD2DEG(kalman->param.xk[8]);
 }

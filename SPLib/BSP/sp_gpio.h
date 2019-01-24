@@ -33,6 +33,9 @@
 #include "sp_rcc.h"
 
 
+#define spGPIO_PinFromPinSource(ps)        (0x0001<<(ps))
+
+
 /** @defgroup Declarations
   * @brief    Exported Function Declarations
   * @ingroup  GPIO

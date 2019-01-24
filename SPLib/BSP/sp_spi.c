@@ -112,5 +112,105 @@ uint8_t SPI5_ReadWriteByte(uint8_t data) {
 }
 
 
+
+
+
+
+static inline uint16_t spSPI_Write(SPI_TypeDef* spi, uint16_t data) {
+    while(!(spi->SR & SPI_SR_TXE));
+    spi->DR = data;
+    return 0;
+}
+
+
+static inline uint16_t spSPI_ReadWriteByte(SPI_TypeDef* spi, uint16_t data) {
+    uint16_t retry=0;
+    while(!(spi->SR & SPI_SR_TXE)){
+        retry++;
+        if(retry>1000) {
+            return false;
+        }
+    }
+    spi->DR = data;
+    retry=0;
+    while(!(spi->SR & SPI_SR_RXNE));
+    return spi->DR;
+}
+
+static inline void spSPI_ChipSelect(SPI_PinsType* spi_pins)  {
+    GPIO_ResetBits(spi_pins->nss.gpio, spGPIO_PinFromPinSource(spi_pins->nss.pin_source));
+}
+
+static inline void spSPI_ChipRelease(SPI_PinsType* spi_pins)  {
+    GPIO_SetBits(spi_pins->nss.gpio, spGPIO_PinFromPinSource(spi_pins->nss.pin_source));
+}
+
+struct SPI_Controllers_Type spSPI_Controllers = {
+    .read_write_b = spSPI_ReadWriteByte,
+    .write_b = spSPI_Write,
+    .select = spSPI_ChipSelect,
+    .release = spSPI_ChipRelease
+};
+
+
+SPI_PinsType SPI4_Pins = {
+    SPI4,
+    {GPIOE, GPIO_PinSource12},
+    {GPIOE, GPIO_PinSource5},
+    {GPIOE, GPIO_PinSource6},   
+    {GPIOE, GPIO_PinSource4},
+};
+
+
+void SPI4_Init(void){
+    
+    spRCC_Set_SPI4();
+    spRCC_Set_GPIOE();
+    
+    /* Config pins */
+    GPIO_PinAFConfig(SPI4_Pins.sck.gpio, SPI4_Pins.sck.pin_source, GPIO_AF_SPI4);
+    GPIO_PinAFConfig(SPI4_Pins.miso.gpio, SPI4_Pins.miso.pin_source, GPIO_AF_SPI4);
+    GPIO_PinAFConfig(SPI4_Pins.mosi.gpio, SPI4_Pins.mosi.pin_source, GPIO_AF_SPI4);
+    
+    GPIO_AF_Config(SPI4_Pins.sck.gpio, spGPIO_PinFromPinSource(SPI4_Pins.sck.pin_source), GPIO_OType_PP,
+        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    GPIO_AF_Config(SPI4_Pins.miso.gpio, spGPIO_PinFromPinSource(SPI4_Pins.miso.pin_source), GPIO_OType_PP,
+        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    GPIO_AF_Config(SPI4_Pins.mosi.gpio, spGPIO_PinFromPinSource(SPI4_Pins.mosi.pin_source), GPIO_OType_PP,
+        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    
+    
+    GPIO_OUT_Config(SPI4_Pins.nss.gpio, spGPIO_PinFromPinSource(SPI4_Pins.nss.pin_source), GPIO_OType_PP, 
+        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spSPI_Controllers.release(&SPI4_Pins);
+    
+    /* f_APB2 = 84MHz, f_MPU_SCLK_Max = 1MHz */
+    SPI4_Pins.spi_initer.SPI_BaudRatePrescaler    = SPI_BaudRatePrescaler_128;
+    SPI4_Pins.spi_initer.SPI_CPOL                 = SPI_CPOL_High;
+    SPI4_Pins.spi_initer.SPI_CPHA                 = SPI_CPHA_2Edge;
+    SPI4_Pins.spi_initer.SPI_DataSize             = SPI_DataSize_16b;
+    SPI4_Pins.spi_initer.SPI_Direction            = SPI_Direction_2Lines_FullDuplex;
+    
+    SPI4_Pins.spi_initer.SPI_FirstBit             = SPI_FirstBit_MSB;
+    SPI4_Pins.spi_initer.SPI_Mode                 = SPI_Mode_Master;
+    SPI4_Pins.spi_initer.SPI_NSS                  = SPI_NSS_Soft;
+    // spi_initer.SPI_CRCPolynomial = 0x00;
+    SPI_Init(SPI4_Pins.this, &SPI4_Pins.spi_initer);
+    SPI_Cmd(SPI4_Pins.this, ENABLE);
+    
+    
+//    spRCC_Set_SYSCFG();
+//    GPIO_IN_Config(GPIOF, GPIO_Pin_1, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+//    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
+//    EXTI_InitTypeDef            exit_initer;
+//    exit_initer.EXTI_Line       = EXTI_Line1;
+//    exit_initer.EXTI_LineCmd    = ENABLE;
+//    exit_initer.EXTI_Mode       = EXTI_Mode_Interrupt;
+//    exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;
+//    EXTI_Init(&exit_initer);
+    
+}
+
+
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
 
