@@ -20,14 +20,10 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
 
-/* Exported types ------------------------------------------------------------*/
-/* Exported macro ------------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 /**
   * @brief  Using limited moving abverage on data list, fitting type:
   *         f32 @ref float; d32 @ref uint32_t; d16 @ref uint16_t 

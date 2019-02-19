@@ -19,13 +19,12 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include "sp_type.h"
 
-/* Exported macro ------------------------------------------------------------*/
+
 #define PID_CHANGERATE_THRESHOLD        0.5f        /* Value whos change rate over this will be replaced 
                                                        by averaged recent value. */
 #define PID_SOFTPID_THRESHOLD           0.3f        /* Error whos change rate lower than this will 
@@ -40,7 +39,6 @@
 #define PID_SetGainI(pid, x)       (pid)->Ki = (x)
 #define PID_SetGainD(pid, x)       (pid)->Kd = (x)
 
-/* Exported types ------------------------------------------------------------*/
 /**
   * @brief  PID type structure
   * @note   
@@ -74,7 +72,7 @@ typedef struct {
     } functions;
 } PID_Type;
 
-/* Exported functions --------------------------------------------------------*/
+
 
 /** @defgroup PID User API
   * @brief    PID initialization and implement
@@ -99,8 +97,9 @@ void PID_ControllerInit(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t 
   * @retval PID controller output
   */ 
 float PID_ControllerDriver(PID_Type* pid, float target, float input);
-
 float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input, uint16_t lim_delta);
+
+float PID_ControllerDriver_test(PID_Type* pid, float target, float input);
 
 /**
   * @brief  Set PID controller's current target value

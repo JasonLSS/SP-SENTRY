@@ -169,7 +169,7 @@ void CHASIS_SetMotorRelativePosition(CHASIS_MotorIdType motorx, float relapositi
     }
 }
 
-const MOTOR_CrtlType_CAN* CHASIS_GetMotor(CHASIS_MotorIdType motorx) {
+MOTOR_CrtlType_CAN* CHASIS_GetMotor(CHASIS_MotorIdType motorx) {
     if((uint8_t)motorx <= sizeof(__CAHSIS_Manager.motors)/sizeof(__CAHSIS_Manager.motors[0]) &&
         __CAHSIS_Manager.motors[(uint8_t)motorx] && __CAHSIS_Manager.motors[(uint8_t)motorx]->flags.enable) {
         return __CAHSIS_Manager.motors[(uint8_t)motorx];

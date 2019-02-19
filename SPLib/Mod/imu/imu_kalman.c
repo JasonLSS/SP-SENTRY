@@ -1,5 +1,7 @@
 #include "imu_kalman.h"
 
+// From https://www.embbnux.com/2015/01/30/9_dof_imu_with_kalman_filter_on_avr/
+
 static const float I[]= {
     1.f, 0, 0,
     0, 1.f, 0,
@@ -49,7 +51,7 @@ void AngleFromAccelMag(const float* accel, const float* mag, float* angles) {
     float my = mag[1] * normFactor;
     float mz = mag[2] * normFactor;
     
-    float roll = atan2(-ay, az);       // Roll
+    float roll = atan2(-ay, az);       // Roll [az=g not -g]
     float pitch = asin(-ax);       // Pitch
     float yaw = atan2(-my*cos(roll)+mz*sin(roll), 
         mx*cos(pitch)+my*sin(roll)*sin(pitch)+mz*cos(roll)*sin(pitch)); // Yaw
@@ -99,14 +101,23 @@ void KalmanFilter(
     sdet = S[0] * S[4] * S[8] + S[1] * S[5] * S[6] + S[2] * S[3] * S[7] - 
         S[2] * S[4] * S[6] - S[5] * S[7] * S[0] - S[8] * S[1] * S[3];
     S_invert[0] = (S[4] * S[8] - S[5] * S[7]) / sdet;
-    S_invert[1] = (S[2] * S[7] - S[1] * S[8]) / sdet;
-    S_invert[2] = (S[1] * S[7] - S[4] * S[6]) / sdet;
-    S_invert[3] = (S[5] * S[6] - S[3] * S[8]) / sdet;
+    S_invert[1] = (S[5] * S[6] - S[3] * S[8]) / sdet;
+    S_invert[2] = (S[3] * S[7] - S[4] * S[6]) / sdet;
+    S_invert[3] = (S[2] * S[7] - S[1] * S[8]) / sdet;
     S_invert[4] = (S[0] * S[8] - S[2] * S[6]) / sdet;
-    S_invert[5] = (S[2] * S[3] - S[0] * S[5]) / sdet;
-    S_invert[6] = (S[3] * S[7] - S[4] * S[6]) / sdet;
-    S_invert[7] = (S[1] * S[6] - S[0] * S[7]) / sdet;
+    S_invert[5] = (S[1] * S[6] - S[0] * S[7]) / sdet;
+    S_invert[6] = (S[1] * S[5] - S[2] * S[4]) / sdet;
+    S_invert[7] = (S[3] * S[4] - S[0] * S[5]) / sdet;
     S_invert[8] = (S[0] * S[4] - S[1] * S[3]) / sdet;
+//    S_invert[0] = (S[4] * S[8] - S[5] * S[7]) / sdet;
+//    S_invert[1] = (S[2] * S[7] - S[1] * S[8]) / sdet;
+//    S_invert[2] = (S[1] * S[7] - S[4] * S[6]) / sdet;
+//    S_invert[3] = (S[5] * S[6] - S[3] * S[8]) / sdet;
+//    S_invert[4] = (S[0] * S[8] - S[2] * S[6]) / sdet;
+//    S_invert[5] = (S[2] * S[3] - S[0] * S[5]) / sdet;
+//    S_invert[6] = (S[3] * S[7] - S[4] * S[6]) / sdet;
+//    S_invert[7] = (S[1] * S[6] - S[0] * S[7]) / sdet;
+//    S_invert[8] = (S[0] * S[4] - S[1] * S[3]) / sdet;
     //K = Pk * S_invert
     matrix_multi(kalman->param.pk, S_invert, K);
     //xk = xk + K * yk

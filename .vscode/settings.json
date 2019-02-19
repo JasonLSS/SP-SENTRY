@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "sp_conf.h": "c",
+        "sp_type.h": "c",
+        "sp_imu.h": "c",
+        "sp_rcc.h": "c"
+    }
+}

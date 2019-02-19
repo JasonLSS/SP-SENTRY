@@ -38,6 +38,7 @@ typedef enum {
     RM_6025_PITCH,
     RM_6623_YAW,
     RM_3510_P27,
+    RM_2006_P96,
     GM_3510                 /* NOT YET 20181205 */
 } MOTOR_RM_Types;
 

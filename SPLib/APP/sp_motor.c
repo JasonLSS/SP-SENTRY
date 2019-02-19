@@ -34,6 +34,7 @@
 
 #define CAN_MOTOR_RM3510_P27            (27)
 #define CAN_MOTOR_RM2006_P36            (36)
+#define CAN_MOTOR_RM2006_P96            (96)
 #define CAN_MOTOR_RM3510_3508_P19       (3591/187)          /* Motor's Mechanical trasmission ratio 
                                                                 Real value is 3591/187 = 19.2032f @RM3508 */
 
@@ -52,7 +53,8 @@ MOTOR_CrtlType_CAN                      MOTORs[MOTOR_POOLSIZE] = {0x00};
   * @param  MotorCurrent: current control value
   * @param  limit: limitation
   */
-__STATIC_INLINE float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value) {
+// __STATIC_INLINE 
+float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value) {
     return (value > __motor->control.output_limit)?__motor->control.output_limit:
         (value < -__motor->control.output_limit)?-__motor->control.output_limit:value;
 }
@@ -180,22 +182,17 @@ void __MOTOR_MountCAN(void* motor, CAN_TypeDef* canx, uint16_t stdid) {
         void __MOTOR_DataResolve(CanRxMsg*, void*);
         switch(__motor->flags.rm_type) {
             case RM_3508_P19:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM3510_3508;
-                break;
             case RM_3510_P19:
+            case RM_3510_P27:
                 __motor->data.receiver.resolver = __MOTOR_DataResolve_RM3510_3508;
                 break;
             case RM_2006_P36:
+            case RM_2006_P96:
                 __motor->data.receiver.resolver = __MOTOR_DataResolve_RM2006;
                 break;
             case RM_6025_PITCH:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM6xxx;
-                break;
             case RM_6623_YAW:
                 __motor->data.receiver.resolver = __MOTOR_DataResolve_RM6xxx;
-                break;
-            case RM_3510_P27:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM3510_3508;
                 break;
             case GM_3510:
                 __motor->data.receiver.resolver = __MOTOR_DataResolve_GM3510;
@@ -283,7 +280,13 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor) {
             delta = __motor->state.__motor_angel_curr - __motor->state.__motor_angel_last;
             /* For motor cannot cover 4092 in a sampling period */
             delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
-            __motor->state.angle += delta/CAN_MOTOR_RM2006_P36;
+            
+            if(__motor->flags.rm_type == RM_2006_P36) {
+                __motor->state.angle += delta/CAN_MOTOR_RM2006_P36;
+            } else if(__motor->flags.rm_type == RM_2006_P96) {
+                __motor->state.angle += delta/CAN_MOTOR_RM2006_P96;
+            }
+            
             /* Too small delta angle is regarded as static/stuck */
             if((delta<CAN_STUCK_FILTER)&&(delta>-CAN_STUCK_FILTER)){
                 __motor->state.mortor_stuckflag += 

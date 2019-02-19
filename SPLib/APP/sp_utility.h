@@ -52,6 +52,20 @@ typedef struct {
 
 extern float speeder;
 
+
+
+
+typedef struct {
+    uint8_t         on_press:1;
+    uint8_t         on_release:1;
+    spPinSet        gpio_pin;
+} spKeyController;
+
+extern spKeyController spUserKey;
+
+
+
+
 #define LASER_ON()          GPIO_SetBits(GPIOG,GPIO_Pin_13)
 #define LASER_OFF()         GPIO_ResetBits(GPIOG,GPIO_Pin_13)
 
@@ -115,6 +129,7 @@ void Buzzer_Init(void);
 void Led_Configuration(void);
 void Led8_Configuration(void);
 void TIM6_Configuration(void);
+void KEY_Configuration(void);
 /**
   * @}
   */

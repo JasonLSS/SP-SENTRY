@@ -14,18 +14,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_pid.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
-/** @defgroup PID User API
-  * @brief    PID initialization and implement
-  * @{
-  */
 
 void PID_ControllerInit(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t lim_out, float dt) {
     memset(pid, 0x00, sizeof(PID_Type));
@@ -208,6 +196,43 @@ float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input,
 }
 
 
+float PID_ControllerDriver_test(PID_Type* pid, float target, float input) {
+    // uint8_t i;
+    volatile float pterm, iterm, dterm;
+    float error;
+    
+    /*------------------------------PART I-------------------------------*/
+    if(fabs(pid->target - target) > 0.01f)
+        PID_SetTarget(pid, target);
+    
+    /* Update error */
+    error = pid->target - input;
+    pid->errors[2] = pid->errors[1];
+    pid->errors[1] = pid->errors[0];
+    pid->errors[0] = error;
+        
+    /*------------------------------PART II------------------------------*/
+    /* Calc calssical incremental PID, result delta U[k] */
+    pterm = pid->Kp * pid->errors[0];
+    /* Integral separation */
+    /* Using TRAPEZOID intergration instead of RECTANGLE intergration */
+    pid->sum_error += (pid->errors[0] + pid->errors[1]) * pid->dT / 2;      //----TRAPEZOID intergration
+    if(fabs(pid->sum_error) > pid->intergration_limit) {
+        pid->sum_error = (pid->sum_error>0)? pid->intergration_limit:-pid->intergration_limit;
+    }
+    /* Intergration limit */
+    iterm = pid->Ki * pid->sum_error;
+
+    /* Differential limit */
+    dterm = pid->Kd * (pid->errors[0] - pid->errors[1]) / pid->dT;
+    /* Output delta U[k] */
+    float new_output = pterm + iterm + dterm;
+
+    return new_output;
+}
+
+
+
 
 void PID_SetTarget(PID_Type* pid, float target) {
     pid->target = target;
@@ -226,8 +251,5 @@ void PID_UpdateLimits(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t li
     pid->output_limit = lim_out;
 }
 
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

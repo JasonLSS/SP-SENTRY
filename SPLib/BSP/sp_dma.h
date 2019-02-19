@@ -49,11 +49,15 @@
 typedef struct {
     DMA_Stream_TypeDef*             stream;         /*<! DMA stream selection as DMA[0,1]_Stream[0~7] */
     uint32_t                        channel;        /*<! DMA channel selection as DMA_Channel_[0~7] */
+    bool                            engaged;        /*<! If DMA channel has been engaged. */
 } spDMA_SelectorType;
 
+//Program Size: Code=44364 RO-data=2252 RW-data=2744 ZI-data=11680
+//Program Size: Code=44364 RO-data=1964 RW-data=2744 ZI-data=11680
+//Program Size: Code=44364 RO-data=1820 RW-data=2744 ZI-data=11680
+
 typedef struct {
-    DMA_Stream_TypeDef*             stream;         /*<! DMA stream selection as DMA[0,1]_Stream[0~7] */
-    uint32_t                        channel;        /*<! DMA channel selection as DMA_Channel_[0~7] */
+    spDMA_SelectorType*             dma_selector;   /*<! Selected DMA stream and channel. */
     uint8_t*                        buffer;         /*<! Data buffer pointer */
     uint16_t                        size;           /*<! Data buffer capacity */
 } spDMA_RequestType;
@@ -82,54 +86,93 @@ typedef struct {
   */
 #define spDMA_USART1_tx_stream      DMA2_Stream7
 #define spDMA_USART1_tx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART1_TX = {
+//    spDMA_USART1_tx_stream, spDMA_USART1_tx_chnl, false };
+
 // 2,2,4 2,5,4
 #define spDMA_USART1_rx_stream      DMA2_Stream5
 #define spDMA_USART1_rx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART1_RX = {
+//    spDMA_USART1_rx_stream, spDMA_USART1_rx_chnl, false };
 
 
 #define spDMA_USART2_tx_stream      DMA1_Stream6
 #define spDMA_USART2_tx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART2_TX = {
+//    spDMA_USART2_tx_stream, spDMA_USART2_tx_chnl, false };
+
 #define spDMA_USART2_rx_stream      DMA1_Stream5
 #define spDMA_USART2_rx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART2_RX = {
+//    spDMA_USART2_rx_stream, spDMA_USART2_rx_chnl, false };
 
 
 #define spDMA_USART3_tx_stream      DMA1_Stream3
 #define spDMA_USART3_tx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART3_TX = {
+//    spDMA_USART3_tx_stream, spDMA_USART3_tx_chnl, false };
+
 #define spDMA_USART3_rx_stream      DMA1_Stream1
 #define spDMA_USART3_rx_chnl        DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_USART3_RX = {
+//    spDMA_USART3_rx_stream, spDMA_USART3_rx_chnl, false };
 
 
 #define spDMA_UAR_4_tx_stream       DMA1_Stream4
 #define spDMA_UART4_tx_chnl         DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_UART4_TX = {
+//    spDMA_UAR_4_tx_stream, spDMA_UART4_tx_chnl, false };
+
 #define spDMA_UART4_rx_stream       DMA1_Stream2
 #define spDMA_UART4_rx_chnl         DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_UART4_RX = {
+//    spDMA_UART4_rx_stream, spDMA_UART4_rx_chnl, false };
 
-
+    
 #define spDMA_UART5_tx_stream       DMA1_Stream7
 #define spDMA_UART5_tx_chnl         DMA_Channel_4
+//static const spDMA_SelectorType     spDMA_UART5_TX = {
+//    spDMA_UART5_tx_stream, spDMA_UART5_tx_chnl, false };
+
 #define spDMA_UART5_rx_stream       DMA1_Stream0
 #define spDMA_UART5_rx_chnl         DMA_Channel_4
-
+//static const spDMA_SelectorType     spDMA_UART5_RX = {
+//    spDMA_UART5_rx_stream, spDMA_UART5_rx_chnl, false };
 
 // 2,6,5 2,7,5
 #define spDMA_USART6_tx_stream      DMA2_Stream6
 #define spDMA_USART6_tx_chnl        DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_USART6_TX = {
+//    spDMA_USART6_tx_stream, spDMA_USART6_tx_chnl, false };
 // 2,1,5 2,2,5
 #define spDMA_USART6_rx_stream      DMA2_Stream1
 #define spDMA_USART6_rx_chnl        DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_USART6_RX = {
+//    spDMA_USART6_rx_stream, spDMA_USART6_rx_chnl, false };
 
-
+    
 #define spDMA_UART7_tx_stream       DMA1_Stream1
 #define spDMA_UART7_tx_chnl         DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_UART7_TX = {
+//    spDMA_UART7_tx_stream, spDMA_UART7_tx_chnl, false };
 #define spDMA_UART7_rx_stream       DMA1_Stream3
 #define spDMA_UART7_rx_chnl         DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_UART7_RX = {
+//    spDMA_UART7_rx_stream, spDMA_UART7_rx_chnl, false };
 
 
 #define spDMA_UART8_tx_stream       DMA1_Stream0
 #define spDMA_UART8_tx_chnl         DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_UART8_TX = {
+//    spDMA_UART8_tx_stream, spDMA_UART8_tx_chnl, false };
+
 #define spDMA_UART8_rx_stream       DMA1_Stream6
 #define spDMA_UART8_rx_chnl         DMA_Channel_5
+//static const spDMA_SelectorType     spDMA_UART8_RX = {
+//    spDMA_UART8_rx_stream, spDMA_UART8_rx_chnl, false };
+    
 
+    
 /**
   * @brief    DMA for ADCx
   */
@@ -137,15 +180,28 @@ typedef struct {
 #define spDMA_ACD1_chnl_1           DMA_Channel_0
 #define spDMA_ACD1_stream_2         DMA2_Stream4
 #define spDMA_ACD1_chnl_2           DMA_Channel_0
+//static const spDMA_SelectorType        spDMA_ADC12[2] = {
+//    { spDMA_ACD1_stream_1, spDMA_ACD1_chnl_1, false },
+//    { spDMA_ACD1_stream_2, spDMA_ACD1_chnl_2, false } };
+
 #define spDMA_ACD2_stream_1         DMA2_Stream2
 #define spDMA_ACD2_chnl_1           DMA_Channel_1
 #define spDMA_ACD2_stream_2         DMA2_Stream3
 #define spDMA_ACD2_chnl_2           DMA_Channel_1
+//static const spDMA_SelectorType        spDMA_ADC2[2] = {
+//    { spDMA_ACD2_stream_1, spDMA_ACD2_chnl_1, false },
+//    { spDMA_ACD2_stream_2, spDMA_ACD2_chnl_2, false } };
+
 #define spDMA_ACD3_stream_1         DMA2_Stream0
 #define spDMA_ACD3_chnl_1           DMA_Channel_2
 #define spDMA_ACD3_stream_2         DMA2_Stream1
 #define spDMA_ACD3_chnl_2           DMA_Channel_2
+//static const spDMA_SelectorType        spDMA_ADC3[2] = {
+//    { spDMA_ACD3_stream_1, spDMA_ACD3_chnl_1, false },
+//    { spDMA_ACD3_stream_2, spDMA_ACD3_chnl_2, false }  };
 
+
+    
 /**
   * @brief    DMA for TIMx
   */
@@ -233,6 +289,7 @@ typedef struct {
 #define spDMA_TIM8_COM_stream       DMA2_Stream7
 #define spDMA_TIM8_COM_chnl         DMA_Channel_7
 
+
 /**
   * @brief    DMA for SPIx
   */
@@ -265,6 +322,15 @@ typedef struct {
 #define spDMA_SPI6_rx_chnl          DMA_Channel_2
 #define spDMA_SPI6_tx_stream        DMA1_Stream4
 #define spDMA_SPI6_tx_chnl          DMA_Channel_2
+
+//static const spDMA_SelectorType     spDMA_SPI[6][2] = {
+//    {{ spDMA_SPI1_rx_stream, spDMA_SPI1_rx_chnl, false }, { spDMA_SPI1_tx_stream, spDMA_SPI1_tx_chnl, false }},
+//    {{ spDMA_SPI2_rx_stream, spDMA_SPI2_rx_chnl, false }, { spDMA_SPI2_tx_stream, spDMA_SPI2_tx_chnl, false }},
+//    {{ spDMA_SPI3_rx_stream, spDMA_SPI3_rx_chnl, false }, { spDMA_SPI3_tx_stream, spDMA_SPI3_tx_chnl, false }},
+//    {{ spDMA_SPI4_rx_stream, spDMA_SPI4_rx_chnl, false }, { spDMA_SPI4_tx_stream, spDMA_SPI4_tx_chnl, false }},
+//    {{ spDMA_SPI5_rx_stream, spDMA_SPI5_rx_chnl, false }, { spDMA_SPI5_tx_stream, spDMA_SPI5_tx_chnl, false }},
+//    {{ spDMA_SPI6_rx_stream, spDMA_SPI6_rx_chnl, false }, { spDMA_SPI6_tx_stream, spDMA_SPI6_tx_chnl, false }} };
+
 
 /**
   * @brief    DMA for Non-specific Usage

@@ -30,10 +30,72 @@
 #include "gimbal.h"
 #include "Auto_aim.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
+/** @defgroup System_Time_Support
+  * @brief    Using spCLOCK(default TIM14) as clock source with 1ms(count 1000) period.
+  * @{
+  */
+
+/**
+  * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
+  */
+static struct {
+    volatile uint32_t  ms;
+    volatile uint32_t* us;
+} spClock = {0, &spCLOCK->CNT};
+
+void spCLOCK_Configuration(void) {
+    /* 84MHz */
+    spRCC_Set_spCLOCK();
+    /* 1000Hz */
+    TIM_TimeBaseInitTypeDef tim_base_initer;
+    tim_base_initer.TIM_Prescaler = 84-1;
+    tim_base_initer.TIM_Period = 1000-1;
+    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
+    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
+    
+    TIM_TimeBaseInit(spCLOCK, &tim_base_initer);
+    TIM_ITConfig(spCLOCK, TIM_IT_Update, ENABLE);
+    NVIC_IRQEnable(spClock_IRQn, 0, 0);
+    TIM_Cmd(spCLOCK, ENABLE);
+}
+
+void spClock_IRQHandler(void) {
+    if(TIM_GetITStatus(spCLOCK,TIM_IT_Update) == SET) {
+        spClock.ms ++;
+        TIM_ClearITPendingBit(spCLOCK, TIM_IT_Update);
+    }
+}
+
+uint32_t TASK_GetMicrosecond(void) {
+    return spClock.ms;
+}
+
+void TASK_GetMicrosecondPtr(unsigned long *count) {
+    count[0] = spClock.ms;
+}
+
+spTimeStamp TASK_GetTimeStamp(void) {
+    spTimeStamp stamp;
+    stamp.us = *spClock.us;
+    stamp.ms = spClock.ms;
+    return stamp;
+}
+
+float TASK_GetSecond(void) {
+    return spClock.ms*1.0f/1000 + (*spClock.us)*1.0f/1000000;
+}
+
+float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp) {
+    return stamp->ms*1.0f/1000 + stamp->us*1.0f/1000000;
+}
+
+/**
+  * @}
+  */
+
+
+
+
 /**
   * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
   */
@@ -42,14 +104,86 @@ volatile uint32_t           task_counter = 0;
   * @brief  Flag for system initialization
   */
 bool                        task_inited = false;
-/**
-  * @brief  Values for test
-  */
-char                        uart8_buff[16] = "Hello world!\r\n";
-char                        uart_buff[256] = {0x00};
+//char                        uart_rx_buff[256] = {0x00};
+char                        uart_tx_buff[256] = {0x00};
+extern char uart6_buff[256];
+#ifdef USING_MOTOR_TEST
+packed_union {
+    uint8_t bytes[24];
+    packed_struct {
+        float pkp, pki, pkd;
+        float skp, ski, skd;
+        bool flushed;
+    } data;
+} MOTOR_ControllReg;
 
-/* Private functions ---------------------------------------------------------*/
-/** @defgroup Task Initialization and Configuration Functions
+struct {
+    uint8_t     buffer[256];
+    uint16_t    capacity;
+    uint16_t    curr_ptr, last_ptr;
+    uint16_t size0, size1;
+} USART_Transfer = {
+    {0x00}, 256,
+    0, 0, 0, 0
+};
+
+float tar_spd = 0.f;
+extern spDMA_SelectorType spDMA_Mem2Mem[];
+void motor_recevier(void) {
+    
+//    extern char uart_rx_buff[256];
+//    static uint8_t curr_ptr = 0, last_ptr = 0;
+//    curr_ptr = 256 - spDMA_UART7_rx_stream->NDTR;
+//    if(curr_ptr<last_ptr) {
+//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff[last_ptr], (uint32_t)&UART7->DR, sizeof(uart_rx_buff)-last_ptr);
+//        while(DMA_GetCmdStatus(spDMA_UART7_tx_stream)==ENABLE);
+//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff, (uint32_t)&UART7->DR, curr_ptr);
+//    } else if(curr_ptr>last_ptr) {
+//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff[last_ptr], (uint32_t)&UART7->DR, curr_ptr-last_ptr);
+//    }
+//    last_ptr = curr_ptr;
+    
+//    USART_Transfer.curr_ptr = USART_Transfer.capacity - spDMA_UART7_rx_stream->NDTR;
+//    uint8_t size;
+//    if(USART_Transfer.curr_ptr < USART_Transfer.last_ptr) {
+//        USART_Transfer.size0 = USART_Transfer.capacity - USART_Transfer.last_ptr;
+//        USART_Transfer.size1 = USART_Transfer.curr_ptr;
+//    } else if(USART_Transfer.curr_ptr > USART_Transfer.last_ptr) {
+//        USART_Transfer.size0 = USART_Transfer.curr_ptr - USART_Transfer.last_ptr;
+//        USART_Transfer.size1 = 0;
+//    }
+//    USART_Transfer.last_ptr = USART_Transfer.curr_ptr;
+    
+    USART_Transfer.curr_ptr = USART_Transfer.capacity - spDMA_UART7_rx_stream->NDTR;
+    uint8_t size;
+    if(USART_Transfer.curr_ptr < USART_Transfer.last_ptr) {
+        uint8_t size0 = USART_Transfer.capacity - USART_Transfer.last_ptr;
+        size = size0 + USART_Transfer.curr_ptr;
+        
+//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size0);
+//        while(DMA_GetCmdStatus(spDMA_Mem2Mem[0].stream)==ENABLE);
+//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)&MOTOR_ControllReg.bytes[size0], (uint32_t)&uart_rx_buff, curr_ptr);
+//        DMA_Stream_TypeDef* stream =
+//            DMA_CopyMem2Mem((uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size0);
+//        while(DMA_GetCmdStatus(stream)==ENABLE);
+//        DMA_CopyMem2Mem((uint32_t)&MOTOR_ControllReg.bytes[size0], (uint32_t)&uart_rx_buff, curr_ptr);
+        memcpy(MOTOR_ControllReg.bytes, &USART_Transfer.buffer[USART_Transfer.last_ptr], size0);
+        memcpy(&MOTOR_ControllReg.bytes[size0], USART_Transfer.buffer, USART_Transfer.curr_ptr);
+        memset(&MOTOR_ControllReg.bytes[size], 0, sizeof(MOTOR_ControllReg.bytes)-size);
+        MOTOR_ControllReg.data.flushed = true;
+    } else if(USART_Transfer.curr_ptr > USART_Transfer.last_ptr) {
+        size = USART_Transfer.curr_ptr - USART_Transfer.last_ptr;
+//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)&MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size);
+//        DMA_CopyMem2Mem((uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size);
+        memcpy(MOTOR_ControllReg.bytes, &USART_Transfer.buffer[USART_Transfer.last_ptr], size);
+        memset(&MOTOR_ControllReg.bytes[size], 0, sizeof(MOTOR_ControllReg.bytes)-size);
+        MOTOR_ControllReg.data.flushed = true;
+    }
+    USART_Transfer.last_ptr = USART_Transfer.curr_ptr;
+}
+#endif
+
+/** @defgroup Task_Initialization_and_Configuration_Functions
   * @brief    Implement member functions for @ref MOTOR_CrtlType
   * @{
   */
@@ -83,6 +217,7 @@ inline void TASK_Start(void) {
 //    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);
 //    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
 //    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
+    NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
     
     extern void sendtoComputerInit(void);
     sendtoComputerInit();
@@ -103,6 +238,10 @@ void TASK_GlobalInit() {
     {
         Led_Configuration();
         Led8_Configuration();
+        
+        spIRQ_Manager.init();
+        
+        KEY_Configuration();
         Buzzer_Init();
         // Enable CAN1, baudrate=1Mbps
         CAN1_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
@@ -110,6 +249,7 @@ void TASK_GlobalInit() {
         CAN2_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
         // DMA memory-to-memory tranfer config
         DMA_InitNull(NULL, NULL, 0);
+        
         // Start general USART8 for general communication
         USART_TX_Config(UART8, 115200);
         USART_RX_Config(UART8, 115200);
@@ -117,7 +257,11 @@ void TASK_GlobalInit() {
         
         // Start USART and DMA for send data
         USART_TX_Config(UART7, 115200);
+        USART_RX_Config(UART7, 115200);
         DMA_USART_TX_Config(UART7);
+        DMA_USART_RX_Config(UART7, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
+        
+        USART_ITConfig(UART7, USART_IT_IDLE, ENABLE);
         USART_Cmd(UART7, ENABLE);
 
 //        // Start general USART8 for general communication
@@ -129,23 +273,32 @@ void TASK_GlobalInit() {
 //        DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
 //        USART_Cmd(USART6, ENABLE);
         
+    }
+    
+    /** 
+      * @brief  System layer initialize
+      */
+    {
+        MOTOR_ControlInit();
+        CHASIS_ControlInit();
+        
         // Enable Remote Controller Receiver
         RC_ReceiverInit();
         
         // IMU module init
         IMU_Controllers.operations.init();
         
-        extern void SPI4_Init(void);
-        SPI4_Init();
-        delay_ms(1);
-        uint16_t prod_id[24];
-        
-        for(uint8_t i=0; i<24; i++) {
-            spSPI_Controllers.select(&SPI4_Pins);
-            prod_id[i] = spSPI_Controllers.read_write_b(SPI4, 0x7200);
-            spSPI_Controllers.release(&SPI4_Pins);
-            delay_us(20);
-        }
+//        extern void SPI4_Init(void);
+//        SPI4_Init();
+//        delay_ms(1);
+//        uint16_t prod_id[24];
+//        
+//        for(uint8_t i=0; i<24; i++) {
+//            spSPI_Controllers.select(&SPI4_Pins);
+//            prod_id[i] = spSPI_Controllers.read_write_b(SPI4, 0x7200);
+//            spSPI_Controllers.release(&SPI4_Pins);
+//            delay_us(20);
+//        }
         
     #ifdef USING_USB
         USB_TaskInit();
@@ -153,20 +306,11 @@ void TASK_GlobalInit() {
     }
     
     /** 
-      * @brief  System layer initialize
-      */
-    {
-        
-    }
-    
-    /** 
       * @brief  Peripheral layer initialize
       */
     {
-        MOTOR_ControlInit();
-        CHASIS_ControlInit();
         
-    #ifdef USING_DM6020
+    #ifdef USING_GIMBAL
         /* For view communication via USART2 */
         extern UsartBuffer_t view_buffer;
         USART_RX_Config(USART2, 115200);
@@ -295,6 +439,21 @@ void TASK_GlobalInit() {
             gimbal_pitch_motor->control.output_limit = 8000;
         }
     #endif
+    
+    #ifdef USING_MOTOR_TEST
+        MOTOR_CrtlType_CAN* motor = CHASIS_EnableMotor(Motor206, RM_2006_P96, true);
+        
+        motor->control.speed_pid->intergration_limit = 400;
+        motor->control.speed_pid->output_limit = 16000;
+        PID_SetGains(motor->control.speed_pid, 0, 0, 0);
+        
+        motor->control.position_pid->intergration_limit = 400;
+        motor->control.position_pid->output_limit = 16000;
+        PID_SetGains(motor->control.position_pid, 0, 0, 0);
+        
+        spIRQ_Manager.registe(UART7_IRQn, motor_recevier);
+        
+    #endif
     }
     /** 
       * @brief  Sundries and initialize
@@ -333,7 +492,7 @@ void TASK_Enable() {
 
 }
 
-extern char uart6_buff[256];
+
 /**
   * @brief  System layer control loop in background
   */
@@ -440,11 +599,66 @@ void TASK_ControlLooper() {
             const MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
             printf("%d,%d\r\n", motor201->state.speed, motor202->state.speed);
           #endif
+            
+          #ifdef USING_MOTOR_TEST
+            extern float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value);
+            MOTOR_CrtlType_CAN* motor = CHASIS_GetMotor(Motor206);
+
+            if(MOTOR_ControllReg.data.flushed) {
+                MOTOR_ControllReg.data.flushed = false;
+                
+                motor->control.speed_pid->Kp = MOTOR_ControllReg.data.skp;
+                motor->control.speed_pid->Ki = MOTOR_ControllReg.data.ski;
+                motor->control.speed_pid->Kd = MOTOR_ControllReg.data.skd;
+                motor->control.position_pid->Kp = MOTOR_ControllReg.data.pkp;
+                motor->control.position_pid->Ki = MOTOR_ControllReg.data.pki;
+                motor->control.position_pid->Kd = MOTOR_ControllReg.data.pkd;
+                
+                tar_spd = motor->state.angle + 8192;
+            }
+            
+            /* PID controller */
+            float pid_tmp;
+            CHASIS_SetMotorPosition(Motor206, tar_spd);
+            pid_tmp = PID_ControllerDriver_test(motor->control.position_pid, 
+                motor->control.target , motor->state.angle);
+            pid_tmp = __MOTOR_OutputLimit(motor, pid_tmp);
+            if(motor->control.speed_pid) {
+                pid_tmp = PID_ControllerDriver_test(motor->control.speed_pid,
+                    pid_tmp, motor->state.speed);
+            }
+            motor->control.output = __MOTOR_OutputLimit(motor, pid_tmp);
+
+//            static int tar_spd = 2000;
+//            static bool using_key = true;
+//            if(using_key && spUserKey.on_press) {
+//                spUserKey.on_press = false;
+//                motor201->control.output = (motor201->control.output==0)*tar_spd;
+//            } else {
+//                // TODO: Make interval time more specific.
+//                float pid_tmp;
+//                pid_tmp = PID_ControllerDriver_test(motor201->control.position_pid, 
+//                    motor201->control.target , motor201->state.angle);
+//                pid_tmp = __MOTOR_OutputLimit(motor201, pid_tmp);
+//                if(motor201->control.speed_pid) {
+//                    pid_tmp = PID_ControllerDriver_test(motor201->control.speed_pid,
+//                        pid_tmp, motor201->state.speed);
+//                }
+//                motor201->control.output = __MOTOR_OutputLimit(motor201, pid_tmp);
+//            }
+          #endif
         }  else if(task_counter%10 == 9) {
-            recv_ex = recv;
+            
+          #ifdef USING_MOTOR_TEST
+            MOTOR_CrtlType_CAN* motor = CHASIS_GetMotor(Motor206);
+            uint8_t size = sprintf(uart_tx_buff, "%d,%.5f\r\n",
+                spClock.ms,
+                motor->control.position_pid->errors[0]); 
+            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
+          #endif
         }
         
-      #ifdef USING_DM6020
+      #ifdef USING_GIMBAL
         if(task_counter%5 == 2) {
             extern void sendtoComputer(void);
             sendtoComputer();
@@ -472,7 +686,7 @@ void TASK_ControlLooper() {
         static float pose = 0.f;
         CHASIS_SetMotorPosition(Motor205, pose);
       #endif
-      
+
         recv_ex = recv;
     }
     /** 
@@ -498,7 +712,7 @@ void TASK_ControlLooper() {
 
 
 
-/** @defgroup Task Implement Functions
+/** @defgroup Task_Implement_Functions
   * @brief    Implement task control by interrupt
   * @{
   */
@@ -513,8 +727,8 @@ void SysTick_Handler(void) {
         static uint16_t tick_init = 0;
         tick_init ++;
         
-        #ifndef USING_DM6020
-        if(tick_init>= 3000) {
+        #ifndef USING_GIMBAL
+        if(tick_init>= 1000) {
             task_inited = true;
             TASK_Enable();
         }
@@ -531,10 +745,13 @@ void SysTick_Handler(void) {
 
     /* System background */
     uint32_t ctime = TASK_GetMicrosecond();
-    MOTOR_ControlLooper();
+
     
     if(ctime%10 == 0) {
-    #ifdef USING_DM6020
+    #ifndef USING_MOTOR_TEST
+        MOTOR_ControlLooper();
+    #endif
+    #ifdef USING_GIMBAL
         GIMBAL_ControlLooper();
     #endif
         CHASIS_ControlLooper();
@@ -547,69 +764,6 @@ void SysTick_Handler(void) {
   * @}
   */
 
-
-/** @defgroup System Time Support
-  * @brief    Using spCLOCK(default TIM14) as clock source with 1ms(count 1000) period.
-  * @{
-  */
-
-/**
-  * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
-  */
-static struct {
-    volatile uint32_t  ms;
-    volatile uint32_t* us;
-} spClock = {0, &spCLOCK->CNT};
-
-void spCLOCK_Configuration(void) {
-    /* 84MHz */
-    spRCC_Set_spCLOCK();
-    /* 1000Hz */
-    TIM_TimeBaseInitTypeDef tim_base_initer;
-    tim_base_initer.TIM_Prescaler = 84-1;
-    tim_base_initer.TIM_Period = 1000-1;
-    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
-    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
-    
-    TIM_TimeBaseInit(spCLOCK, &tim_base_initer);
-    TIM_ITConfig(spCLOCK, TIM_IT_Update, ENABLE);
-    NVIC_IRQEnable(spClock_IRQn, 0, 0);
-    TIM_Cmd(spCLOCK, ENABLE);
-}
-
-void spClock_IRQHandler(void) {
-    if(TIM_GetITStatus(spCLOCK,TIM_IT_Update) == SET) {
-        spClock.ms ++;
-        TIM_ClearITPendingBit(spCLOCK, TIM_IT_Update);
-    }
-}
-
-uint32_t TASK_GetMicrosecond(void) {
-    return spClock.ms;
-}
-
-void TASK_GetMicrosecondPtr(unsigned long *count) {
-    count[0] = spClock.ms;
-}
-
-spTimeStamp TASK_GetTimeStamp(void) {
-    spTimeStamp stamp;
-    stamp.us = *spClock.us;
-    stamp.ms = spClock.ms;
-    return stamp;
-}
-
-float TASK_GetSecond(void) {
-    return spClock.ms*1.0f/1000 + (*spClock.us)*1.0f/1000000;
-}
-
-float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp) {
-    return stamp->ms*1.0f/1000 + stamp->us*1.0f/1000000;
-}
-
-/**
-  * @}
-  */
 
 /**
   * @}

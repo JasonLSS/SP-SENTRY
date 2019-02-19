@@ -255,7 +255,7 @@ clock is used, keep this define commented */
 
 /* Uncomment the line below to expanse the "assert_param" macro in the 
 Standard Peripheral Library drivers code */
-/* #define USE_FULL_ASSERT    1 */
+#define USE_FULL_ASSERT    1
 
 #ifdef USE_FULL_ASSERT
 

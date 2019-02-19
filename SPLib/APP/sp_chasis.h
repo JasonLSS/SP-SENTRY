@@ -65,7 +65,7 @@ void CHASIS_SetMotorRelativePosition(CHASIS_MotorIdType motorx, float relapositi
   * @brief  
   * @note   
   */ 
-const MOTOR_CrtlType_CAN* CHASIS_GetMotor(CHASIS_MotorIdType motorx);
+MOTOR_CrtlType_CAN* CHASIS_GetMotor(CHASIS_MotorIdType motorx);
 
 
 

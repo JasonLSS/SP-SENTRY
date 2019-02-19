@@ -14,7 +14,6 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __SP_MATH_H
 #define __SP_MATH_H
 
@@ -44,12 +43,23 @@
 /**
   * @brief  Reset values for a float32 array
   */ 
-extern __inline void memset_f32(float* array, float value, uint16_t size);
+static __inline void memset_f32(float* array, float value, uint16_t size) {
+    while(size--) {
+        *(array++) = value;
+    }
+}
 
 /**
   * @brief  Carmack's Unusual Inverse Square Root
   */
-extern __inline float invSqrt(float x);
+static __inline float invSqrt(float x) {
+    float xhalf = 0.5f * x;
+    int i = *(int*)&x;              // get bits for floating value
+    i = 0x5f375a86 - (i >> 1);      // gives initial guess y0
+    x = *(float*)&i;                // convert bits back to float
+    x = x * (1.5f - xhalf * x * x); // Newton step, repeating increases accuracy
+    return x;
+}
 
 /** 
   * @}
@@ -67,7 +77,9 @@ extern __inline float invSqrt(float x);
   *         sign(x) = 0  if x = 0
   *         sign(x) = -1 if x < 0
   */ 
-extern __inline float sign(float x);
+static __inline float sign(float x) {
+    return (x==0)?0:((x>0)?1:-1);
+}
 
 /**
   * @brief  Limit value in a bilateral range
@@ -129,7 +141,7 @@ extern __inline float limit_deadzone_minmax(float x, float min, float max);
   * @note   Excpression: \f[ V_o(k) = \frac{ V_i(k)+\frac{RC}{T_s}*V_o(k-1) }{ 1+ \frac{RC}{T_s} } \f]
   */
 typedef struct {
-    float  Vi;
+//    float  Vi;
     float  Vo_prev;
     float  Vo;
     float  cutFreq;
@@ -168,7 +180,7 @@ float LPF_FirstOrder_filter(LPF_FirstOrder_type* lpf, float Vi );
   
   */
 typedef struct {
-    float  Vi;
+//    float  Vi;
     float  Vi_prev;
     float  Vo;
     float  Vo_prev;

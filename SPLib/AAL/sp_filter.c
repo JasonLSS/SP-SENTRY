@@ -15,19 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_filter.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 
-/** @defgroup Utility of General Algorithms
-  * @{
-  */
-  
 float MovingAverageFilter_f32(float* data, uint8_t size, float newval, uint16_t rela_limit) {
     float avg = 0;
     /* Amplitude restriction */
@@ -75,10 +63,6 @@ int16_t MovingAverageFilter_d16(int16_t* data, uint8_t size, int16_t newval, uin
     avg += data[0]/size;
     return (data[0] = avg);
 }
-
-/**
-  * @}
-  */
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

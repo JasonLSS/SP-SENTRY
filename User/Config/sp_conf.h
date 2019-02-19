@@ -13,7 +13,6 @@
 
 //*** <<< Use Configuration Wizard in Context Menu >>> ***
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __SP_CONF_H
 #define __SP_CONF_H
 
@@ -21,26 +20,52 @@
  extern "C" {
 #endif
 
-#if !defined(SP19)
-    #error "Please define SP19 in your porject!"
-#endif
-
-/** @defgroup Commonly Used Macros
+/** @addtogroup SP
+  * @brief      SuperPower
   * @{
   */
-#define spGPIO_FromSource(x)            (0x0001<<(x))   /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
-#define spUSART_PRINTF_USARTx           UART8           /* Select USART for overriding printf */
-/**
-  * @}
+
+/** @defgroup SPI
+  * @brief    SPI Module
+  * @{
   */
 
-#define spCLOCK                 TIM14
-#define spRCC_Set_spCLOCK       spRCC_Set_TIM14
-#define spClock_IRQn            TIM8_TRG_COM_TIM14_IRQn
-#define spClock_IRQHandler      TIM8_TRG_COM_TIM14_IRQHandler
 
 
-/** @defgroup Test Configurations
+/** @defgroup Commonly_Used_Macros
+  * @ingroup  CONFIG
+  * @{
+  */
+#if !defined(SP19)
+    #error "Please specify SPxx in your porject!"
+#endif
+
+#include "stm32f4xx.h"
+#include "stm32f4xx_conf.h"
+#include <core_cm4.h>
+
+/* __packed keyword used to decrease the data type alignment to 1-byte */
+#if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+    #define packed_struct       struct __attribute__((packed))
+    #define packed_union        union __attribute__((packed))
+#else
+    #define packed_struct       __packed struct
+    #define packed_union        __packed union
+#endif
+
+#define spGPIO_FromSource(x)            (0x0001<<(x))   /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
+#define spUSART_PRINTF_USARTx           UART8           /* Select USART for overriding printf */
+
+#define spCLOCK                         TIM14
+#define spRCC_Set_spCLOCK               spRCC_Set_TIM14
+#define spClock_IRQn                    TIM8_TRG_COM_TIM14_IRQn
+#define spClock_IRQHandler              TIM8_TRG_COM_TIM14_IRQHandler
+/** @} */
+
+
+
+/** @defgroup Test_Configurations
+  * @ingroup  CONFIG
   * @{
   */
 
@@ -65,9 +90,9 @@
 //    <i> USING sentry test part
 //#define USING_SENTRY
 //  </c>
-//  <c1> USING_DM6020
+//  <c1> USING_GIMBAL
 //    <i> USING DM6020 test part
-//#define USING_DM6020
+//#define USING_GIMBAL
 //  </c>
 //  <c1> USING_USB
 //    <i> Enable USB
@@ -85,44 +110,35 @@
 //    <i> Enable FreeRTOS
 //#define USING_OS
 //  </c>
+//  <c1> USING_MOTOR_TEST
+//    <i> Enable FreeRTOS
+#define USING_MOTOR_TEST
+//  </c>
 //  </h>
-
 
 #define Latitude_At_ShenZhen 22.57025f
 #define Latitude_At_ShangHai 31.18333f
-
-/* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
-#include "stm32f4xx_conf.h"
-
-#include "sp_type.h"
-#include "sp_rcc.h"
-#include "sp_gpio.h"
-#include "sp_dma.h"
-#include "sp_usart.h"
-#include "sp_can.h"
-
-#ifdef USING_USB
-    #include "usb.h"
-#endif
-
-#ifdef USING_OS
-    #include "FreeRTOSConfig.h"
-    #include "FreeRTOS.h"
-    #include "task.h"
-    #include "timers.h"
-#endif
-
-/* Exported types ------------------------------------------------------------*/
-
-/**
-  * @}
-  */
+/** @} */
 
 
-/** @defgroup USART Resource Using Configuration
+/** @defgroup Pool_Size_Configuration
+  * @ingroup  CONFIG
   * @{
   */
+//  <h> IRQ callback pool size
+//    <o> USING_IRQ_POOL_SIZE       <32-256>
+#define USING_IRQ_POOL_SIZE         128
+//  </h>
+/** @} */  
+
+  
+
+
+/** @defgroup USART_Resource_Using_Configuration
+  * @ingroup  CONFIG
+  * @{
+  */
+
 //  <h> USART Select
 //    <h> USART1
 //      <c1> USING_SP_USART1_TX
@@ -212,15 +228,39 @@
 //      </c>
 //    </h>
 //  </h>
-
-/**
-  * @}
-  */
+/** @} */
 
 
-/** @defgroup SuperPower Tasks
+/** @defgroup Module_Includes
+  * @ingroup  CONFIG
   * @{
   */
+#include "sp_type.h"
+#include "sp_irq.h"
+#include "sp_rcc.h"
+#include "sp_gpio.h"
+#include "sp_dma.h"
+#include "sp_usart.h"
+#include "sp_can.h"
+
+
+#ifdef USING_USB
+    #include "usb.h"
+#endif
+
+#ifdef USING_OS
+    #include "FreeRTOSConfig.h"
+    #include "FreeRTOS.h"
+    #include "task.h"
+    #include "timers.h"
+#endif
+/** @} */
+
+/** @defgroup SuperPower_Tasks
+  * @ingroup  CONFIG
+  * @{
+  */
+
 extern void TASK_GlobalInit(void);
 void spCLOCK_Configuration(void);
 
@@ -248,27 +288,26 @@ extern void TASK_ExecutorLooper(TimerHandle_t xTimer);
 extern void TASK_ClearLooper(TimerHandle_t xTimer);
 extern void TASK_UILooper(TimerHandle_t xTimer);
 #endif
-/**
-  * @}
-  */
+/** @} */
+
   
-/** @defgroup General System Functions
+
+/** @defgroup General_System_Functions
+  * @ingroup  CONFIG
   * @{
   */
 extern void delay_us(uint32_t us);
 extern void delay_ms(uint32_t ms);
-
 extern uint32_t TASK_GetMicrosecond(void);
 extern void TASK_GetMicrosecondPtr(unsigned long *count);
 extern spTimeStamp TASK_GetTimeStamp(void);
 extern float TASK_GetSecond(void);
 extern float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp);
-/**
-  * @}
-  */
+/** @} */
   
   
-/** @defgroup IRQ Handlers
+/** @defgroup IRQ_Handlers
+  * @ingroup  CONFIG
   * @{
   */
 extern void EXTI9_5_IRQHandler(void);
@@ -285,13 +324,19 @@ extern void USART6_IRQHandler(void);
 extern void UART7_IRQHandler(void);
 extern void UART8_IRQHandler(void);
 extern void SysTick_Handler(void);
-/**
-  * @}
-  */
+/** @} */
   
 #ifdef __cplusplus
 }
 #endif
+
+/**
+  * @}
+  */
+  
+/**
+  * @}
+  */
 
 //*** <<< end of configuration section >>>    ***
 #endif /*__SP_CONF_H */

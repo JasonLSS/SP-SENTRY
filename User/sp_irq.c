@@ -12,20 +12,12 @@
   ******************************************************************************
   */
 
-/* Includes ------------------------------------------------------------------*/
-#include "sp_conf.h"
+
+#include "sp_irq.h"
+
 #include <string.h>
 #include "sp_imu.h"
 #include "sp_utility.h"
-
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-/* Exported variables --------------------------------------------------------*/
-/* Exported functions --------------------------------------------------------*/
 
 #include "sp_imu.h"
 
@@ -35,20 +27,20 @@ void EXTI9_5_IRQHandler(void) {
         //mag: -37.8 37.2 42.5
         IMU_Controllers.operations.read_stream(
             IMU_Controllers.imu_state.ahrs.gyro, 
-            IMU_Controllers.imu_state.ahrs.accel,
+            IMU_Controllers.imu_state.ahrs.accel_0,
             &IMU_Controllers.imu_state.ahrs.temp, 
             IMU_Controllers.imu_state.ahrs.mag);
         
         if(IMU_Controllers.imu_state.kalman.pass_filter.lpf_enbale) {
             IMU_Controllers.imu_state.ahrs.accel[0] = 
                 LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+0,
-                IMU_Controllers.imu_state.ahrs.accel[0]);
+                IMU_Controllers.imu_state.ahrs.accel_0[0]);
             IMU_Controllers.imu_state.ahrs.accel[1] = 
                 LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+1,
-                IMU_Controllers.imu_state.ahrs.accel[1]);
+                IMU_Controllers.imu_state.ahrs.accel_0[1]);
             IMU_Controllers.imu_state.ahrs.accel[2] = 
                 LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+2,
-                IMU_Controllers.imu_state.ahrs.accel[2]);
+                IMU_Controllers.imu_state.ahrs.accel_0[2]);
         }
         
 //        static float data[10];
@@ -216,11 +208,69 @@ void USART6_IRQHandler (void) {
 void UART7_IRQHandler (void) {
     if(USART_GetITStatus(UART7, USART_IT_IDLE)) {
         
+        spIRQ_Manager.invoke(UART7_IRQn);
+        
         USART_ClearITPendingBit(UART7, USART_IT_IDLE);
     }
 }
 void UART8_IRQHandler (void) {
 }
+
+
+
+/* IQR Manager --------------------------------------------------------------------*/
+
+spIRQ_CbUnit_t                   spIRQ_CbPool[USING_IRQ_POOL_SIZE];
+spIRQ_CbUnit_t*                  spIRQ_CbEntries[91];
+
+void IRQ_ManagerInit(void) {
+    memset(spIRQ_CbEntries, NULL, sizeof(spIRQ_CbEntries)/sizeof(spIRQ_CbEntries[0]));
+    for(uint16_t i=0; i<sizeof(spIRQ_CbPool)/sizeof(spIRQ_CbPool[0]); i++) {
+        spIRQ_CbPool[i] = spIRQ_CbNull;
+    }
+}
+
+spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, IRQ_Callback_t cb) {
+    /* Malloc a new callback-unit from pool */
+    spIRQ_CbUnit_t* pCb;
+    for(uint16_t i=0; i<sizeof(spIRQ_CbPool)/sizeof(spIRQ_CbPool[0]); i++) {
+        if(spIRQ_CbPool[i].irq_type == (IRQn_Type)-1) {
+            pCb = &spIRQ_CbPool[i];
+            break;
+        }
+    }
+    
+    pCb->irq_type = irq;
+    pCb->callback = cb;
+    /* Add it to corresponding callback list */
+    if(spIRQ_CbEntries[irq] == NULL) {
+        spIRQ_CbEntries[irq] = pCb;
+    } else {
+        spIRQ_CbUnit_t* pCurrCb = spIRQ_CbEntries[irq];
+        while(pCurrCb->next) pCurrCb = pCurrCb->next;
+        pCurrCb->next = pCb;
+    }
+    
+    return pCb;
+}
+
+void IRQ_Invoke(IRQn_Type irq) {
+    
+    spIRQ_CbUnit_t* pCurrCb = spIRQ_CbEntries[irq];
+    while(pCurrCb) {
+        if(pCurrCb->callback) {
+            pCurrCb->callback();
+        }
+        pCurrCb = pCurrCb->next;
+    } 
+}
+
+
+struct __IRQ_Manager_Type spIRQ_Manager = {
+    .init = IRQ_ManagerInit,
+    .registe = IRQ_Regeiste,
+    .invoke = IRQ_Invoke,
+};
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

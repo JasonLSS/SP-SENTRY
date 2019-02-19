@@ -25,7 +25,7 @@ static inline uint16_t spSPI_ReadWriteByte(SPI_TypeDef* spi, uint16_t data) {
     while(!(spi->SR & SPI_SR_TXE));
     spi->DR = data;
     retry=0;
-    while(!(spi->SR & SPI_SR_RXNE));
+    while(!(spi->SR & SPI_SR_RXNE) && retry<10000) retry++;
     return spi->DR;
 }
 

@@ -104,6 +104,7 @@ void Led_Configuration(void) {
     LED_G_OFF();
     LED_R_ON();
 }
+
 void Led8_Configuration(void) {         
     GPIO_InitTypeDef  GPIO_InitStructure;
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG , ENABLE);
@@ -133,6 +134,77 @@ void TIM6_Configuration(void) {
     TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
     
     TIM_Cmd(TIM6, ENABLE);
+}
+
+
+
+
+
+void EXTI2_IRQHandler(void) {
+    if(EXTI_GetITStatus(EXTI_Line2)) {
+//        if(spUserKey.gpio_pin.gpio->IDR & GPIO_IDR_ID1) {
+//            spUserKey.on_release = true;
+//        } else {
+//            
+//        }
+        spUserKey.on_press = true;
+        EXTI_ClearITPendingBit(EXTI_Line2);
+    }
+}
+
+spKeyController spUserKey = {
+    .on_press = false, .on_release = false, 
+    .gpio_pin = {GPIOB, GPIO_PinSource2} };
+
+#define spEXIT_LineFromPinSource(ln)        (0x0001<<(ln))
+void KEY_Configuration(void) {
+    spRCC_Set_SYSCFG();
+    GPIO_IN_Config(spUserKey.gpio_pin.gpio, 
+        spGPIO_PinFromPinSource(spUserKey.gpio_pin.pin_source), 
+        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    
+    if(spUserKey.gpio_pin.gpio==GPIOA) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOB) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOC) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOC, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOD) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOD, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOE) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOE, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOF) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOF, spUserKey.gpio_pin.pin_source); 
+    } else if(spUserKey.gpio_pin.gpio==GPIOG) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOG, spUserKey.gpio_pin.pin_source); 
+    }
+    #ifdef GPIOH
+    else if(spUserKey.gpio_pin.gpio==GPIOH) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOH, spUserKey.gpio_pin.pin_source); 
+    }
+    #endif
+    #ifdef GPIOI
+    else if(spUserKey.gpio_pin.gpio==GPIOI) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOI, spUserKey.gpio_pin.pin_source); 
+    } 
+    #endif
+    #ifdef GPIOK
+    else if(spUserKey.gpio_pin.gpio==GPIOJ) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOJ, spUserKey.gpio_pin.pin_source); 
+    } 
+    #endif
+    #ifdef GPIOK
+    else if(spUserKey.gpio_pin.gpio==GPIOK) {
+        SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOK, spUserKey.gpio_pin.pin_source); 
+    }
+    #endif
+    
+    EXTI_InitTypeDef            exit_initer;
+    exit_initer.EXTI_Line       = spEXIT_LineFromPinSource(spUserKey.gpio_pin.pin_source);
+    exit_initer.EXTI_LineCmd    = ENABLE;
+    exit_initer.EXTI_Mode       = EXTI_Mode_Interrupt;
+    exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;  // EXTI_Trigger_Rising_Falling;
+    EXTI_Init(&exit_initer);
 }
 
 

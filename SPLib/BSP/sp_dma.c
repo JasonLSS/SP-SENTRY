@@ -134,6 +134,9 @@ bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize) {
 
 
 bool DMA_Start(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len) {
+    if(len==0) {
+        return false;
+    }
     /* DMA is transfering */
     if(DMA_GetCmdStatus(stream)==ENABLE){
         return false;
@@ -152,6 +155,9 @@ bool DMA_Start(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph
 }
 
 bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len) {
+    if(len==0) {
+        return false;
+    }
     /* DMA is transfering */
     uint16_t overtime = 2000;
     DMA_Cmd(stream, DISABLE);
@@ -169,6 +175,9 @@ bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t peri
 }
 
 DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len) {
+    if(len==0) {
+        return false;
+    }
     /* Select DMA stream */
     uint8_t i, size=sizeof(spDMA_Mem2Mem)/sizeof(*spDMA_Mem2Mem);
     for(i=0; i<size; i++) {

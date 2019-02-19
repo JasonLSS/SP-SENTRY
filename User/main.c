@@ -49,8 +49,6 @@
 #include "sp_utility.h"
 #include "sp_imu.h"
 
-volatile uint8_t                uartx_buff[128];
-char                            uart6_buff[256];
 
 float frame[6];
 
@@ -74,27 +72,29 @@ int main(void)
     TASK_TimerInit();
     
     /* System init finish signal */
-    BUZZER_ON(1500); delay_ms(500); BUZZER_OFF();
+    //BUZZER_ON(1500); 
+    delay_ms(500); BUZZER_OFF();
     LED_G_ON();LED_R_OFF();
     TASK_Start();
-
+    
     __enable_irq();
     
     while(1) {
+        extern char uart_buff[256];
         const uint32_t ctime = TASK_GetMicrosecond();
         
-        if(ctime % 20 == 0) {
+        if(ctime % 10 == 0) {
 //            frame[0] = IMU_Controllers.imu_state.kalman.mag_angle[0];
 //            frame[1] = IMU_Controllers.imu_state.kalman.mag_angle[1];
 //            frame[2] = IMU_Controllers.imu_state.kalman.mag_angle[2];
 //            frame[3] = IMU_Controllers.imu_state.ahrs.gyro[0];
 //            frame[4] = IMU_Controllers.imu_state.ahrs.gyro[1];
 //            frame[5] = IMU_Controllers.imu_state.ahrs.gyro[2];
-            uint8_t size = sprintf(uart6_buff, "%f,%f,%f\r\n", 
-                IMU_Controllers.imu_state.kalman.euler.roll, 
-                IMU_Controllers.imu_state.kalman.euler.pitch,
-                IMU_Controllers.imu_state.kalman.euler.yaw);
-            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
+//            uint8_t size = sprintf(uart_buff, "%f,%f,%f\r\n", 
+//                IMU_Controllers.imu_state.kalman.euler.roll, 
+//                IMU_Controllers.imu_state.kalman.euler.pitch,
+//                IMU_Controllers.imu_state.kalman.euler.yaw);
+//            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_buff, (uint32_t)&UART7->DR, size);
         }
         
         

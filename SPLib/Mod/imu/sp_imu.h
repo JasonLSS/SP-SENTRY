@@ -86,6 +86,7 @@
 typedef struct {
     float q[4];
     float gyro[3];
+    float accel_0[3];
     float accel[3];
     float mag[3];
     float temp;

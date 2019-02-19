@@ -454,12 +454,12 @@ struct IMU_Controllers_Type IMU_Controllers = {
         .R= {
             0.5f, 0, 0,
             0, 0.5f, 0,
-            0, 0, 0.01f,
+            0, 0, 0.05f,
         },
         .Q= {
             0.005f, 0, 0,
             0, 0.005f, 0,
-            0, 0, 0.001f
+            0, 0, 0.01f
         },
     },
     .imu_state.kalman.pass_filter = {

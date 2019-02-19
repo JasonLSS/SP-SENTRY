@@ -24,7 +24,7 @@ typedef union {
 
 
 // 位置信息(被其他结构体调用), 定位数据单位为米，小数点后两位为有效数据。
-typedef __packed struct {
+typedef packed_struct {
     uint8_t flag;
     float x;
     float y;
@@ -33,7 +33,7 @@ typedef __packed struct {
 }tLocData;
 
 // 比赛进程信息（0x0001）, 发送频率为50Hz。 总36字节
-typedef __packed struct {
+typedef packed_struct {
     uint16_t stageRemianTime;
     uint8_t gameProgress;
     uint8_t robotLevel;
@@ -53,20 +53,20 @@ typedef __packed struct {
 其它暂作保留  
     4-7bits: 血量变化类型  
 */
-typedef __packed struct {
+typedef packed_struct {
     uint8_t armorType:4;  // 标识装甲ID 
     uint8_t hurtType:4;  // 血量变化类型
 }extRobotHurt_t;
 
 // 实时射击信息(0x0003) 总共6字节
-typedef __packed struct {
+typedef packed_struct {
     uint8_t bulletType;  // 弹丸类型
     uint8_t bulletFreq;  // 弹丸射频    
     float bulletSpeed;  // 弹丸射速
 }extShootData_t;
 
 // 实时功率热量数据（0x0004）
-typedef __packed struct {
+typedef packed_struct {
     float chassisVolt;
     float chassisCurrent;
     float chassisPower;
@@ -76,7 +76,7 @@ typedef __packed struct {
 }extPowerHeatData_t;
 
 //机器人位置和枪口朝向数据(0x0008)
-typedef __packed struct {
+typedef packed_struct {
     float x;
     float y;
     float z;
@@ -87,7 +87,7 @@ typedef __packed struct {
 
 //1.2.4 赛场信息(0x0005)
 //发送速率：2Hz数字节偏移大小说明，总12字节
-typedef __packed struct  
+typedef packed_struct  
 {  
      uint8_t RobotColor :2;  //0x0 :该机器人为红方  //0x1 :该机器人为蓝方
      uint8_t RedBaseSta :2;  //0x0   : 红方基地普通状态  //0x1  : 基地无敌
@@ -146,7 +146,7 @@ typedef __packed struct
 // 学生上传自定义数据(0x0006)
 // 支持学生上传3个float类型的数据. 需要按照协议来发送.
 // 发送频率最大200Hz.
-typedef __packed struct {
+typedef packed_struct {
     float data1;
     float data2;
     float data3;

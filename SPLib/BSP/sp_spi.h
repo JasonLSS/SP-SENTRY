@@ -92,10 +92,14 @@ static SPI_PinsType SPI5_Pins = {
 static SPI_PinsType SPI6_Pins = {
     SPI6,
 };
+/** @} */
 
 
-
-
+/** @defgroup SPI_APIs
+  * @brief    SPI user operations
+  * @ingroup  SPI
+  * @{
+  */
 extern struct SPI_Controllers_Type {
     uint16_t (*read_write_b)(SPI_TypeDef* spi, uint16_t data);
     uint16_t (*write_b)(SPI_TypeDef* spi, uint16_t data);

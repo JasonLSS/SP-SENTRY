@@ -39,8 +39,8 @@ uint8_t small_power_flag = 0;
 static const float yaw_kp_0 = 8.0f;
 static const float yaw_ki_0 = 10.0f;
 
-static const float pitch_kp_0 = 5.0f;
-static const float pitch_ki_0 = 10.0f;
+static const float pitch_kp_0 = 2.0f;
+static const float pitch_ki_0 = 3.0f;
 
 void GIMBAL_ControlInit(void) {
     /* Init new motor */
@@ -82,13 +82,15 @@ void GIMBAL_ControlInit(void) {
         CAN_RegistTransmitter(CAN1, &gm_data.transmitter);
     }
 
-    gimbal_pitch_motor = CHASIS_EnableMotor(Motor205, GM_3510, true);
+//    gimbal_pitch_motor = CHASIS_EnableMotor(Motor205, GM_3510, true);
     // PID_SetGains(gimbal_pitch_motor->control.speed_pid, 1.2f, 0, 0);
+    gimbal_pitch_motor = CHASIS_EnableMotor(Motor206, RM_2006_P96, true);
     gimbal_pitch_motor->implement.set_speed_pid(gimbal_pitch_motor, NULL);
     gimbal_pitch_motor->control.position_pid->intergration_separation = 100;
     gimbal_pitch_motor->control.position_pid->intergration_limit = 400;
-    gimbal_pitch_motor->control.position_pid->output_limit = 8000;
-    PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0*1.5f, 0.4f);
+    gimbal_pitch_motor->control.position_pid->output_limit = 5000;
+    gimbal_pitch_motor->control.output_limit = 7000;
+    PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0*1.5f, 0.f);
 
 }
 
@@ -106,13 +108,13 @@ void GIMBAL_ControlLooper(void) {
 //        gimbal_yaw_motor->control.position_pid->Ki = yaw_ki_0;
 //    }
     
-    if(fabs(gimbal_pitch_motor->state.angle - GimbalController.pitch_set) < 1.f/0.0439f) {
-        gimbal_pitch_motor->control.position_pid->Kp = 0.6f*pitch_kp_0;
-        gimbal_pitch_motor->control.position_pid->Ki = 1.5f*pitch_ki_0;
-    } else {
-        gimbal_pitch_motor->control.position_pid->Kp = pitch_kp_0;
-        gimbal_pitch_motor->control.position_pid->Ki = pitch_ki_0;
-    }
+//    if(fabs(gimbal_pitch_motor->state.angle - GimbalController.pitch_set) < 1.f/0.0439f) {
+//        gimbal_pitch_motor->control.position_pid->Kp = 0.6f*pitch_kp_0;
+//        gimbal_pitch_motor->control.position_pid->Ki = 1.5f*pitch_ki_0;
+//    } else {
+//        gimbal_pitch_motor->control.position_pid->Kp = pitch_kp_0;
+//        gimbal_pitch_motor->control.position_pid->Ki = pitch_ki_0;
+//    }
     
     gimbal_yaw_motor->implement.set_target(gimbal_yaw_motor, GimbalController.yaw_set);         // Yaw
     gimbal_pitch_motor->implement.set_target(gimbal_pitch_motor, GimbalController.pitch_set);   // Pitch
@@ -145,36 +147,37 @@ void GIMBAL_UpdateYaw(float target_yaw) {
 #define MIDDLE_YAW          4700
 #define MIDDLE_PITCH        7620
 bool GIMBAL_MiddleLooper(uint32_t tick) {
-    static uint16_t pass_flag = 0;
-    if(pass_flag >= 800) {
-        gimbal_pitch_motor->state.angle = 0;
-        gimbal_pitch_motor->control.target = 0;
-        gimbal_pitch_motor->control.position_pid->Kp = pitch_kp_0;
-        gimbal_pitch_motor->control.position_pid->Ki = pitch_ki_0;
-        
-        gimbal_yaw_motor->state.angle = 0;
-        gimbal_yaw_motor->control.target = 0;
-        gimbal_yaw_motor->control.position_pid->Kp = yaw_kp_0;
-        gimbal_yaw_motor->control.position_pid->Ki = yaw_ki_0;
-        return true;
-    } else {
-        //if(abs(gimbal_pitch_motor->state.__motor_angel_curr - MIDDLE_PITCH)<5.f/0.0439f &&
-        if(abs(gimbal_yaw_motor->state.__motor_angel_curr - MIDDLE_YAW)<1.f/0.0439f ) {
-            pass_flag ++;
-        } else {
-            pass_flag = 0;
-        }
-        
-        if(tick%10==1) {
-            if(gimbal_yaw_motor->state.__motor_angel_last!=-1) {
-                GIMBAL_UpdateYaw(MIDDLE_YAW - gimbal_yaw_motor->state.__motor_angel_first);
-            }
-            if(gimbal_pitch_motor->state.__motor_angel_last!=-1) {
-                GIMBAL_UpdatePitch(MIDDLE_PITCH - gimbal_pitch_motor->state.__motor_angel_first);
-            }
-        }
-    }
-    return false;
+    return true;
+//    static uint16_t pass_flag = 0;
+//    if(pass_flag >= 800) {
+//        gimbal_pitch_motor->state.angle = 0;
+//        gimbal_pitch_motor->control.target = 0;
+//        gimbal_pitch_motor->control.position_pid->Kp = pitch_kp_0;
+//        gimbal_pitch_motor->control.position_pid->Ki = pitch_ki_0;
+//        
+//        gimbal_yaw_motor->state.angle = 0;
+//        gimbal_yaw_motor->control.target = 0;
+//        gimbal_yaw_motor->control.position_pid->Kp = yaw_kp_0;
+//        gimbal_yaw_motor->control.position_pid->Ki = yaw_ki_0;
+//        return true;
+//    } else {
+//        //if(abs(gimbal_pitch_motor->state.__motor_angel_curr - MIDDLE_PITCH)<5.f/0.0439f &&
+//        if(abs(gimbal_yaw_motor->state.__motor_angel_curr - MIDDLE_YAW)<1.f/0.0439f ) {
+//            pass_flag ++;
+//        } else {
+//            pass_flag = 0;
+//        }
+//        
+//        if(tick%10==1) {
+//            if(gimbal_yaw_motor->state.__motor_angel_last!=-1) {
+//                GIMBAL_UpdateYaw(MIDDLE_YAW - gimbal_yaw_motor->state.__motor_angel_first);
+//            }
+//            if(gimbal_pitch_motor->state.__motor_angel_last!=-1) {
+//                GIMBAL_UpdatePitch(MIDDLE_PITCH - gimbal_pitch_motor->state.__motor_angel_first);
+//            }
+//        }
+//    }
+//    return false;
 }
 
 
