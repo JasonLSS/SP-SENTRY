@@ -137,83 +137,65 @@ void TIM6_DAC_IRQHandler(void)
 }
 
 
-#include "sp_rc.h"
-void USART1_IRQHandler (void) {
-    if(USART_GetITStatus(USART1, USART_IT_IDLE)) {
-        RC_OnBusIdle();
-        USART_ClearITPendingBit(USART1, USART_IT_IDLE);
+void DMA2_Stream5_IRQHandler(void) {
+    if(DMA_GetITStatus(DMA2_Stream5, DMA_IT_TCIF5)) {
+        spIRQ_Manager.invoke(DMA2_Stream5_IRQn);
+        DMA_ClearFlag(DMA2_Stream5, DMA_IT_TCIF5);
+        DMA_ClearITPendingBit(DMA2_Stream5, DMA_IT_TCIF5);
     }
 }
 
-#include "Auto_aim.h"
-// View-USART2
-static uint8_t __view_buffer[128];
-UsartBuffer_t view_buffer = {
-    .buffer = __view_buffer,
-    .size = 128,
-    .curr_ptr = 0,
-    .last_ptr = 0
-};
+
+
+void USART1_IRQHandler (void) {
+    if(USART_GetITStatus(USART1, USART_IT_IDLE)) {
+        // RC_OnBusIdle();
+        spIRQ_Manager.invoke(UART7_IRQn);
+        USART_ClearITPendingBit(USART1, USART_IT_IDLE);
+    }
+}
 void USART2_IRQHandler (void) {
     if(USART_GetITStatus(USART2, USART_IT_IDLE)) {
-//        uint16_t size;
-//        uint8_t buffer[128];
-//        view_buffer.curr_ptr = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
-//        if(view_buffer.curr_ptr > view_buffer.last_ptr) {
-//            size = view_buffer.curr_ptr - view_buffer.last_ptr;
-//            DMA_CopyMem2Mem(
-//                (uint32_t)buffer, 
-//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
-//                size);
-//        } else if(view_buffer.curr_ptr < view_buffer.last_ptr) {
-//            size = view_buffer.size - view_buffer.last_ptr;
-//            DMA_CopyMem2Mem(
-//                (uint32_t)buffer, 
-//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
-//                size);
-//            DMA_CopyMem2Mem(
-//                (uint32_t)(&buffer[size]), 
-//                (uint32_t)(view_buffer.buffer), 
-//                view_buffer.curr_ptr);
-//            size += view_buffer.curr_ptr;
-//        }
-//        view_buffer.last_ptr = view_buffer.curr_ptr;
-    
-        uint16_t size = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
-        DMA_Restart(spDMA_USART2_rx_stream, (uint32_t)view_buffer.buffer, 
-             (uint32_t)&USART2->DR, view_buffer.size);
-        Auto_aim(view_buffer.buffer, size);
-        
+        spIRQ_Manager.invoke(USART2_IRQn);
         USART_ClearITPendingBit(USART2, USART_IT_IDLE);
     }
 }
 void USART3_IRQHandler (void) {
+    if(USART_GetITStatus(USART3, USART_IT_IDLE)) {
+        spIRQ_Manager.invoke(USART3_IRQn);
+        USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+    }
 }
 void UART4_IRQHandler (void) {
+    if(USART_GetITStatus(UART4, USART_IT_IDLE)) {
+        spIRQ_Manager.invoke(UART4_IRQn);
+        USART_ClearITPendingBit(UART4, USART_IT_IDLE);
+    }
 }
 void UART5_IRQHandler (void) {
-}
-
-
-extern uint8_t referee_buffer[128];
-void Referee_OnBusIdle(void) {
-    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
+    if(USART_GetITStatus(UART5, USART_IT_IDLE)) {
+        spIRQ_Manager.invoke(UART5_IRQn);
+        USART_ClearITPendingBit(UART5, USART_IT_IDLE);
+    }
 }
 void USART6_IRQHandler (void) {
     if(USART_GetITStatus(USART6, USART_IT_IDLE)) {
-        Referee_OnBusIdle();
+        spIRQ_Manager.invoke(USART6_IRQn);
+        // Referee_OnBusIdle();
         USART_ClearITPendingBit(USART6, USART_IT_IDLE);
     }
 }
 void UART7_IRQHandler (void) {
     if(USART_GetITStatus(UART7, USART_IT_IDLE)) {
-        
         spIRQ_Manager.invoke(UART7_IRQn);
-        
         USART_ClearITPendingBit(UART7, USART_IT_IDLE);
     }
 }
 void UART8_IRQHandler (void) {
+    if(USART_GetITStatus(UART8, USART_IT_IDLE)) {
+        spIRQ_Manager.invoke(UART8_IRQn);
+        USART_ClearITPendingBit(UART8, USART_IT_IDLE);
+    }
 }
 
 

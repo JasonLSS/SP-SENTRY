@@ -423,9 +423,47 @@ void Auto_aim(u8 *rx_buf,int len)
     if(auto_aim_flag == 0x00 && small_power_flag == 0xFF)
     { 
         if(if_newframe == 1) {
-            GIMBAL_Update((fabs(fram.pitch)<7.0? fram.pitch :(fram.pitch>0 ? 7.0 : -7.0))/0.04394f,
+            spGIMBAL_Controller.user.update_target((fabs(fram.pitch)<7.0? fram.pitch :(fram.pitch>0 ? 7.0 : -7.0))/0.04394f,
                 -(fabs(fram.yaw)< 16.0?  fram.yaw :( fram.yaw>0 ? 16.0:-16.0))/0.04394f); 
         }
     }
     #endif
 }
+
+
+static uint8_t __view_buffer[128];
+UsartBuffer_t view_buffer = {
+    .buffer = __view_buffer,
+    .size = 128,
+    .curr_ptr = 0,
+    .last_ptr = 0
+};
+void Autoaim_USART_Interface(void) {
+    uint16_t size = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
+    DMA_Restart(spDMA_USART2_rx_stream, (uint32_t)view_buffer.buffer, 
+         (uint32_t)&USART2->DR, view_buffer.size);
+    Auto_aim(view_buffer.buffer, size);
+}
+
+//        uint16_t size;
+//        uint8_t buffer[128];
+//        view_buffer.curr_ptr = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
+//        if(view_buffer.curr_ptr > view_buffer.last_ptr) {
+//            size = view_buffer.curr_ptr - view_buffer.last_ptr;
+//            DMA_CopyMem2Mem(
+//                (uint32_t)buffer, 
+//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
+//                size);
+//        } else if(view_buffer.curr_ptr < view_buffer.last_ptr) {
+//            size = view_buffer.size - view_buffer.last_ptr;
+//            DMA_CopyMem2Mem(
+//                (uint32_t)buffer, 
+//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
+//                size);
+//            DMA_CopyMem2Mem(
+//                (uint32_t)(&buffer[size]), 
+//                (uint32_t)(view_buffer.buffer), 
+//                view_buffer.curr_ptr);
+//            size += view_buffer.curr_ptr;
+//        }
+//        view_buffer.last_ptr = view_buffer.curr_ptr;

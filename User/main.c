@@ -48,6 +48,7 @@
 #include "sp_conf.h"
 #include "sp_utility.h"
 #include "sp_imu.h"
+#include "gimbal.h"
 
 
 float frame[6];
@@ -61,6 +62,7 @@ void Power_Configuration(void)
 }
 
 int main(void)
+
 {
     __disable_irq();
     
@@ -72,7 +74,7 @@ int main(void)
     TASK_TimerInit();
     
     /* System init finish signal */
-    //BUZZER_ON(1500); 
+    BUZZER_ON(1500); 
     delay_ms(500); BUZZER_OFF();
     LED_G_ON();LED_R_OFF();
     TASK_Start();
@@ -80,7 +82,7 @@ int main(void)
     __enable_irq();
     
     while(1) {
-        extern char uart_buff[256];
+        extern char uart_tx_buff[256];
         const uint32_t ctime = TASK_GetMicrosecond();
         
         if(ctime % 10 == 0) {
@@ -90,11 +92,10 @@ int main(void)
 //            frame[3] = IMU_Controllers.imu_state.ahrs.gyro[0];
 //            frame[4] = IMU_Controllers.imu_state.ahrs.gyro[1];
 //            frame[5] = IMU_Controllers.imu_state.ahrs.gyro[2];
-//            uint8_t size = sprintf(uart_buff, "%f,%f,%f\r\n", 
-//                IMU_Controllers.imu_state.kalman.euler.roll, 
-//                IMU_Controllers.imu_state.kalman.euler.pitch,
-//                IMU_Controllers.imu_state.kalman.euler.yaw);
-//            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_buff, (uint32_t)&UART7->DR, size);
+            uint8_t size = sprintf(uart_tx_buff, "%f,%d\r\n", 
+                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle,
+                spGIMBAL_Controller._target.gimbal_pitch_motor->state.speed);
+            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
         }
         
         

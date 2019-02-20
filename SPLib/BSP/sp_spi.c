@@ -40,7 +40,7 @@ static inline void spSPI_ChipRelease(SPI_PinsType* spi_pins)  {
 
 
 
-struct SPI_Controllers_Type spSPI_Controllers = {
+struct __SPI_Manager_Type spSPI_Manager = {
     .read_write_b = spSPI_ReadWriteByte,
     .write_b = spSPI_Write,
     .select = spSPI_ChipSelect,
@@ -161,7 +161,7 @@ void SPI4_Init(void){
     
     GPIO_OUT_Config(SPI4_Pins.nss.gpio, spGPIO_PinFromPinSource(SPI4_Pins.nss.pin_source), GPIO_OType_PP, 
         GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    spSPI_Controllers.release(&SPI4_Pins);
+    spSPI_Manager.release(&SPI4_Pins);
     
     /* f_APB2 = 84MHz, f_MPU_SCLK_Max = 1MHz */
     SPI4_Pins.spi_initer.SPI_BaudRatePrescaler    = SPI_BaudRatePrescaler_128;

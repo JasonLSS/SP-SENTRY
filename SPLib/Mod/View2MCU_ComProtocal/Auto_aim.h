@@ -4,6 +4,7 @@
 #include "frame.h"
 
 void Auto_aim(uint8_t *rx_buf,int len);
+void Autoaim_USART_Interface(void);
 
 extern double view_ch2;
 extern double view_ch3;

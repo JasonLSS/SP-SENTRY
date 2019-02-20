@@ -141,8 +141,8 @@ void packFrame1(u8 *buff,frame *fram)
 ****************************************************************************************/
 void sendtoComputer(void)
 {
-    sendtoCom_frame.yaw = gimbal_yaw_motor->state.angle*0.0439f;
-    sendtoCom_frame.pitch = gimbal_pitch_motor->state.angle*0.0439f;
+    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
+    sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
     packFrame1(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
@@ -162,8 +162,8 @@ void sendtoComputerInit(void)
     sendtoCom_frame.head[0]=0xff;
     sendtoCom_frame.head[1]=0xff;
     
-    sendtoCom_frame.yaw = gimbal_yaw_motor->state.angle*0.0439f;
-    sendtoCom_frame.pitch = gimbal_pitch_motor->state.angle*0.0439f;
+    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
+    sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
     

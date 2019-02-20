@@ -40,6 +40,11 @@
     #error "Please specify SPxx in your porject!"
 #endif
 
+#if !defined(SP_FANTRY) && !defined(SP_HERO) && !defined(SP_ENGENEER) \
+    && !defined(SP_SENTRY) && !defined(SP_TEST)
+    #error "Please specify your robot type from SP_FANTRY, SP_HERO, SP_ENGENEER, SP_SENTRY or SP_TEST!"
+#endif
+
 #include "stm32f4xx.h"
 #include "stm32f4xx_conf.h"
 #include <core_cm4.h>
@@ -74,45 +79,20 @@
   * @note   42mm using motor 203 and 204, 17mm using PWM and motor 201
   */
 //  <h> Test Module Select
-//  <c1> USING_TEST42
-//    <i> Using 42mm bullet test part
-//#define USING_TEST42
-//  </c>
-//  <c1> USING_TEST17
-//    <i> Using 17mm bullet test part
-//#define USING_TEST17
-//  </c>
 //  <c1> USING_CHASIS
-//    <i> USING chasis test part
+//    <i> USING chasis part
 //#define USING_CHASIS
 //  </c>
-//  <c1> USING_SENTRY
-//    <i> USING sentry test part
-//#define USING_SENTRY
-//  </c>
-//  <c1> USING_GIMBAL
-//    <i> USING DM6020 test part
-//#define USING_GIMBAL
-//  </c>
+//  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
+//       <i> Selects Active Bits in Base Address
+#define USING_GIMBAL_MODE       0
 //  <c1> USING_USB
 //    <i> Enable USB
 #define USING_USB
 //  </c>
-//  <c1> USING_GM3510Test
-//    <i> Enable GM3510 test
-//#define USING_GM3510Test
-//  </c>
-//  <c1> USING_MPU_DMP
-//    <i> Enable MPU with DMP
-//#define USING_MPU_DMP
-//  </c>
 //  <c1> USING_OS
 //    <i> Enable FreeRTOS
 //#define USING_OS
-//  </c>
-//  <c1> USING_MOTOR_TEST
-//    <i> Enable FreeRTOS
-#define USING_MOTOR_TEST
 //  </c>
 //  </h>
 

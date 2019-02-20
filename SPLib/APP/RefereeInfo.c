@@ -238,6 +238,12 @@ void float2bytes(float chosen_value, uint8_t * res_message) {
 }
 
 
+void Referee_OnBusIdle(void) {
+    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
+    Referee_OnBusIdle();
+}
+
+
 // 比赛机器人状态（0x0001）, 发送频率为10Hz。
 void extGameRobotState_interpret(uint8_t * extGameRobotState_Message) {
       extGameRobotState.stageRemianTime = _bytes2u16(&extGameRobotState_Message[0]);
@@ -246,7 +252,6 @@ void extGameRobotState_interpret(uint8_t * extGameRobotState_Message) {
         extGameRobotState.remainHP = _bytes2u16(&extGameRobotState_Message[4]);
       extGameRobotState.maxHP = _bytes2u16(&extGameRobotState_Message[6]);
 }
-
 
 
  //伤害数据(0x0002)，受到伤害时发送

@@ -118,16 +118,6 @@ void __RC_DataClear(void) {
     RC_Manager.cvt_rc_data.key.bits = 0;
 }
 
-void DMA2_Stream5_IRQHandler(void) {
-    if(DMA_GetITStatus(DMA2_Stream5, DMA_IT_TCIF5)) {
-        
-        __RC_DataConvert();
-        
-        DMA_ClearFlag(DMA2_Stream5, DMA_IT_TCIF5);
-        DMA_ClearITPendingBit(DMA2_Stream5, DMA_IT_TCIF5);
-    }
-}
-
 void RC_OnError(RC_InfoType info) {
     if((RC_InfoType)info == RC_WRONG_DATA) {
         LED8_BIT_ON(LED8_BIT1);
@@ -146,11 +136,9 @@ void RC_OnRecovery(void) {
 }
 
 void RC_OnBusIdle(void) {
-    
     /* Start RC DMA and stop USART_DELE IRQ */
     NVIC_IRQEnable(DMA2_Stream5_IRQn, 1, 0);
     USART_ITConfig(USART1, USART_IT_IDLE, DISABLE);
-    
 }
 
 void RC_ReceiverChecker(void) {
@@ -189,6 +177,10 @@ bool RC_ReceiverInit(void) {
     /* For first frame detecting */
     USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
     USART_Cmd(USART1, ENABLE);
+    
+    /* Registe IRQ callbacks */
+    spIRQ_Manager.registe(USART1_IRQn, RC_OnBusIdle);
+    spIRQ_Manager.registe(DMA2_Stream5_IRQn, __RC_DataConvert);
     
     return true;
 }

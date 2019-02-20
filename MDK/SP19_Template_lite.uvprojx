@@ -336,9 +336,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP19</Define>
+              <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP19,SP_FANTRY</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\View2MCU_ComProtocal</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -508,14 +508,14 @@
           <GroupName>View</GroupName>
           <Files>
             <File>
-              <FileName>frame.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\View2MCU_ComProtocal\frame.c</FilePath>
-            </File>
-            <File>
               <FileName>Auto_aim.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\SPLib\View2MCU_ComProtocal\Auto_aim.c</FilePath>
+              <FilePath>..\SPLib\Mod\View2MCU_ComProtocal\Auto_aim.c</FilePath>
+            </File>
+            <File>
+              <FileName>frame.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\View2MCU_ComProtocal\frame.c</FilePath>
             </File>
           </Files>
         </Group>

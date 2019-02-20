@@ -157,23 +157,6 @@ void RC_ReceiverChecker(void);
   */
 
 
-/** @defgroup   Callbacks
-  * @note       Remote Controller Event Callbacks
-  * @ingroup    RC
-  * @{
-  */
-
-/**
-  * @brief  On USART bus idle state
-  * @note   Used in IRQ_HADNLER
-  */ 
-void RC_OnBusIdle(void);
-
-/**
-  * @}
-  */
-
-
 /** @defgroup   UserAPI
   * @note       Remote Controller  Interface
   * @ingroup    RC

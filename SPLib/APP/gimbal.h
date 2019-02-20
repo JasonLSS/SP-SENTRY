@@ -34,17 +34,33 @@
 extern uint8_t auto_aim_flag;
 extern uint8_t small_power_flag;
 
-extern MOTOR_CrtlType_CAN* gimbal_yaw_motor;
-extern MOTOR_CrtlType_CAN* gimbal_pitch_motor;
-
 #define RC_PARAM        8192.f
 
-void GIMBAL_ControlInit(void);
-void GIMBAL_ControlLooper(void);
-void GIMBAL_UpdatePitch(float target_pitch);
-void GIMBAL_UpdateYaw(float target_yaw);
-void GIMBAL_Update(float target_pitch, float target_yaw);
-bool GIMBAL_MiddleLooper(uint32_t tick);
+/** @defgroup SPI_APIs
+  * @brief    SPI user operations
+  * @ingroup  SPI
+  * @{
+  */
+extern struct __GIMBAL_Controller_Type {
+    struct {
+        MOTOR_CrtlType_CAN*         gimbal_yaw_motor;
+        MOTOR_CrtlType_CAN*         gimbal_pitch_motor;
+        float                       yaw_set;
+        float                       pitch_set;
+    } _target;
+    struct {
+        void (*init)(void);                                             /*!< Initialize system gimbal controller. */
+        void (*looper)(void);                                           /*!< System gimbal controller looper. */
+        bool (*regression)(uint32_t tick);                              /*!< Make gimbal return to its start state. */
+    } _system;
+    
+    struct {
+        void (*update_target_pitch)(float target_pitch);                /*!< Update gimbal pitch target. */
+        void (*update_target_yaw)(float target_yaw);                    /*!< Update gimbal yaw target. */
+        void (*update_target)(float target_pitch, float target_yaw);    /*!< Update gimbal pitch and yaw target. */
+    } user;
+} spGIMBAL_Controller;
+/** @} */
 
 #ifdef __cplusplus
 }

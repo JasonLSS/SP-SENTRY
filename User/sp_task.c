@@ -106,17 +106,7 @@ volatile uint32_t           task_counter = 0;
 bool                        task_inited = false;
 //char                        uart_rx_buff[256] = {0x00};
 char                        uart_tx_buff[256] = {0x00};
-extern char uart6_buff[256];
-#ifdef USING_MOTOR_TEST
-packed_union {
-    uint8_t bytes[24];
-    packed_struct {
-        float pkp, pki, pkd;
-        float skp, ski, skd;
-        bool flushed;
-    } data;
-} MOTOR_ControllReg;
-
+extern char                 uart6_buff[256];
 struct {
     uint8_t     buffer[256];
     uint16_t    capacity;
@@ -127,61 +117,6 @@ struct {
     0, 0, 0, 0
 };
 
-float tar_spd = 0.f;
-extern spDMA_SelectorType spDMA_Mem2Mem[];
-void motor_recevier(void) {
-    
-//    extern char uart_rx_buff[256];
-//    static uint8_t curr_ptr = 0, last_ptr = 0;
-//    curr_ptr = 256 - spDMA_UART7_rx_stream->NDTR;
-//    if(curr_ptr<last_ptr) {
-//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff[last_ptr], (uint32_t)&UART7->DR, sizeof(uart_rx_buff)-last_ptr);
-//        while(DMA_GetCmdStatus(spDMA_UART7_tx_stream)==ENABLE);
-//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff, (uint32_t)&UART7->DR, curr_ptr);
-//    } else if(curr_ptr>last_ptr) {
-//        DMA_Start(spDMA_UART7_tx_stream, (uint32_t)&uart_rx_buff[last_ptr], (uint32_t)&UART7->DR, curr_ptr-last_ptr);
-//    }
-//    last_ptr = curr_ptr;
-    
-//    USART_Transfer.curr_ptr = USART_Transfer.capacity - spDMA_UART7_rx_stream->NDTR;
-//    uint8_t size;
-//    if(USART_Transfer.curr_ptr < USART_Transfer.last_ptr) {
-//        USART_Transfer.size0 = USART_Transfer.capacity - USART_Transfer.last_ptr;
-//        USART_Transfer.size1 = USART_Transfer.curr_ptr;
-//    } else if(USART_Transfer.curr_ptr > USART_Transfer.last_ptr) {
-//        USART_Transfer.size0 = USART_Transfer.curr_ptr - USART_Transfer.last_ptr;
-//        USART_Transfer.size1 = 0;
-//    }
-//    USART_Transfer.last_ptr = USART_Transfer.curr_ptr;
-    
-    USART_Transfer.curr_ptr = USART_Transfer.capacity - spDMA_UART7_rx_stream->NDTR;
-    uint8_t size;
-    if(USART_Transfer.curr_ptr < USART_Transfer.last_ptr) {
-        uint8_t size0 = USART_Transfer.capacity - USART_Transfer.last_ptr;
-        size = size0 + USART_Transfer.curr_ptr;
-        
-//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size0);
-//        while(DMA_GetCmdStatus(spDMA_Mem2Mem[0].stream)==ENABLE);
-//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)&MOTOR_ControllReg.bytes[size0], (uint32_t)&uart_rx_buff, curr_ptr);
-//        DMA_Stream_TypeDef* stream =
-//            DMA_CopyMem2Mem((uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size0);
-//        while(DMA_GetCmdStatus(stream)==ENABLE);
-//        DMA_CopyMem2Mem((uint32_t)&MOTOR_ControllReg.bytes[size0], (uint32_t)&uart_rx_buff, curr_ptr);
-        memcpy(MOTOR_ControllReg.bytes, &USART_Transfer.buffer[USART_Transfer.last_ptr], size0);
-        memcpy(&MOTOR_ControllReg.bytes[size0], USART_Transfer.buffer, USART_Transfer.curr_ptr);
-        memset(&MOTOR_ControllReg.bytes[size], 0, sizeof(MOTOR_ControllReg.bytes)-size);
-        MOTOR_ControllReg.data.flushed = true;
-    } else if(USART_Transfer.curr_ptr > USART_Transfer.last_ptr) {
-        size = USART_Transfer.curr_ptr - USART_Transfer.last_ptr;
-//        DMA_Start(spDMA_Mem2Mem[0].stream, (uint32_t)&MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size);
-//        DMA_CopyMem2Mem((uint32_t)MOTOR_ControllReg.bytes, (uint32_t)&uart_rx_buff[last_ptr], size);
-        memcpy(MOTOR_ControllReg.bytes, &USART_Transfer.buffer[USART_Transfer.last_ptr], size);
-        memset(&MOTOR_ControllReg.bytes[size], 0, sizeof(MOTOR_ControllReg.bytes)-size);
-        MOTOR_ControllReg.data.flushed = true;
-    }
-    USART_Transfer.last_ptr = USART_Transfer.curr_ptr;
-}
-#endif
 
 /** @defgroup Task_Initialization_and_Configuration_Functions
   * @brief    Implement member functions for @ref MOTOR_CrtlType
@@ -224,8 +159,6 @@ inline void TASK_Start(void) {
 }
 
 
-
-
 /**
   * @brief  Init modules in system layer control
   * @note   User CANNOT involve this functions
@@ -260,7 +193,6 @@ void TASK_GlobalInit() {
         USART_RX_Config(UART7, 115200);
         DMA_USART_TX_Config(UART7);
         DMA_USART_RX_Config(UART7, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
-        
         USART_ITConfig(UART7, USART_IT_IDLE, ENABLE);
         USART_Cmd(UART7, ENABLE);
 
@@ -282,21 +214,39 @@ void TASK_GlobalInit() {
         MOTOR_ControlInit();
         CHASIS_ControlInit();
         
-        // Enable Remote Controller Receiver
+        /* Enable Remote Controller Receiver */
         RC_ReceiverInit();
         
-        // IMU module init
+        /* IMU module init */
         IMU_Controllers.operations.init();
         
+//        /* Registe autoaims to USART2 */
+//        /* For view communication via USART2 */
+//    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+//        extern UsartBuffer_t view_buffer;
+//        USART_RX_Config(USART2, 115200);
+//        DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer, view_buffer.size, false);
+//        
+//        USART_TX_Config(USART2, 115200);
+//        DMA_USART_TX_Config(USART2);
+//        
+//        USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
+//        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
+//        DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
+//        USART_Cmd(USART2, ENABLE);
+//        spIRQ_Manager.registe(USART2_IRQn, Autoaim_USART_Interface);
+//    #endif
+    
+        /* ADI IMU */
 //        extern void SPI4_Init(void);
 //        SPI4_Init();
 //        delay_ms(1);
 //        uint16_t prod_id[24];
 //        
 //        for(uint8_t i=0; i<24; i++) {
-//            spSPI_Controllers.select(&SPI4_Pins);
-//            prod_id[i] = spSPI_Controllers.read_write_b(SPI4, 0x7200);
-//            spSPI_Controllers.release(&SPI4_Pins);
+//            spSPI_Manager.select(&SPI4_Pins);
+//            prod_id[i] = spSPI_Manager.read_write_b(SPI4, 0x7200);
+//            spSPI_Manager.release(&SPI4_Pins);
 //            delay_us(20);
 //        }
         
@@ -310,33 +260,21 @@ void TASK_GlobalInit() {
       */
     {
         
-    #ifdef USING_GIMBAL
-        /* For view communication via USART2 */
-        extern UsartBuffer_t view_buffer;
-        USART_RX_Config(USART2, 115200);
-        DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer, view_buffer.size, false);
-        
-        USART_TX_Config(USART2, 115200);
-        DMA_USART_TX_Config(USART2);
-        
-        USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
-        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
-        DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
-        USART_Cmd(USART2, ENABLE);
-        
-        GIMBAL_ControlInit();
+    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE>0
+        spGIMBAL_Controller._system.init();
     #endif
         
-    #ifdef USING_GM3510Test
-        MOTOR_CrtlType_CAN*         gm3510;
-        gm3510 = CHASIS_EnableMotor(Motor205, GM_3510, true);
-        // PID_SetGains(gm3510->control.speed_pid, 1.2f, 0, 0);
-        gm3510->implement.set_speed_pid(gm3510, NULL);
-        gm3510->control.position_pid->intergration_separation = 100;
-        gm3510->control.position_pid->intergration_limit = 400;
-        gm3510->control.position_pid->output_limit = 8000;
-        PID_SetGains(gm3510->control.position_pid, 4.f, 10.0f, 0.4f);
-    #endif
+        MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor207, RM_2006_P36, false);
+
+        if(motor201) {
+            motor201->control.speed_pid->Kp = 3.f;
+            motor201->control.speed_pid->Ki = 6.f;
+            motor201->control.speed_pid->Kd = 0;
+            motor201->control.speed_pid->intergration_limit = 1000;
+            motor201->control.speed_pid->intergration_separation = 800;
+            
+            motor201->control.output_limit = 5000;
+        }
     
     #ifdef USING_CHASIS
         MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3508_P19, false);
@@ -384,32 +322,6 @@ void TASK_GlobalInit() {
             motor204->control.output_limit = 8000;
         }
     #endif
-    
-    #ifdef USING_SENTRY
-        MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3510_P19, false);
-        MOTOR_CrtlType_CAN* motor202 = CHASIS_EnableMotor(Motor202, RM_3510_P19, false);
-        
-        if(motor201) {
-            motor201->control.speed_pid->Kp = 3.0f;
-            motor201->control.speed_pid->Ki = 12.f;
-            motor201->control.speed_pid->Kd = 0.015f;
-            motor201->control.speed_pid->intergration_limit = 1000;
-            motor201->control.speed_pid->intergration_separation = 800;
-            
-            motor201->control.output_limit = 6000;
-        }
-        
-        if(motor202) {
-            motor202->control.speed_pid->Kp = 2.0f;
-            motor202->control.speed_pid->Ki = 9.f;
-            motor202->control.speed_pid->Kd = 0.01f;
-            motor202->control.speed_pid->intergration_limit = 1000;
-            motor202->control.speed_pid->intergration_separation = 800;
-
-            motor202->control.output_limit = 6000;
-        }
-    #endif
-    
     #ifdef USING_TEST17
         MOTOR_CrtlType_CAN* motor205 = CHASIS_EnableMotor(Motor205, RM_2006_P36, true);
         MOTOR_CrtlType_CAN* gimbal_pitch_motor = CHASIS_EnableMotor(Motor206, RM_2006_P36, false);
@@ -438,21 +350,6 @@ void TASK_GlobalInit() {
             
             gimbal_pitch_motor->control.output_limit = 8000;
         }
-    #endif
-    
-    #ifdef USING_MOTOR_TEST
-        MOTOR_CrtlType_CAN* motor = CHASIS_EnableMotor(Motor206, RM_2006_P96, true);
-        
-        motor->control.speed_pid->intergration_limit = 400;
-        motor->control.speed_pid->output_limit = 16000;
-        PID_SetGains(motor->control.speed_pid, 0, 0, 0);
-        
-        motor->control.position_pid->intergration_limit = 400;
-        motor->control.position_pid->output_limit = 16000;
-        PID_SetGains(motor->control.position_pid, 0, 0, 0);
-        
-        spIRQ_Manager.registe(UART7_IRQn, motor_recevier);
-        
     #endif
     }
     /** 
@@ -485,14 +382,11 @@ void TASK_Enable() {
         NVIC_IRQEnable(USART6_IRQn, 1, 1);
         NVIC_IRQEnable(UART7_IRQn, 1, 1);
         NVIC_IRQEnable(UART8_IRQn, 1, 1);
-        
-//    DMA_Cmd(spDMA_USART1_rx_stream, ENABLE);    
-//    NVIC_IRQEnable(TIM6_DAC_IRQn, 2, 1);
     }
 
 }
 
-
+float speed = 3000;
 /**
   * @brief  System layer control loop in background
   */
@@ -519,12 +413,6 @@ void TASK_ControlLooper() {
         if(task_counter%10 == 1) {
             
         } else if(task_counter%10 == 3) {
-          #ifdef USING_TEST42
-            static float speed = 0;
-            CHASIS_SetMotorSpeed(Motor207, speed);
-            CHASIS_SetMotorSpeed(Motor208, -speed);
-          #endif
-            
           #ifdef USING_TEST17
             static float speed = 0;
             static uint32_t target = 0;
@@ -578,87 +466,21 @@ void TASK_ControlLooper() {
           #endif
         } else if(task_counter%10 == 5) {
           #ifdef USING_CHASIS
-            CHASIS_Move(
-                recv.rc.ch0=abs(recv.rc.ch0)<20?0:recv.rc.ch0, 
-                recv.rc.ch1=abs(recv.rc.ch1)<20?0:recv.rc.ch1, 
-                recv.rc.ch2=abs(recv.rc.ch2)<20?0:recv.rc.ch2);
-          #endif
-          
-          #ifdef USING_SENTRY
-            int16_t speed = (abs(recv.rc.ch0)<20?0:recv.rc.ch0)*5;
-            CHASIS_SetMotorSpeed(Motor201, speed);
-            CHASIS_SetMotorSpeed(Motor202, speed);
+            if(recv.rc.s1 == RC_SW_MID) {
+                CHASIS_Move(
+                    recv.rc.ch0=abs(recv.rc.ch0)<20?0:recv.rc.ch0, 
+                    recv.rc.ch1=abs(recv.rc.ch1)<20?0:recv.rc.ch1, 
+                    recv.rc.ch2=abs(recv.rc.ch2)<20?0:recv.rc.ch2);
+            } else {
+                CHASIS_Move(0, 0, 0);
+            }
           #endif
         } else if(task_counter%10 == 7) {
-          #ifdef USING_TEST17
-            extern PWMFriction_Type Friction_CH1, Friction_CH2;
-            printf("%.4f,%.4f\r\n", Friction_CH1.speed[0], Friction_CH2.speed[0]);
-          #endif 
-          #ifdef USING_SENTRY
-            const MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
-            const MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
-            printf("%d,%d\r\n", motor201->state.speed, motor202->state.speed);
-          #endif
             
-          #ifdef USING_MOTOR_TEST
-            extern float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value);
-            MOTOR_CrtlType_CAN* motor = CHASIS_GetMotor(Motor206);
-
-            if(MOTOR_ControllReg.data.flushed) {
-                MOTOR_ControllReg.data.flushed = false;
-                
-                motor->control.speed_pid->Kp = MOTOR_ControllReg.data.skp;
-                motor->control.speed_pid->Ki = MOTOR_ControllReg.data.ski;
-                motor->control.speed_pid->Kd = MOTOR_ControllReg.data.skd;
-                motor->control.position_pid->Kp = MOTOR_ControllReg.data.pkp;
-                motor->control.position_pid->Ki = MOTOR_ControllReg.data.pki;
-                motor->control.position_pid->Kd = MOTOR_ControllReg.data.pkd;
-                
-                tar_spd = motor->state.angle + 8192;
-            }
-            
-            /* PID controller */
-            float pid_tmp;
-            CHASIS_SetMotorPosition(Motor206, tar_spd);
-            pid_tmp = PID_ControllerDriver_test(motor->control.position_pid, 
-                motor->control.target , motor->state.angle);
-            pid_tmp = __MOTOR_OutputLimit(motor, pid_tmp);
-            if(motor->control.speed_pid) {
-                pid_tmp = PID_ControllerDriver_test(motor->control.speed_pid,
-                    pid_tmp, motor->state.speed);
-            }
-            motor->control.output = __MOTOR_OutputLimit(motor, pid_tmp);
-
-//            static int tar_spd = 2000;
-//            static bool using_key = true;
-//            if(using_key && spUserKey.on_press) {
-//                spUserKey.on_press = false;
-//                motor201->control.output = (motor201->control.output==0)*tar_spd;
-//            } else {
-//                // TODO: Make interval time more specific.
-//                float pid_tmp;
-//                pid_tmp = PID_ControllerDriver_test(motor201->control.position_pid, 
-//                    motor201->control.target , motor201->state.angle);
-//                pid_tmp = __MOTOR_OutputLimit(motor201, pid_tmp);
-//                if(motor201->control.speed_pid) {
-//                    pid_tmp = PID_ControllerDriver_test(motor201->control.speed_pid,
-//                        pid_tmp, motor201->state.speed);
-//                }
-//                motor201->control.output = __MOTOR_OutputLimit(motor201, pid_tmp);
-//            }
-          #endif
-        }  else if(task_counter%10 == 9) {
-            
-          #ifdef USING_MOTOR_TEST
-            MOTOR_CrtlType_CAN* motor = CHASIS_GetMotor(Motor206);
-            uint8_t size = sprintf(uart_tx_buff, "%d,%.5f\r\n",
-                spClock.ms,
-                motor->control.position_pid->errors[0]); 
-            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
-          #endif
+            CHASIS_SetMotorSpeed(Motor207, speed);
         }
         
-      #ifdef USING_GIMBAL
+      #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
         if(task_counter%5 == 2) {
             extern void sendtoComputer(void);
             sendtoComputer();
@@ -668,25 +490,18 @@ void TASK_ControlLooper() {
                 auto_aim_flag = 0; small_power_flag = 0xff;
             } else if(recv.rc.s2==RC_SW_DOWN) {
                 auto_aim_flag = 0xff; small_power_flag = 0;
-                GIMBAL_Update( recv.rc.ch1 , recv.rc.ch0*4.0f);
+                spGIMBAL_Controller.user.update_target( recv.rc.ch1 , recv.rc.ch0*4.0f);
             } else {
-                GIMBAL_Update(0, 0);
+                spGIMBAL_Controller.user.update_target(0, 0);
                 auto_aim_flag = 0; small_power_flag = 0;
             }
             
             extern frame fram; 
-            uint8_t size = sprintf(uart6_buff, "%f,%f\r\n", gimbal_yaw_motor->state.angle, 
-                -fram.yaw/0.04394f);
-            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
-            
+            uint8_t size = sprintf(uart_tx_buff, "%f,%f\r\n", gimbal_yaw_motor->state.angle, -fram.yaw/0.04394f);
+            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
         }
       #endif
         
-      #ifdef USING_GM3510Test
-        static float pose = 0.f;
-        CHASIS_SetMotorPosition(Motor205, pose);
-      #endif
-
         recv_ex = recv;
     }
     /** 
@@ -727,13 +542,13 @@ void SysTick_Handler(void) {
         static uint16_t tick_init = 0;
         tick_init ++;
         
-        #ifndef USING_GIMBAL
-        if(tick_init>= 1000) {
+        #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE>0
+        if(spGIMBAL_Controller._system.regression(tick_init)) {
             task_inited = true;
             TASK_Enable();
         }
         #else
-        if(GIMBAL_MiddleLooper(tick_init)) {
+        if(tick_init>= 3000) {
             task_inited = true;
             TASK_Enable();
         }
@@ -742,17 +557,15 @@ void SysTick_Handler(void) {
         TASK_ControlLooper();
     }
     
-
     /* System background */
     uint32_t ctime = TASK_GetMicrosecond();
 
-    
     if(ctime%10 == 0) {
     #ifndef USING_MOTOR_TEST
         MOTOR_ControlLooper();
     #endif
-    #ifdef USING_GIMBAL
-        GIMBAL_ControlLooper();
+    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+        spGIMBAL_Controller._system.looper();
     #endif
         CHASIS_ControlLooper();
     }
@@ -770,3 +583,50 @@ void SysTick_Handler(void) {
   */
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
 
+//          #ifdef USING_MOTOR_TEST
+//            extern float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value);
+//            MOTOR_CrtlType_CAN* motor = CHASIS_GetMotor(Motor206);
+
+//            if(MOTOR_ControllReg.data.flushed) {
+//                MOTOR_ControllReg.data.flushed = false;
+//                
+//                motor->control.speed_pid->Kp = MOTOR_ControllReg.data.skp;
+//                motor->control.speed_pid->Ki = MOTOR_ControllReg.data.ski;
+//                motor->control.speed_pid->Kd = MOTOR_ControllReg.data.skd;
+//                motor->control.position_pid->Kp = MOTOR_ControllReg.data.pkp;
+//                motor->control.position_pid->Ki = MOTOR_ControllReg.data.pki;
+//                motor->control.position_pid->Kd = MOTOR_ControllReg.data.pkd;
+//                
+//                tar_spd = motor->state.angle + 8192;
+//            }
+//            
+//            /* PID controller */
+//            float pid_tmp;
+//            CHASIS_SetMotorPosition(Motor206, tar_spd);
+//            pid_tmp = PID_ControllerDriver_test(motor->control.position_pid, 
+//                motor->control.target , motor->state.angle);
+//            pid_tmp = __MOTOR_OutputLimit(motor, pid_tmp);
+//            if(motor->control.speed_pid) {
+//                pid_tmp = PID_ControllerDriver_test(motor->control.speed_pid,
+//                    pid_tmp, motor->state.speed);
+//            }
+//            motor->control.output = __MOTOR_OutputLimit(motor, pid_tmp);
+
+////            static int tar_spd = 2000;
+////            static bool using_key = true;
+////            if(using_key && spUserKey.on_press) {
+////                spUserKey.on_press = false;
+////                motor201->control.output = (motor201->control.output==0)*tar_spd;
+////            } else {
+////                // TODO: Make interval time more specific.
+////                float pid_tmp;
+////                pid_tmp = PID_ControllerDriver_test(motor201->control.position_pid, 
+////                    motor201->control.target , motor201->state.angle);
+////                pid_tmp = __MOTOR_OutputLimit(motor201, pid_tmp);
+////                if(motor201->control.speed_pid) {
+////                    pid_tmp = PID_ControllerDriver_test(motor201->control.speed_pid,
+////                        pid_tmp, motor201->state.speed);
+////                }
+////                motor201->control.output = __MOTOR_OutputLimit(motor201, pid_tmp);
+////            }
+//          #endif

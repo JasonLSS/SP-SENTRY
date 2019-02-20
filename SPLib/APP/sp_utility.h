@@ -77,14 +77,14 @@ extern spKeyController spUserKey;
 #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
 #define LED_R_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
 // A-board
-#define	LED8_BIT0           GPIO_Pin_1
-#define	LED8_BIT1           GPIO_Pin_2
-#define	LED8_BIT2           GPIO_Pin_3
-#define	LED8_BIT3           GPIO_Pin_4
-#define	LED8_BIT4           GPIO_Pin_5
-#define	LED8_BIT5           GPIO_Pin_6
-#define	LED8_BIT6           GPIO_Pin_7
-#define	LED8_BIT7           GPIO_Pin_8
+#define LED8_BIT0           GPIO_Pin_1
+#define LED8_BIT1           GPIO_Pin_2
+#define LED8_BIT2           GPIO_Pin_3
+#define LED8_BIT3           GPIO_Pin_4
+#define LED8_BIT4           GPIO_Pin_5
+#define LED8_BIT5           GPIO_Pin_6
+#define LED8_BIT6           GPIO_Pin_7
+#define LED8_BIT7           GPIO_Pin_8
 #define LED8_BIT_ON(x)      GPIO_ResetBits(GPIOG,x)
 #define LED8_BIT_OFF(x)     GPIO_SetBits(GPIOG,x)
 #define LED8_BIT_TOGGLE(x)  GPIOG->ODR ^= (x)

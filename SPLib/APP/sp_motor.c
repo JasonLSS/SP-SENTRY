@@ -58,13 +58,6 @@ float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value) {
     return (value > __motor->control.output_limit)?__motor->control.output_limit:
         (value < -__motor->control.output_limit)?-__motor->control.output_limit:value;
 }
-//__STATIC_INLINE float __MOTOR_TargetLimit(MOTOR_CrtlType_CAN* __motor, float value) {
-//    return (value > __motor->control.target_limit)?__motor->control.target_limit:
-//        (value < -__motor->control.target_limit)?-__motor->control.target_limit:value;
-//}
-
-
-
 
 
 /**

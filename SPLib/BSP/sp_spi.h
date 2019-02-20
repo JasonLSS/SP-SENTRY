@@ -100,12 +100,12 @@ static SPI_PinsType SPI6_Pins = {
   * @ingroup  SPI
   * @{
   */
-extern struct SPI_Controllers_Type {
+extern struct __SPI_Manager_Type {
     uint16_t (*read_write_b)(SPI_TypeDef* spi, uint16_t data);
     uint16_t (*write_b)(SPI_TypeDef* spi, uint16_t data);
     void     (*select)(SPI_PinsType* spi_pins);
     void     (*release)(SPI_PinsType* spi_pins);
-} spSPI_Controllers;
+} spSPI_Manager;
 /** @} */
 
 
