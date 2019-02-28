@@ -40,30 +40,19 @@
   */
 static struct {
     volatile uint32_t  ms;
-    volatile uint32_t* us;
-} spClock = {0, &spCLOCK->CNT};
+//    volatile uint32_t  us;
+} spClock = {0};
 
 void spCLOCK_Configuration(void) {
-    /* 84MHz */
-    spRCC_Set_spCLOCK();
-    /* 1000Hz */
-    TIM_TimeBaseInitTypeDef tim_base_initer;
-    tim_base_initer.TIM_Prescaler = 84-1;
-    tim_base_initer.TIM_Period = 1000-1;
-    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
-    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
-    
-    TIM_TimeBaseInit(spCLOCK, &tim_base_initer);
-    TIM_ITConfig(spCLOCK, TIM_IT_Update, ENABLE);
-    NVIC_IRQEnable(spClock_IRQn, 0, 0);
-    TIM_Cmd(spCLOCK, ENABLE);
+    SysTick->CTRL = 0x00;                               /* Reset SysTick control */
+    SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK);    /* Using SystemCoreClock as clock source */
+    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;          /* Enbale systick interrupt */
+    SysTick->LOAD = SystemCoreClock/1000;               /* Config to generate 1ms peroid interrupt */
+    SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;           /* Enbale systick */
 }
 
-void spClock_IRQHandler(void) {
-    if(TIM_GetITStatus(spCLOCK,TIM_IT_Update) == SET) {
-        spClock.ms ++;
-        TIM_ClearITPendingBit(spCLOCK, TIM_IT_Update);
-    }
+void SysTick_Handler(void) {
+    spClock.ms ++;
 }
 
 uint32_t TASK_GetMicrosecond(void) {
@@ -76,18 +65,19 @@ void TASK_GetMicrosecondPtr(unsigned long *count) {
 
 spTimeStamp TASK_GetTimeStamp(void) {
     spTimeStamp stamp;
-    stamp.us = *spClock.us;
+//    stamp.us = 1000 - spClock.us;
     stamp.ms = spClock.ms;
     return stamp;
 }
 
 float TASK_GetSecond(void) {
-    return spClock.ms*1.0f/1000 + (*spClock.us)*1.0f/1000000;
+    return spClock.ms*1.0f/1000;
+//    return spClock.ms*1.0f/1000 + (1000 - spClock.us)*1.0f/1000000;
 }
 
-float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp) {
-    return stamp->ms*1.0f/1000 + stamp->us*1.0f/1000000;
-}
+//float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp) {
+//    return stamp->ms*1.0f/1000 + stamp->us*1.0f/1000000;
+//}
 
 /**
   * @}
@@ -104,9 +94,6 @@ volatile uint32_t           task_counter = 0;
   * @brief  Flag for system initialization
   */
 bool                        task_inited = false;
-//char                        uart_rx_buff[256] = {0x00};
-char                        uart_tx_buff[256] = {0x00};
-extern char                 uart6_buff[256];
 struct {
     uint8_t     buffer[256];
     uint16_t    capacity;
@@ -118,10 +105,6 @@ struct {
 };
 
 
-/** @defgroup Task_Initialization_and_Configuration_Functions
-  * @brief    Implement member functions for @ref MOTOR_CrtlType
-  * @{
-  */
 
 /**
   * @brief  Init systick for global timer control
@@ -129,35 +112,20 @@ struct {
   *         with the SysTick clock set to 18.75 MHz (HCLK/8, with HCLK set to 150 MHz).
   */
 void TASK_TimerInit(void) {
-    SysTick->CTRL = 0x00;                               /* Reset SysTick control */
-    SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK);    /* Using SystemCoreClock as clock source */
-    SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;          /* Enbale systick interrupt */
-    SysTick->LOAD = SystemCoreClock/1000;               /* Config to generate 1ms peroid interrupt */
-    SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;          /* Enbale systick */
-}
-
-/**
-  * @brief  Enable systick to start running tasks
-  */
-inline void TASK_Start(void) {
-    SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;           /* Enbale systick */
-    spCLOCK_Configuration();
+    /* 84MHz */
+    spRCC_Set_SYSTIMER();
+    /* 1000Hz */
+    TIM_TimeBaseInitTypeDef tim_base_initer;
+    tim_base_initer.TIM_Prescaler = 84-1;
+    tim_base_initer.TIM_Period = 1000-1;
+    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
+    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
     
-    NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 2);
-    NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 2);
-    NVIC_IRQEnable(USART1_IRQn, 0, 2);          // RC
-    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
-    NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
-    NVIC_IRQEnable(EXTI9_5_IRQn, 0, 3);         // MPU int
-//    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);
-//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
-//    NVIC_IRQEnable(DMA1_Stream1_IRQn, 2, 1);
-    NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
-    
-    extern void sendtoComputerInit(void);
-    sendtoComputerInit();
+    TIM_TimeBaseInit(spSYSTIMER, &tim_base_initer);
+    TIM_ITConfig(spSYSTIMER, TIM_IT_Update, ENABLE);
+    NVIC_IRQEnable(spSYSTIMER_IRQn, 0, 0);
+    TIM_Cmd(spSYSTIMER, ENABLE);
 }
-
 
 /**
   * @brief  Init modules in system layer control
@@ -169,11 +137,10 @@ void TASK_GlobalInit() {
       * @brief  Low layer initialize
       */
     {
-        Led_Configuration();
-        Led8_Configuration();
-        
         spIRQ_Manager.init();
         
+        Led_Configuration();
+        Led8_Configuration();
         KEY_Configuration();
         Buzzer_Init();
         // Enable CAN1, baudrate=1Mbps
@@ -195,16 +162,6 @@ void TASK_GlobalInit() {
         DMA_USART_RX_Config(UART7, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
         USART_ITConfig(UART7, USART_IT_IDLE, ENABLE);
         USART_Cmd(UART7, ENABLE);
-
-//        // Start general USART8 for general communication
-//        extern uint8_t referee_buffer[128];
-//        USART_RX_Config(USART6, 115200);
-//        DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
-//        USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
-//        DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
-//        DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
-//        USART_Cmd(USART6, ENABLE);
-        
     }
     
     /** 
@@ -219,36 +176,8 @@ void TASK_GlobalInit() {
         
         /* IMU module init */
         IMU_Controllers.operations.init();
-        
-//        /* Registe autoaims to USART2 */
-//        /* For view communication via USART2 */
-//    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-//        extern UsartBuffer_t view_buffer;
-//        USART_RX_Config(USART2, 115200);
-//        DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer, view_buffer.size, false);
-//        
-//        USART_TX_Config(USART2, 115200);
-//        DMA_USART_TX_Config(USART2);
-//        
-//        USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
-//        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
-//        DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
-//        USART_Cmd(USART2, ENABLE);
-//        spIRQ_Manager.registe(USART2_IRQn, Autoaim_USART_Interface);
-//    #endif
-    
-        /* ADI IMU */
-//        extern void SPI4_Init(void);
-//        SPI4_Init();
-//        delay_ms(1);
-//        uint16_t prod_id[24];
-//        
-//        for(uint8_t i=0; i<24; i++) {
-//            spSPI_Manager.select(&SPI4_Pins);
-//            prod_id[i] = spSPI_Manager.read_write_b(SPI4, 0x7200);
-//            spSPI_Manager.release(&SPI4_Pins);
-//            delay_us(20);
-//        }
+       
+
         
     #ifdef USING_USB
         USB_TaskInit();
@@ -259,97 +188,58 @@ void TASK_GlobalInit() {
       * @brief  Peripheral layer initialize
       */
     {
-        
-    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE>0
-        spGIMBAL_Controller._system.init();
-    #endif
-        
-        MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor207, RM_2006_P36, false);
-
-        if(motor201) {
-            motor201->control.speed_pid->Kp = 3.f;
-            motor201->control.speed_pid->Ki = 6.f;
-            motor201->control.speed_pid->Kd = 0;
-            motor201->control.speed_pid->intergration_limit = 1000;
-            motor201->control.speed_pid->intergration_separation = 800;
-            
-            motor201->control.output_limit = 5000;
-        }
-    
+//        MOTOR_CrtlType_CAN* motor207 = CHASIS_EnableMotor(Motor207, RM_2006_P36, false);
+//        if(motor207) {
+//            PID_SetGains(motor207->control.speed_pid, 3.f, 6.f, 0.f);
+//            motor207->control.speed_pid->intergration_limit = 1000;
+//            motor207->control.speed_pid->intergration_separation = 800;
+//            
+//            motor207->control.output_limit = 5000;
+//        }
     #ifdef USING_CHASIS
         MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3508_P19, false);
         MOTOR_CrtlType_CAN* motor202 = CHASIS_EnableMotor(Motor202, RM_3508_P19, false);
         MOTOR_CrtlType_CAN* motor203 = CHASIS_EnableMotor(Motor203, RM_3508_P19, false);
         MOTOR_CrtlType_CAN* motor204 = CHASIS_EnableMotor(Motor204, RM_3508_P19, false);
         
-        if(motor201) {
-            motor201->control.speed_pid->Kp = 4.f;
-            motor201->control.speed_pid->Ki = 10.f;
-            motor201->control.speed_pid->Kd = 0;
-            motor201->control.speed_pid->intergration_limit = 1000;
-            motor201->control.speed_pid->intergration_separation = 800;
-            
-            motor201->control.output_limit = 8000;
-        }
+        motor201->control.speed_pid = NULL;
+        motor202->control.speed_pid = NULL;
+        motor203->control.speed_pid = NULL;
+        motor204->control.speed_pid = NULL;
         
-        if(motor202) {
-            motor202->control.speed_pid->Kp = 4.f;
-            motor202->control.speed_pid->Ki = 10.f;
-            motor202->control.speed_pid->Kd = 0;
-            motor202->control.speed_pid->intergration_limit = 1000;
-            motor202->control.speed_pid->intergration_separation = 800;
+        PID_ControllerInit(&CHASIS_Param_Reg.PID.x, 50, -1, 4000, 0.01f);
+        CHASIS_Param_Reg.PID.x.intergration_separation = 20;
+        PID_ControllerInit(&CHASIS_Param_Reg.PID.y, 50, -1, 4000, 0.01f);
+        CHASIS_Param_Reg.PID.y.intergration_separation = 20;
+        PID_ControllerInit(&CHASIS_Param_Reg.PID.yaw, 50, -1, 4000, 0.01f);
+        CHASIS_Param_Reg.PID.yaw.intergration_separation = 20;
+        
+        PID_SetGains(&CHASIS_Param_Reg.PID.x, 15.0f, 1.f, 1.f);
+        PID_SetGains(&CHASIS_Param_Reg.PID.y, 15.0f, 1.f, 1.f);
+        PID_SetGains(&CHASIS_Param_Reg.PID.yaw, 15.0f, 1.f, 1.f);
+        
+//        // 4, 10
+//        if(motor201 && motor202 && motor203 && motor204) {
+//            PID_SetGains(motor201->control.speed_pid, 15.f, 7.f, 1.f);
+//            motor201->control.speed_pid->intergration_limit = 1000;
+//            motor201->control.speed_pid->intergration_separation = 200;
+//            motor201->control.output_limit = 4000;
 
-            motor202->control.output_limit = 8000;
-        }
-        
-        if(motor203) {
-            motor203->control.speed_pid->Kp = 4.f;
-            motor203->control.speed_pid->Ki = 10.f;
-            motor203->control.speed_pid->Kd = 0;
-            motor203->control.speed_pid->intergration_limit = 1000;
-            motor203->control.speed_pid->intergration_separation = 800;
-            
-            motor203->control.output_limit = 8000;
-        }
-        
-        if(motor204) {
-            motor204->control.speed_pid->Kp = 4.f;
-            motor204->control.speed_pid->Ki = 10.f;
-            motor204->control.speed_pid->Kd = 0;
-            motor204->control.speed_pid->intergration_limit = 1000;
-            motor204->control.speed_pid->intergration_separation = 800;
-            
-            motor204->control.output_limit = 8000;
-        }
-    #endif
-    #ifdef USING_TEST17
-        MOTOR_CrtlType_CAN* motor205 = CHASIS_EnableMotor(Motor205, RM_2006_P36, true);
-        MOTOR_CrtlType_CAN* gimbal_pitch_motor = CHASIS_EnableMotor(Motor206, RM_2006_P36, false);
-        Friction_Init();
-        
-        if(motor205) {
-            motor205->control.speed_pid->Kp = 7.f;
-            motor205->control.speed_pid->Ki = 5.f;
-            motor205->control.speed_pid->Kd = 0.06f;
-            motor205->control.speed_pid->intergration_limit = 500;
-            motor205->control.speed_pid->intergration_separation = 400;
-            
-            motor205->control.position_pid->Kp = 2;
-            motor205->control.position_pid->Ki = 0;
-            motor205->control.position_pid->Kd = 0;
-            
-            motor205->control.output_limit = 8000;
-        }
-        
-        if(gimbal_pitch_motor) {
-            gimbal_pitch_motor->control.speed_pid->Kp = 7.f;
-            gimbal_pitch_motor->control.speed_pid->Ki = 5.f;
-            gimbal_pitch_motor->control.speed_pid->Kd = 0.06f;
-            gimbal_pitch_motor->control.speed_pid->intergration_limit = 500;
-            gimbal_pitch_motor->control.speed_pid->intergration_separation = 400;
-            
-            gimbal_pitch_motor->control.output_limit = 8000;
-        }
+//            PID_SetGains(motor202->control.speed_pid, 15.f, 7.f, 1.f);
+//            motor202->control.speed_pid->intergration_limit = 1000;
+//            motor202->control.speed_pid->intergration_separation = 200;
+//            motor202->control.output_limit = 4000;
+
+//            PID_SetGains(motor203->control.speed_pid, 15.f, 7.f, 1.f);
+//            motor203->control.speed_pid->intergration_limit = 1000;
+//            motor203->control.speed_pid->intergration_separation = 200;
+//            motor203->control.output_limit = 4000;
+
+//            PID_SetGains(motor204->control.speed_pid, 15.f, 7.f, 1.f);
+//            motor204->control.speed_pid->intergration_limit = 1000;
+//            motor204->control.speed_pid->intergration_separation = 200;
+//            motor204->control.output_limit = 4000;
+//        }
     #endif
     }
     /** 
@@ -360,6 +250,23 @@ void TASK_GlobalInit() {
     }
 }
 
+/**
+  * @brief  Enable systick to start running tasks
+  */
+inline void TASK_Start(void) {
+    spCLOCK_Configuration();
+    
+    NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 2);
+    NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 2);
+    NVIC_IRQEnable(USART1_IRQn, 0, 0);          // RC
+    NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
+    NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
+    NVIC_IRQEnable(EXTI9_5_IRQn, 0, 3);         // MPU int
+    NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
+    
+    extern void sendtoComputerInit(void);
+    sendtoComputerInit();
+}
 
 /**
   * @brief  Enabel each modules
@@ -370,15 +277,7 @@ void TASK_Enable() {
       * @brief  NVIC config
       */
     {
-        NVIC_IRQEnable(TIM2_IRQn, 0, 2);            // Friction
-        NVIC_IRQEnable(DMA1_Stream5_IRQn, 0, 1);    // Friction pulse capture
-        NVIC_IRQEnable(DMA1_Stream6_IRQn, 0, 1);    // Friction pulse capture
-        
-//        NVIC_IRQEnable(USART1_IRQn, 1, 1);
-//        NVIC_IRQEnable(USART2_IRQn, 1, 1);
         NVIC_IRQEnable(USART3_IRQn, 1, 1);
-//        NVIC_IRQEnable(UART4_IRQn, 1, 1);
-//        NVIC_IRQEnable(UART5_IRQn, 1, 1);
         NVIC_IRQEnable(USART6_IRQn, 1, 1);
         NVIC_IRQEnable(UART7_IRQn, 1, 1);
         NVIC_IRQEnable(UART8_IRQn, 1, 1);
@@ -386,16 +285,14 @@ void TASK_Enable() {
 
 }
 
-float speed = 3000;
+RC_DataType recv;
+RC_DataType recv_ex;
 /**
   * @brief  System layer control loop in background
   */
 void TASK_ControlLooper() {
     
     task_counter++;
-    
-    static RC_DataType recv;
-    static RC_DataType recv_ex;
     
     RC_GetState(&recv);
     
@@ -411,96 +308,37 @@ void TASK_ControlLooper() {
       */
     {
         if(task_counter%10 == 1) {
-            
-        } else if(task_counter%10 == 3) {
-          #ifdef USING_TEST17
-            static float speed = 0;
-            static uint32_t target = 0;
-            // static uint32_t posicount = 0;
-            static float delta = 1366;
-            
-            if((recv.key.bit.g^recv_ex.key.bit.g) && recv.key.bit.g){
-                if(delta>0)
-                    delta = 0;
-                else 
-                    delta = 1366;
-            }
-            
-            if((recv.key.bit.a^recv_ex.key.bit.a) && recv.key.bit.a){
-                speed += 500;
-            }
-            if((recv.key.bit.d^recv_ex.key.bit.d) && recv.key.bit.d){
-                speed -= 500;
-            }
-            if((recv.key.bit.s^recv_ex.key.bit.s) && recv.key.bit.s){
-                speed = 0;
-            }
-            if((recv.key.bit.r^recv_ex.key.bit.r) && recv.key.bit.r){
-                speed = 4000;
-            }
-            speed = (speed>8000)?8000:speed;
-            CHASIS_SetMotorSpeed(Motor206, speed);
-            
-            if((recv.key.bit.q^recv_ex.key.bit.q) && recv.key.bit.q){
-                CHASIS_SetMotorRelativePosition(Motor205, delta);
-            }
-            if((recv.key.bit.e^recv_ex.key.bit.e) && recv.key.bit.e){
-                CHASIS_SetMotorRelativePosition(Motor205, -delta);
-            }
-            if((recv.key.bit.w^recv_ex.key.bit.w) && recv.key.bit.w){
-                CHASIS_SetMotorPosition(Motor205, 0);
-            }
-            
-            if((recv.key.bit.z^recv_ex.key.bit.z) && recv.key.bit.z){
-                target += 10;
-            }
-            if((recv.key.bit.x^recv_ex.key.bit.x) && recv.key.bit.x){
-                target -= 10;
-            }
-            if((recv.key.bit.c^recv_ex.key.bit.c) && recv.key.bit.c){
-                target = 0;
-            }
-            target = (target>200)?200:target;
-            
-            Friction_Looper(target);
+          #ifdef USING_CHASIS
+//            float speed[4];
+//            // rad/s
+//            speed[0] = CHASIS_GetMotor(Motor201)->state.speed;
+//            speed[1] = CHASIS_GetMotor(Motor202)->state.speed;
+//            speed[2] = CHASIS_GetMotor(Motor203)->state.speed;
+//            speed[3] = CHASIS_GetMotor(Motor204)->state.speed;
+//            CHASIS_Mecanum_Inv(speed, &CHASIS_Param_Reg.state.x, &CHASIS_Param_Reg.state.y, &CHASIS_Param_Reg.state.yaw);
           #endif
+        } else if(task_counter%10 == 3) {
+            
         } else if(task_counter%10 == 5) {
           #ifdef USING_CHASIS
             if(recv.rc.s1 == RC_SW_MID) {
+                #define __CHASIS_kLinearSpeedX              0.004545f          /*  */
+                #define __CHASIS_kLinearSpeedY              0.004545f          /*  */
+                #define __CHASIS_kAngularSpeed              0.004545f          /*  */
+                CHASIS_Param_Reg.target.spdx = (abs(recv.rc.ch1)<20?0:recv.rc.ch1) * __CHASIS_kLinearSpeedX;
+                CHASIS_Param_Reg.target.spdy = -(abs(recv.rc.ch0)<20?0:recv.rc.ch0) * __CHASIS_kLinearSpeedY;
+                CHASIS_Param_Reg.target.spdyaw = -(abs(recv.rc.ch2)<20?0:recv.rc.ch2) * __CHASIS_kAngularSpeed;
                 CHASIS_Move(
-                    recv.rc.ch0=abs(recv.rc.ch0)<20?0:recv.rc.ch0, 
-                    recv.rc.ch1=abs(recv.rc.ch1)<20?0:recv.rc.ch1, 
-                    recv.rc.ch2=abs(recv.rc.ch2)<20?0:recv.rc.ch2);
+                    CHASIS_Param_Reg.target.spdx, 
+                    CHASIS_Param_Reg.target.spdy,
+                    CHASIS_Param_Reg.target.spdyaw);
             } else {
                 CHASIS_Move(0, 0, 0);
             }
           #endif
         } else if(task_counter%10 == 7) {
             
-            CHASIS_SetMotorSpeed(Motor207, speed);
         }
-        
-      #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-        if(task_counter%5 == 2) {
-            extern void sendtoComputer(void);
-            sendtoComputer();
-        }
-        if(task_counter%10 == 8) {
-            if(recv.rc.s2==RC_SW_UP) {
-                auto_aim_flag = 0; small_power_flag = 0xff;
-            } else if(recv.rc.s2==RC_SW_DOWN) {
-                auto_aim_flag = 0xff; small_power_flag = 0;
-                spGIMBAL_Controller.user.update_target( recv.rc.ch1 , recv.rc.ch0*4.0f);
-            } else {
-                spGIMBAL_Controller.user.update_target(0, 0);
-                auto_aim_flag = 0; small_power_flag = 0;
-            }
-            
-            extern frame fram; 
-            uint8_t size = sprintf(uart_tx_buff, "%f,%f\r\n", gimbal_yaw_motor->state.angle, -fram.yaw/0.04394f);
-            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
-        }
-      #endif
         
         recv_ex = recv;
     }
@@ -521,21 +359,8 @@ void TASK_ControlLooper() {
     }
 }
 
-/**
-  * @}
-  */
 
-
-
-/** @defgroup Task_Implement_Functions
-  * @brief    Implement task control by interrupt
-  * @{
-  */
-
-/**
-  * @brief  Systick interrupt handler for task control
-  */
-void SysTick_Handler(void) {
+void TASK_Backend(void) {
     RC_ReceiverChecker();
     
     if(!task_inited){
@@ -573,15 +398,55 @@ void SysTick_Handler(void) {
     CAN2_MsgSendLoop();
 }
 
-/**
-  * @}
-  */
+void TIM8_TRG_COM_TIM14_IRQHandler(void) {
+    if(TIM_GetITStatus(TIM14,TIM_IT_Update) == SET) {
+        
+        TASK_Backend();
+        
+        TIM_ClearITPendingBit(TIM14, TIM_IT_Update);
+    }
+}
 
-
-/**
-  * @}
-  */
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
+
+//        // Start general USART8 for general communication
+//        extern uint8_t referee_buffer[128];
+//        USART_RX_Config(USART6, 115200);
+//        DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
+//        USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+//        DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
+//        DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
+//        USART_Cmd(USART6, ENABLE);
+       
+//        /* Registe autoaims to USART2 */
+//        /* For view communication via USART2 */
+//    #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+//        extern UsartBuffer_t view_buffer;
+//        USART_RX_Config(USART2, 115200);
+//        DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer, view_buffer.size, false);
+//        
+//        USART_TX_Config(USART2, 115200);
+//        DMA_USART_TX_Config(USART2);
+//        
+//        USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
+//        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
+//        DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
+//        USART_Cmd(USART2, ENABLE);
+//        spIRQ_Manager.registe(USART2_IRQn, Autoaim_USART_Interface);
+//    #endif
+    
+        /* ADI IMU */
+//        extern void SPI4_Init(void);
+//        SPI4_Init();
+//        delay_ms(1);
+//        uint16_t prod_id[24];
+//        
+//        for(uint8_t i=0; i<24; i++) {
+//            spSPI_Manager.select(&SPI4_Pins);
+//            prod_id[i] = spSPI_Manager.read_write_b(SPI4, 0x7200);
+//            spSPI_Manager.release(&SPI4_Pins);
+//            delay_us(20);
+//        }
 
 //          #ifdef USING_MOTOR_TEST
 //            extern float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value);

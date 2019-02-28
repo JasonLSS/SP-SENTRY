@@ -43,43 +43,16 @@ void EXTI9_5_IRQHandler(void) {
                 IMU_Controllers.imu_state.ahrs.accel_0[2]);
         }
         
-//        static float data[10];
-//        IMU_Controllers.operations.read_stream(data+3, data, &temp, data+6);
         float time = TASK_GetSecond();
         float dt = time - IMU_Controllers.imu_state.timestamp;
         IMU_Controllers.imu_state.freq = 1.f/dt;
-        // Calculate AHRS
-        //TM_AHRSIMU_UpdateAHRS(&IMU_Controllers.imu_state.ahrs, gyro[0], gyro[1], gyro[2],
-        //    accel[0], accel[1], accel[2], mag[0], mag[1], mag[2]);
         if(!IMU_Controllers.imu_state.inited) {
-//            Madgwick_Init(&IMU_Controllers.imu_state.mad, 0.1f, 200.f);
-//            AHRS_init(IMU_Controllers.imu_state.ahrs.q, 
-//                IMU_Controllers.imu_state.ahrs.accel, 
-//                IMU_Controllers.imu_state.ahrs.mag);
             IMU_Controllers.imu_state.inited = true;
         } else {
             KalmanFilter(&IMU_Controllers.imu_state.kalman,
                 IMU_Controllers.imu_state.ahrs.gyro,
                 IMU_Controllers.imu_state.ahrs.accel, 
                 IMU_Controllers.imu_state.ahrs.mag, dt);
-//            AHRS_update(IMU_Controllers.imu_state.ahrs.q, 
-//                IMU_Controllers.imu_state.freq,
-//                IMU_Controllers.imu_state.ahrs.gyro, 
-//                IMU_Controllers.imu_state.ahrs.accel, 
-//                IMU_Controllers.imu_state.ahrs.mag);
-//            get_angle(IMU_Controllers.imu_state.ahrs.q, &IMU_Controllers.imu_state.ahrs.y, 
-//                &IMU_Controllers.imu_state.ahrs.p, &IMU_Controllers.imu_state.ahrs.r);
-//            Madgwick_update(&IMU_Controllers.imu_state.mad,
-//                IMU_Controllers.imu_state.ahrs.gyro[0],
-//                IMU_Controllers.imu_state.ahrs.gyro[1],
-//                IMU_Controllers.imu_state.ahrs.gyro[2],
-//                IMU_Controllers.imu_state.ahrs.accel[0],
-//                IMU_Controllers.imu_state.ahrs.accel[1],
-//                IMU_Controllers.imu_state.ahrs.accel[2],
-//                IMU_Controllers.imu_state.ahrs.mag[0],
-//                IMU_Controllers.imu_state.ahrs.mag[1],
-//                IMU_Controllers.imu_state.ahrs.mag[2]);
-//            Madgwick_computeAngles(&IMU_Controllers.imu_state.mad);
         }
         // Make log
         IMU_Controllers.imu_state.timestamp = time;
@@ -89,114 +62,53 @@ void EXTI9_5_IRQHandler(void) {
     }
 }
 
-
-void DMA1_Stream3_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA1_Stream3, DMA_IT_TCIF3)) {
-
-        DMA_ClearFlag(DMA1_Stream3, DMA_IT_TCIF3);
-        DMA_ClearITPendingBit(DMA1_Stream3, DMA_IT_TCIF3);
-    }
-}
-
-void DMA2_Stream1_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA2_Stream1, DMA_IT_TCIF1)) {
-
-        DMA_ClearFlag(DMA2_Stream1, DMA_IT_TCIF1);
-        DMA_ClearITPendingBit(DMA2_Stream1, DMA_IT_TCIF1);
-    }
-}
-
-void DMA1_Stream1_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA1_Stream1, DMA_IT_TCIF1)) {
-
-        DMA_ClearFlag(DMA1_Stream1, DMA_IT_TCIF1);
-        DMA_ClearITPendingBit(DMA1_Stream1, DMA_IT_TCIF1);
-    }
-}
-
-
-
-void DMA1_Stream5_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA1_Stream5, DMA_IT_TCIF5)) {
-        
-        DMA_ClearITPendingBit(DMA1_Stream5, DMA_IT_TCIF5);
-    }
-}
-
-
-void TIM6_DAC_IRQHandler(void)
-{
-    if(TIM_GetITStatus(TIM6, TIM_IT_Update)) {
-
-        TIM_ClearITPendingBit(TIM6, TIM_IT_Update);
-    }
-}
-
-
 void DMA2_Stream5_IRQHandler(void) {
-    if(DMA_GetITStatus(DMA2_Stream5, DMA_IT_TCIF5)) {
-        spIRQ_Manager.invoke(DMA2_Stream5_IRQn);
-        DMA_ClearFlag(DMA2_Stream5, DMA_IT_TCIF5);
-        DMA_ClearITPendingBit(DMA2_Stream5, DMA_IT_TCIF5);
-    }
+    spIRQ_Manager.invoke(DMA2_Stream5_IRQn, DMA2_Stream5, 
+        (spIRQ_GetITStatus)DMA_GetITStatus, 
+        (spIRQ_ClearPending)DMA_ClearITPendingBit);
 }
-
-
 
 void USART1_IRQHandler (void) {
-    if(USART_GetITStatus(USART1, USART_IT_IDLE)) {
-        // RC_OnBusIdle();
-        spIRQ_Manager.invoke(UART7_IRQn);
-        USART_ClearITPendingBit(USART1, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(USART1_IRQn, USART1, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART2_IRQHandler (void) {
-    if(USART_GetITStatus(USART2, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(USART2_IRQn);
-        USART_ClearITPendingBit(USART2, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(USART2_IRQn, USART2, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART3_IRQHandler (void) {
-    if(USART_GetITStatus(USART3, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(USART3_IRQn);
-        USART_ClearITPendingBit(USART3, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(USART3_IRQn, USART3, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART4_IRQHandler (void) {
-    if(USART_GetITStatus(UART4, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(UART4_IRQn);
-        USART_ClearITPendingBit(UART4, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(UART4_IRQn, UART4, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART5_IRQHandler (void) {
-    if(USART_GetITStatus(UART5, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(UART5_IRQn);
-        USART_ClearITPendingBit(UART5, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(UART5_IRQn, UART5, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART6_IRQHandler (void) {
-    if(USART_GetITStatus(USART6, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(USART6_IRQn);
-        // Referee_OnBusIdle();
-        USART_ClearITPendingBit(USART6, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(USART6_IRQn, USART6, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART7_IRQHandler (void) {
-    if(USART_GetITStatus(UART7, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(UART7_IRQn);
-        USART_ClearITPendingBit(UART7, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(UART7_IRQn, UART7, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART8_IRQHandler (void) {
-    if(USART_GetITStatus(UART8, USART_IT_IDLE)) {
-        spIRQ_Manager.invoke(UART8_IRQn);
-        USART_ClearITPendingBit(UART8, USART_IT_IDLE);
-    }
+    spIRQ_Manager.invoke(UART8_IRQn, UART8, 
+        (spIRQ_GetITStatus)USART_GetITStatus, 
+        (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
+
 
 
 
@@ -212,7 +124,9 @@ void IRQ_ManagerInit(void) {
     }
 }
 
-spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, IRQ_Callback_t cb) {
+spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, uint32_t it_flag, IRQ_Callback_t cb) {
+    if(!cb) return NULL;
+    
     /* Malloc a new callback-unit from pool */
     spIRQ_CbUnit_t* pCb;
     for(uint16_t i=0; i<sizeof(spIRQ_CbPool)/sizeof(spIRQ_CbPool[0]); i++) {
@@ -223,6 +137,7 @@ spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, IRQ_Callback_t cb) {
     }
     
     pCb->irq_type = irq;
+    pCb->interrupt_request_flag = it_flag;
     pCb->callback = cb;
     /* Add it to corresponding callback list */
     if(spIRQ_CbEntries[irq] == NULL) {
@@ -236,15 +151,20 @@ spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, IRQ_Callback_t cb) {
     return pCb;
 }
 
-void IRQ_Invoke(IRQn_Type irq) {
+void IRQ_Invoke(IRQn_Type irq, void* peripheral, 
+    spIRQ_GetITStatus get_it_status,
+    spIRQ_ClearPending clear_pending) {
     
     spIRQ_CbUnit_t* pCurrCb = spIRQ_CbEntries[irq];
     while(pCurrCb) {
-        if(pCurrCb->callback) {
-            pCurrCb->callback();
+        if(get_it_status(peripheral, pCurrCb->interrupt_request_flag)) {
+            if(pCurrCb->callback) {
+                pCurrCb->callback();
+            }
+            clear_pending(peripheral, pCurrCb->interrupt_request_flag);
         }
         pCurrCb = pCurrCb->next;
-    } 
+    }
 }
 
 
