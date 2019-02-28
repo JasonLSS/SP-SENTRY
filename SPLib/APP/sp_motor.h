@@ -26,6 +26,7 @@
 #include "string.h"
 #include "sp_can.h"
 #include "sp_pid.h"
+#include "sp_math.h"
 
 
 /**
@@ -76,8 +77,8 @@ typedef struct {
       */
     struct {
         int16_t                 current;            /* Read from CAN. [uint=?] */
-        int16_t                 speed;              /* Read from CAN. [uint=?] */
-        float                   angle;              /* Read from CAN. [uint=rad] */
+        float                   speed;              /* Read from CAN. [uint=?] */
+        float                   angle;              /* Read from CAN. [uint=?] */
         int16_t                 temprature;         /* Read from CAN. [uint=?] */
         uint16_t                mortor_stuckflag;
         int16_t                 __motor_angel_curr;

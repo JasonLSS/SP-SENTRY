@@ -207,47 +207,105 @@ void KEY_Configuration(void) {
     EXTI_Init(&exit_initer);
 }
 
-
-
-
-
-
-
 uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size) {
     CRC_ResetDR();
     return CRC_CalcBlockCRC(buffer, size);
 }
 
+
+
+/*
+Unit:
+    linear speed -> m/s
+    angular speed -> rad/s
+    length -> m
+*/
+struct __CHASIS_Param_Reg CHASIS_Param_Reg = {
+    .half_width = 0.185f,
+    .half_length = 0.19f,
+    .wheel_radius = 0.075f
+};
 void CHASIS_Mecanum(float spx, float spy, float spyaw, float out_speed[4]) {
-    out_speed[0] = ( spx + spy + spyaw);
-    out_speed[1] = ( spx - spy + spyaw);
-    out_speed[2] = (-spx - spy + spyaw);
-    out_speed[3] = (-spx + spy + spyaw);
-}
-#define __CHASIS_kLinearSpeedX              10          /*  */
-#define __CHASIS_kLinearSpeedY              7           /*  */
-#define __CHASIS_kAngularSpeed              5           /*  */
-#define __CHASIS_SpeedLimit                 6000
-static float fspeed[4][4] = {0};
-void CHASIS_Move(int16_t speedX, int16_t speedY, int16_t rad) {
-    float speed[4]={0};
-    CHASIS_Mecanum(
-        speedX*__CHASIS_kLinearSpeedX, 
-        speedY*__CHASIS_kLinearSpeedY, 
-        rad*__CHASIS_kAngularSpeed, speed);
     
-    for(uint8_t i=0; i<4; i++) {
-        if(fabs(speed[i]) > __CHASIS_SpeedLimit) {
-            speed[i] = (speed[i]>0)?__CHASIS_SpeedLimit:-__CHASIS_SpeedLimit;
-        } else if(fabs(speed[i]) < 400) {
-            speed[i] = 0;
-        }
-        MovingAverageFilter_f32(fspeed[i], 4, speed[i], __CHASIS_SpeedLimit);
-    }
-    CHASIS_SetMotorSpeed(Motor201, fspeed[0][0]);
-    CHASIS_SetMotorSpeed(Motor202, fspeed[1][0]);
-    CHASIS_SetMotorSpeed(Motor203, fspeed[2][0]);
-    CHASIS_SetMotorSpeed(Motor204, fspeed[3][0]);
+    out_speed[0] = spMATH_RAD2RPM(
+        ( spx - spy - (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
+    out_speed[1] = spMATH_RAD2RPM(
+        ( spx + spy + (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
+    out_speed[2] = spMATH_RAD2RPM(
+        ( spx - spy + (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
+    out_speed[3] = spMATH_RAD2RPM(
+        ( spx + spy - (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
+
+    out_speed[1] = -out_speed[1];
+    out_speed[2] = -out_speed[2];
+}
+void CHASIS_Mecanum_Inv(float speed[4], float* spdx, float *spdy, float *spyaw ) {
+    
+    speed[1] = -speed[1];
+    speed[2] = -speed[2];
+    
+    if(spdx) *spdx = spMATH_RPM2RAD(
+        (speed[0] + speed[1] + speed[2] + speed[3])*CHASIS_Param_Reg.wheel_radius/4.f );
+    if(spdy) *spdy = spMATH_RPM2RAD(
+        (-speed[0] + speed[1] - speed[2] + speed[3])*CHASIS_Param_Reg.wheel_radius/4.f );
+    if(spyaw) *spyaw = spMATH_RPM2RAD(
+        (-speed[0] + speed[1] + speed[2] - speed[3])*CHASIS_Param_Reg.wheel_radius/
+        (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)/4.f );
+}
+
+#define __CHASIS_SpeedLimit                 5000
+static float fspeed[4][4] = {0};
+void CHASIS_Move(float speedX, float speedY, float rad) {
+//    float speed[4]={0};
+//    CHASIS_Mecanum(speedX, speedY, rad, speed);
+//    
+//    for(uint8_t i=0; i<4; i++) {
+//        if(fabs(speed[i]) > __CHASIS_SpeedLimit) {
+//            speed[i] = (speed[i]>0)?__CHASIS_SpeedLimit:-__CHASIS_SpeedLimit;
+//        } else if(fabs(speed[i]) < 20.f) {
+//            speed[i] = 0;
+//        }
+//    }
+//    
+//    memcpy(CHASIS_Param_Reg.state.output, speed, sizeof(speed));
+//    
+//    CHASIS_SetMotorSpeed(Motor201, speed[0]);
+//    CHASIS_SetMotorSpeed(Motor202, speed[1]);
+//    CHASIS_SetMotorSpeed(Motor203, speed[2]);
+//    CHASIS_SetMotorSpeed(Motor204, speed[3]);
+    
+    // TODO: Make interval time more specific.
+    CHASIS_Param_Reg.target.spdx = speedX;
+    CHASIS_Param_Reg.target.spdy = speedY;
+    CHASIS_Param_Reg.target.spdyaw = rad;
+    
+    MOTOR_CrtlType_CAN* motorA = CHASIS_GetMotor(Motor201);
+    MOTOR_CrtlType_CAN* motorB = CHASIS_GetMotor(Motor202);
+    MOTOR_CrtlType_CAN* motorC = CHASIS_GetMotor(Motor203);
+    MOTOR_CrtlType_CAN* motorD = CHASIS_GetMotor(Motor204);
+    
+    float speed[4];
+    // rad/s
+    speed[0] = motorA->state.speed;
+    speed[1] = motorB->state.speed;
+    speed[2] = motorC->state.speed;
+    speed[3] = motorD->state.speed;
+    CHASIS_Mecanum_Inv(speed, &CHASIS_Param_Reg.state.x, &CHASIS_Param_Reg.state.y, &CHASIS_Param_Reg.state.yaw);
+    
+    float target[3];
+    target[0] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.x, 
+        speedX, CHASIS_Param_Reg.state.x);
+    target[1] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.y, 
+        speedY, CHASIS_Param_Reg.state.y);
+    target[2] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.yaw, 
+        rad, CHASIS_Param_Reg.state.yaw);
+    
+    CHASIS_Mecanum(target[0], target[1], target[2], CHASIS_Param_Reg.state.output);
+    
+    motorA->control.output = CHASIS_Param_Reg.state.output[0];
+    motorB->control.output = CHASIS_Param_Reg.state.output[1];
+    motorC->control.output = CHASIS_Param_Reg.state.output[2];
+    motorD->control.output = CHASIS_Param_Reg.state.output[3];
 }
 
 
@@ -255,8 +313,6 @@ void CHASIS_Move(int16_t speedX, int16_t speedY, int16_t rad) {
 
 PWMFriction_Type    Friction_CH1;
 PWMFriction_Type    Friction_CH2;
-
-
 /**
   * @brief  
   * @note   

@@ -32,10 +32,10 @@
 #define MOTOR_STUCK_THRESHOLD           1000
 
 
-#define CAN_MOTOR_RM3510_P27            (27)
-#define CAN_MOTOR_RM2006_P36            (36)
-#define CAN_MOTOR_RM2006_P96            (96)
-#define CAN_MOTOR_RM3510_3508_P19       (3591/187)          /* Motor's Mechanical trasmission ratio 
+#define CAN_MOTOR_RM3510_P27            (27.f)
+#define CAN_MOTOR_RM2006_P36            (36.f)
+#define CAN_MOTOR_RM2006_P96            (96.f)
+#define CAN_MOTOR_RM3510_3508_P19       (3591.f/187.f)       /* Motor's Mechanical trasmission ratio 
                                                                 Real value is 3591/187 = 19.2032f @RM3508 */
 
 
@@ -211,7 +211,11 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor) {
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
-    __motor->state.speed = (msg_data->Data[2]<<8) | msg_data->Data[3];
+    if(__motor->flags.rm_type == RM_3508_P19 || __motor->flags.rm_type == RM_3510_P19) {
+        __motor->state.speed = (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_3508_P19;
+    } else if(__motor->flags.rm_type == RM_3510_P27) {
+        __motor->state.speed = (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_P27;
+    }
     
     if(__motor->flags.rm_type == RM_3508_P19) {
         /* BYTE2+BYTE3 = current */
@@ -221,35 +225,35 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor) {
     }
     
     /* Use angle calculation only when using position PID */
-    if(__motor->control.position_pid) {
-        float delta = 0.f;
-        /* Calculate absolute angle from delta angle */
-        if(__motor->state.__motor_angel_last!=-1){
-            delta = __motor->state.__motor_angel_curr - __motor->state.__motor_angel_last;
-            /* For motor cannot cover 4092 in a sampling period */
-            delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
+//    if(__motor->control.position_pid) {
+    float delta = 0.f;
+    /* Calculate absolute angle from delta angle */
+    if(__motor->state.__motor_angel_last!=-1){
+        delta = __motor->state.__motor_angel_curr - __motor->state.__motor_angel_last;
+        /* For motor cannot cover 4092 in a sampling period */
+        delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
 
-            if(__motor->flags.rm_type == RM_3508_P19 || __motor->flags.rm_type == RM_3510_P19) {
-                __motor->state.angle += delta/CAN_MOTOR_RM3510_3508_P19;
-            } else if(__motor->flags.rm_type == RM_3510_P27) {
-                __motor->state.angle += delta/CAN_MOTOR_RM3510_P27;
-            }
-            
-            /* Too small delta angle is regarded as static/stuck */
-            if((delta<CAN_STUCK_FILTER)&&(delta>-CAN_STUCK_FILTER)){
-                __motor->state.mortor_stuckflag += 
-                    (__motor->state.mortor_stuckflag==(uint16_t)-1)?0:1;
-                __motor->state.mortor_stuckflag = (__motor->state.mortor_stuckflag>MOTOR_STUCK_THRESHOLD)?\
-                    MOTOR_STUCK_THRESHOLD:__motor->state.mortor_stuckflag;
-            }else{
-                __motor->state.mortor_stuckflag = 0;
-            }
-        } else {
-            __motor->state.__motor_angel_first = __motor->state.__motor_angel_curr;
+        if(__motor->flags.rm_type == RM_3508_P19 || __motor->flags.rm_type == RM_3510_P19) {
+            __motor->state.angle += delta/CAN_MOTOR_RM3510_3508_P19;
+        } else if(__motor->flags.rm_type == RM_3510_P27) {
+            __motor->state.angle += delta/CAN_MOTOR_RM3510_P27;
         }
-        /* Record current angle for next resolving */
-        __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
+        
+        /* Too small delta angle is regarded as static/stuck */
+        if((delta<CAN_STUCK_FILTER)&&(delta>-CAN_STUCK_FILTER)){
+            __motor->state.mortor_stuckflag += 
+                (__motor->state.mortor_stuckflag==(uint16_t)-1)?0:1;
+            __motor->state.mortor_stuckflag = (__motor->state.mortor_stuckflag>MOTOR_STUCK_THRESHOLD)?\
+                MOTOR_STUCK_THRESHOLD:__motor->state.mortor_stuckflag;
+        }else{
+            __motor->state.mortor_stuckflag = 0;
+        }
+    } else {
+        __motor->state.__motor_angel_first = __motor->state.__motor_angel_curr;
     }
+    /* Record current angle for next resolving */
+    __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
+//    }
     /* Clear flag */
     __motor->data.receiver.rx.changed = false;
 }

@@ -34,6 +34,10 @@
 #include "stm32f4xx.h"
 #include <arm_math.h>
 
+
+#define spMATH_RPM2RAD(x)       ((x)*0.104719753f)
+#define spMATH_RAD2RPM(x)       ((x)*9.549296748f)
+
      
 /** @defgroup   Common Mathematical Functions
   * @ingroup    MATH

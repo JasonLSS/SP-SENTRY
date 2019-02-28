@@ -38,8 +38,8 @@ typedef struct {
   * @brief  Remote controller manager struct
   */ 
 typedef struct {
-    spTimeStamp                     stamp;                      /*!< Time stamp */
-    spTimeStamp                     stamp_ex;                   /*!< Time stamp of last valid data*/
+    float                           stamp;                      /*!< Time stamp */
+    float                           stamp_ex;                   /*!< Time stamp of last valid data*/
     volatile __RC_RawDataType       raw_rc_data;                /*!< Recerived raw data form remote controll */
     RC_DataType                     cvt_rc_data;                /*!< Converted data */
     uint8_t                         valid:1;                    /*!< If curent frame valid*/
@@ -69,7 +69,7 @@ RC_ManagerType                      RC_Manager;                 /*!< Remote cont
   */ 
 void __RC_DataConvert(void) {
     
-    RC_Manager.stamp = TASK_GetTimeStamp();
+    RC_Manager.stamp = TASK_GetSecond();
     
     if( RC_VALIDATE_CHANNEL(RC_Manager.raw_rc_data.ch0) &&
         RC_VALIDATE_CHANNEL(RC_Manager.raw_rc_data.ch1) &&
@@ -124,10 +124,9 @@ void RC_OnError(RC_InfoType info) {
     } else if((RC_InfoType)info == RC_LOSS_SIGNAL) {
         LED8_BIT_ON(LED8_BIT0);
     }
-    
-    /* Stop RC DMA and start USART_DELE IRQ */
-    NVIC_IRQDisable(DMA2_Stream5_IRQn);
-    USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
+//    /* Stop RC DMA and start USART_DELE IRQ */
+//    NVIC_IRQDisable(DMA2_Stream5_IRQn);
+//    USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
 }
 
 void RC_OnRecovery(void) {
@@ -137,19 +136,17 @@ void RC_OnRecovery(void) {
 
 void RC_OnBusIdle(void) {
     /* Start RC DMA and stop USART_DELE IRQ */
-    NVIC_IRQEnable(DMA2_Stream5_IRQn, 1, 0);
-    USART_ITConfig(USART1, USART_IT_IDLE, DISABLE);
+    DMA_SetCurrDataCounter(spDMA_USART1_rx_stream, sizeof(RC_Manager.raw_rc_data));
 }
 
 void RC_ReceiverChecker(void) {
     /* Converted data has the same timestamp with manage means data valid */
-    spTimeStamp time = TASK_GetTimeStamp();
-    if(TASK_GetSecondFromTimeStamp(&time) - TASK_GetSecondFromTimeStamp(&RC_Manager.stamp) > 0.05f) {
+    float time = TASK_GetSecond();
+    if(time - RC_Manager.stamp > 0.05f) {
         /* Long time not get signal. */
         RC_OnError(RC_LOSS_SIGNAL);
         return;
-    } else if(TASK_GetSecondFromTimeStamp(&RC_Manager.stamp) -
-            TASK_GetSecondFromTimeStamp(&RC_Manager.stamp_ex) > 0.05f) {
+    } else if(RC_Manager.stamp - RC_Manager.stamp_ex > 0.05f) {
         /* Long time not get valid data. */
         RC_OnError(RC_WRONG_DATA);
         return;
@@ -168,10 +165,9 @@ bool RC_ReceiverInit(void) {
     DMA_ClearStreamFlagBit(spDMA_USART1_rx_stream, DMA_CRx);
     /* Enable stream interrupt and start DMA */
     DMA_ITConfig(spDMA_USART1_rx_stream, DMA_IT_TC, ENABLE);
-//    NVIC_IRQEnable(DMA2_Stream5_IRQn, 1, 0);
     DMA_Cmd(spDMA_USART1_rx_stream, ENABLE);
     
-    RC_Manager.stamp = TASK_GetTimeStamp();
+    RC_Manager.stamp = TASK_GetSecond();
     __RC_DataClear();
     
     /* For first frame detecting */
@@ -179,8 +175,8 @@ bool RC_ReceiverInit(void) {
     USART_Cmd(USART1, ENABLE);
     
     /* Registe IRQ callbacks */
-    spIRQ_Manager.registe(USART1_IRQn, RC_OnBusIdle);
-    spIRQ_Manager.registe(DMA2_Stream5_IRQn, __RC_DataConvert);
+    spIRQ_Manager.registe(USART1_IRQn, USART_IT_IDLE, RC_OnBusIdle);
+    spIRQ_Manager.registe(DMA2_Stream5_IRQn, DMA_IT_TCIF5, __RC_DataConvert);
     
     return true;
 }

@@ -78,7 +78,7 @@ typedef struct {
         } bit;
     } key;
     uint16_t            resv;
-    spTimeStamp         stamp;              /*!< Time stamp */
+    float               stamp;              /*!< Time stamp */
 } RC_DataType;
 
 typedef enum {

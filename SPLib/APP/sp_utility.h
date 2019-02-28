@@ -148,6 +148,28 @@ void KEY_Configuration(void);
 uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size);
 
 
+extern struct __CHASIS_Param_Reg{
+    float half_width;
+    float half_length;
+    float wheel_radius;
+    struct {
+        float x;
+        float y;
+        float yaw;
+        float output[4];
+    } state;
+    struct {
+        float spdx;
+        float spdy;
+        float spdyaw;
+    } target;
+    struct {
+        PID_Type x;
+        PID_Type y;
+        PID_Type yaw;
+    } PID;
+} CHASIS_Param_Reg;
+
 /**
   * @brief  Distribute speed accroding to Mecanum wheel principle
   * @param  spx     target linear speed in x-axis
@@ -156,14 +178,14 @@ uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size);
   * @param  out_speed    output speed buffer
   */
 void CHASIS_Mecanum(float spx, float spy, float spyaw, float out_speed[4]);
-
+void CHASIS_Mecanum_Inv(float speed[4], float* spdx, float *spdy, float *spyaw );
 /**
   * @brief  Chasis control looper
   * @brief  speedX: chasis linear speed in X-axis
   * @brief  speedY: chasis linear speed in Y-axis
   * @brief  rad: chasis angular speed yaw
   */
-void CHASIS_Move(int16_t speedX, int16_t speedY, int16_t rad);
+void CHASIS_Move(float speedX, float speedY, float rad);
 
 /**
   * @}
