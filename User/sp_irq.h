@@ -49,15 +49,16 @@ struct __spIRQ_CbUnit {
      *        in @ref Library_configuration_section 
      */
     IRQn_Type                           irq_type;
-    IRQ_Callback_t                      callback;           /*!< Callback function. */
-    struct __spIRQ_CbUnit*              next;               /*!< Next callback unit. */
+    uint32_t                            interrupt_request_flag; /*!< Interrupt request flags for IT status checking. */
+    IRQ_Callback_t                      callback;               /*!< Callback function. */
+    struct __spIRQ_CbUnit*              next;                   /*!< Next callback unit. */
 };
 typedef struct __spIRQ_CbUnit spIRQ_CbUnit_t;
 
 /**
  * @brief The empty spIRQ_CbUnit_t.
  */
-static const spIRQ_CbUnit_t             spIRQ_CbNull = {(IRQn_Type)-1, NULL, NULL};
+static const spIRQ_CbUnit_t             spIRQ_CbNull = {(IRQn_Type)-1, 0x00, NULL, NULL};
 
 /**
  * @brief A reserved pool for spIRQ_CbUnit_t.
@@ -86,6 +87,9 @@ void IRQ_ManagerInit(void);
 /**
  * @brief User interfaces
  */
+typedef ITStatus (*spIRQ_GetITStatus)(void*, uint32_t);
+typedef void (*spIRQ_ClearPending)(void*, uint32_t);
+ 
 extern struct __IRQ_Manager_Type {
     /**
      * @brief Module initialization
@@ -94,11 +98,15 @@ extern struct __IRQ_Manager_Type {
     /**
      * @brief The empty spIRQ_CbUnit_t.
      */
-    spIRQ_CbUnit_t* (*registe)(IRQn_Type, IRQ_Callback_t);
+    spIRQ_CbUnit_t* (*registe)(IRQn_Type irq, uint32_t it_flag, IRQ_Callback_t cb);
     /**
      * @brief The empty spIRQ_CbUnit_t.
      */
-    void (*invoke)(IRQn_Type);
+    void (*invoke)(
+        IRQn_Type irq, void* peripheral, 
+        spIRQ_GetITStatus get_it_status,
+        spIRQ_ClearPending clear_pending);
+    
 } spIRQ_Manager;
 /** @} */
 

@@ -61,10 +61,15 @@
 #define spGPIO_FromSource(x)            (0x0001<<(x))   /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
 #define spUSART_PRINTF_USARTx           UART8           /* Select USART for overriding printf */
 
-#define spCLOCK                         TIM14
-#define spRCC_Set_spCLOCK               spRCC_Set_TIM14
-#define spClock_IRQn                    TIM8_TRG_COM_TIM14_IRQn
-#define spClock_IRQHandler              TIM8_TRG_COM_TIM14_IRQHandler
+//#define spCLOCK                         Systick
+//#define spRCC_Set_spCLOCK               spRCC_Set_TIM14
+//#define spClock_IRQn                    TIM8_TRG_COM_TIM14_IRQn
+//#define spClock_IRQHandler              TIM8_TRG_COM_TIM14_IRQHandler
+    
+#define spSYSTIMER                      TIM14
+#define spRCC_Set_SYSTIMER              spRCC_Set_TIM14
+#define spSYSTIMER_IRQn                 TIM8_TRG_COM_TIM14_IRQn
+    
 /** @} */
 
 
@@ -81,7 +86,7 @@
 //  <h> Test Module Select
 //  <c1> USING_CHASIS
 //    <i> USING chasis part
-//#define USING_CHASIS
+#define USING_CHASIS
 //  </c>
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
@@ -242,7 +247,7 @@
   */
 
 extern void TASK_GlobalInit(void);
-void spCLOCK_Configuration(void);
+extern void spCLOCK_Configuration(void);
 
 #ifndef USING_OS
 extern void TASK_TimerInit(void);
@@ -282,7 +287,7 @@ extern uint32_t TASK_GetMicrosecond(void);
 extern void TASK_GetMicrosecondPtr(unsigned long *count);
 extern spTimeStamp TASK_GetTimeStamp(void);
 extern float TASK_GetSecond(void);
-extern float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp);
+//extern float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp);
 /** @} */
   
   
@@ -290,6 +295,7 @@ extern float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp);
   * @ingroup  CONFIG
   * @{
   */
+extern void TIM8_TRG_COM_TIM14_IRQHandler(void);
 extern void EXTI9_5_IRQHandler(void);
 extern void DMA1_Stream3_IRQHandler(void);
 extern void DMA2_Stream1_IRQHandler(void);

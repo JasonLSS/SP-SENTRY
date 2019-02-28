@@ -62,7 +62,6 @@ void Power_Configuration(void)
 }
 
 int main(void)
-
 {
     __disable_irq();
     
@@ -92,10 +91,10 @@ int main(void)
 //            frame[3] = IMU_Controllers.imu_state.ahrs.gyro[0];
 //            frame[4] = IMU_Controllers.imu_state.ahrs.gyro[1];
 //            frame[5] = IMU_Controllers.imu_state.ahrs.gyro[2];
-            uint8_t size = sprintf(uart_tx_buff, "%f,%d\r\n", 
-                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle,
-                spGIMBAL_Controller._target.gimbal_pitch_motor->state.speed);
-            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
+//            uint8_t size = sprintf(uart_tx_buff, "%f,%f\r\n", 
+//                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle,
+//                spGIMBAL_Controller._target.gimbal_pitch_motor->state.speed);
+//            DMA_Start(spDMA_UART7_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&UART7->DR, size);
         }
         
         
