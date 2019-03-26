@@ -27,25 +27,6 @@
 
 /* Exported types ------------------------------------------------------------*/
 
-//#ifndef __cplusplus
-///**
-// * @brief   User-implemented bool type.
-// */
-//typedef enum {
-//    false = 0,
-//    true = 1
-//} bool;
-//#endif
-
-
-typedef struct {
-    GPIO_TypeDef*       gpio;
-    uint32_t            pin_source;
-} spPinSet;
-static const spPinSet spNullPin = {NULL};
-
-
-
 /** @defgroup General Implement Functions Type
   * @brief    Functions for simple usages without parameters.
   * @{

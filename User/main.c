@@ -7,7 +7,13 @@
   * @brief      project entry
   ******************************************************************************
   * @license
-  *
+  *     BSP modules:
+  *         delay_us/delay_ms
+  *         
+  *         spSPI_Manager
+  *         spGPIO_Controllers
+  *         spDMA_Controllers
+  *         spCAN_Controllers
   ******************************************************************************
   */
   
@@ -53,14 +59,6 @@
 
 float frame[6];
 
-void Power_Configuration(void)
-{
-    spRCC_Set_GPIOH();
-    GPIO_OUT_Config(GPIOH, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5, 
-        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    GPIO_SetBits(GPIOH,GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5);
-}
-
 int main(void)
 {
     __disable_irq();
@@ -73,8 +71,21 @@ int main(void)
     TASK_TimerInit();
     
     /* System init finish signal */
-    BUZZER_ON(1500); 
-    delay_ms(500); BUZZER_OFF();
+
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,659,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,494,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,523,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);TIM_SetFrequency(TIM12,494,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
+    BUZZER_OFF();
     LED_G_ON();LED_R_OFF();
     TASK_Start();
     
@@ -82,7 +93,7 @@ int main(void)
     
     while(1) {
         extern char uart_tx_buff[256];
-        const uint32_t ctime = TASK_GetMicrosecond();
+        const uint32_t ctime = TASK_GetMilliSecond();
         
         if(ctime % 10 == 0) {
 //            frame[0] = IMU_Controllers.imu_state.kalman.mag_angle[0];
@@ -100,4 +111,11 @@ int main(void)
         
     }
 }
+
+
+void assert_failed(uint8_t *file, uint32_t line) {
+    printf("Failed on %s(%d)\r\n", file, line);
+    while(1){ }
+}
+
 

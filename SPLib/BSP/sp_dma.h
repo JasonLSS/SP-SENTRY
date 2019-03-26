@@ -343,82 +343,67 @@ typedef struct {
 
 /** @} */
 
-
-/** @defgroup DMA_Decalarations
-  * @brief    Exported Function Decalarations
+  
+/** @defgroup DMA_APIs
+  * @brief    DMA user operations
   * @ingroup  DMA
   * @{
   */
-///** 
-//  * @brief  Enable DMA with given data size
-//  * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
-//  *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
-//  * @param  size    Number of data items for transfering, which depends only on the Peripheral data format.
-//  * @retval
-//  */
-//bool DMA_Start(DMA_Stream_TypeDef * stream, uint16_t size);
-//  
-///** 
-//  * @brief  Disable DMA and interrupt
-//  * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
-//  *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
-//  * @retval
-//  */
-//void DMA_Stop(DMA_Stream_TypeDef * stream);
-
-/** 
-  * @brief  Clear/Set Stream Flag Bits
-  * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
-  *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
-  * @param  flag    DMA stream flag mask @ref DMA_Stream_FlagBits
-  *                 @arg DMA_CR_CTCIFx      Transfer complete flag
-  *                 @arg DMA_CR_CHTIFx     Half-Transfer Complete flag
-  *                 @arg DMA_CR_CTEIFx     Transfer Error flag
-  *                 @arg DMA_CR_CDMEIFx    Direct Mode Transfer Error flag
-  *                 @arg DMA_CR_CFEIFx     FIFO Mode Transfer Error flag
-  *                 @arg DMA_CR_CRx        Mask for all flags 
-  * @retval
-  */
-void DMA_ClearStreamFlagBit(DMA_Stream_TypeDef* stream, uint32_t flag);
-bool DMA_GetStreamFlagBit(DMA_Stream_TypeDef* stream, uint32_t flag);
-
-/** 
-  * @brief  Start a DMA stream with no channel config for memory-to-memory transfer
-  * @param  addr_from   Address of source data, can be @arg NULL
-  * @param  addr_to     Address of destination data, can be @arg NULL
-  * @param  buffsize    Size of data for transfering, can be @arg NULL/0/0x00 etc.
-  * @note   Use @func DMA_Start() to start new transfer.
-  */
-bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize);
-
-/** 
-  * @brief  Start once DMA transmission
-  * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
-  *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
-  * @param  target  DMA target address ()
-  * @param  buffer  Sending data via DMA ()
-  * @param  len    Size of the sending data
-  * @retval If DMA transfer started.
-  * @note   Default sending from @arg target(MEMORY) to @arg buffer(PHERIPHERAL)
-  *         Actually from where to where depends on DMA stream setting.
-  * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
-  */
-bool DMA_Start(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
-bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
-
-/** 
-  * @brief  Start once DMA transmission between memory and memory
-  * @param  target  DMA target address
-  * @param  buffer  Sending data via DMA
-  * @param  len    Size of the sending data
-  * @retval If success return @ref DMA_Stream_TypeDef* , else NULL
-  * @note   Auto-select DAM stream
-  * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
-  */
-DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len);
-
+extern const struct DMA_Controllers_Type {
+    struct {
+        /** 
+          * @brief  Start once DMA transmission
+          * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
+          *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
+          * @param  target  DMA target address ()
+          * @param  buffer  Sending data via DMA ()
+          * @param  len    Size of the sending data
+          * @retval If DMA transfer started.
+          * @note   Default sending from @arg target(MEMORY) to @arg buffer(PHERIPHERAL)
+          *         Actually from where to where depends on DMA stream setting.
+          * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
+          */
+        bool (*start)(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
+        bool (*restart)(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t periph_buffer, uint16_t len);
+        /** 
+          * @brief  Clear/Set Stream Flag Bits
+          * @param  stream  DMA stream type @ref DMAy_Streamx: where y can be 1 or 2 to select the DMA and x can be 0
+          *                 to 7 to select the DMA Stream, or use @ref spDMA_xxx_stream, like @arg spDMA_USART1_tx_stream.
+          * @param  flag    DMA stream flag mask @ref DMA_Stream_FlagBits
+          *                 @arg DMA_CR_CTCIFx      Transfer complete flag
+          *                 @arg DMA_CR_CHTIFx     Half-Transfer Complete flag
+          *                 @arg DMA_CR_CTEIFx     Transfer Error flag
+          *                 @arg DMA_CR_CDMEIFx    Direct Mode Transfer Error flag
+          *                 @arg DMA_CR_CFEIFx     FIFO Mode Transfer Error flag
+          *                 @arg DMA_CR_CRx        Mask for all flags 
+          * @retval
+          */
+        void (*clear_stream_bit)(DMA_Stream_TypeDef* stream, uint32_t flag);
+        bool (*get_stream_bit)(DMA_Stream_TypeDef* stream, uint32_t flag);
+        void (*reset_counter)(DMA_Stream_TypeDef * stream, uint32_t size);
+    } controller;
+    struct {
+        /** 
+          * @brief  Start a DMA stream with no channel config for memory-to-memory transfer
+          * @param  addr_from   Address of source data, can be @arg NULL
+          * @param  addr_to     Address of destination data, can be @arg NULL
+          * @param  buffsize    Size of data for transfering, can be @arg NULL/0/0x00 etc.
+          * @note   Use @func DMA_Start() to start new transfer.
+          */
+        bool (*init)(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize);
+        /** 
+          * @brief  Start once DMA transmission between memory and memory
+          * @param  target  DMA target address
+          * @param  buffer  Sending data via DMA
+          * @param  len    Size of the sending data
+          * @retval If success return @ref DMA_Stream_TypeDef* , else NULL
+          * @note   Auto-select DAM stream
+          * @note   ATTENTION!!!  the DMA mode will be changed to NON-CIRCULAR mode
+          */
+        DMA_Stream_TypeDef* (*copy)(uint32_t target, uint32_t buffer, uint16_t len);
+    } mem2mem;
+} spDMA_Controllers;
 /** @} */
-
 
 
 /**

@@ -31,8 +31,7 @@
 //    float pitch_set;
 //} GimbalController;
 
-extern uint8_t auto_aim_flag;
-extern uint8_t small_power_flag;
+
 
 #define RC_PARAM        8192.f
 
@@ -52,12 +51,16 @@ extern struct __GIMBAL_Controller_Type {
         void (*init)(void);                                             /*!< Initialize system gimbal controller. */
         void (*looper)(void);                                           /*!< System gimbal controller looper. */
         bool (*regression)(uint32_t tick);                              /*!< Make gimbal return to its start state. */
+				void (*statelooper) (void);                                                /*!< change gimbal state. */
     } _system;
     
     struct {
-        void (*update_target_pitch)(float target_pitch);                /*!< Update gimbal pitch target. */
-        void (*update_target_yaw)(float target_yaw);                    /*!< Update gimbal yaw target. */
-        void (*update_target)(float target_pitch, float target_yaw);    /*!< Update gimbal pitch and yaw target. */
+        void (*update_target_pitch)(float target_pitch);                			/*!< Update gimbal pitch target. */
+        void (*update_target_yaw)(float target_yaw);                    			/*!< Update gimbal yaw target. */
+        void (*update_target)(float target_pitch, float target_yaw);    			/*!< Update gimbal pitch and yaw target. */
+				void (*update_target_limit)(float target_pitch, float target_yaw);    /*!< Update gimbal pitch and yaw target with limit. */
+				void (*pid_init)();    																								/*!< change gimbal pitch and yaw pid to original mode. */
+				void (*visual_pid_init) ();                                                /*!< change gimbal pitch and yaw pid to visual mode. */
     } user;
 } spGIMBAL_Controller;
 /** @} */

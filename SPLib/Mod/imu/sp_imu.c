@@ -287,7 +287,7 @@ int MPU6500_Init(void) {
     
     /* Condif EXIT for MPU interrupt */
     spRCC_Set_SYSCFG();
-    GPIO_IN_Config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO_Controllers.input_config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
     SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
     EXTI_InitTypeDef            exit_initer;
     exit_initer.EXTI_Line       = EXTI_Line8;

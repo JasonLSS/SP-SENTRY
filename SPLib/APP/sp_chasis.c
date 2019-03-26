@@ -204,14 +204,14 @@ void CHASIS_ControlInit() {
     __CAHSIS_Manager.dataA.transmitter.tx.size = 
         sizeof(__CAHSIS_Manager.dataA.raw_data)/sizeof(__CAHSIS_Manager.dataA.raw_data[0]);
     __CAHSIS_Manager.dataA.transmitter.tx.addr = __CAHSIS_Manager.dataA.raw_data;
-    CAN_RegistTransmitter(CAN1, &__CAHSIS_Manager.dataA.transmitter);
+    spCAN_Controllers.user.registe_transmitter(CAN1, &__CAHSIS_Manager.dataA.transmitter);
     
     /* Mount mortor205~mortor208 to CAN chasis control */
     __CAHSIS_Manager.dataB.transmitter.std_id = 0x1FF;
     __CAHSIS_Manager.dataB.transmitter.tx.size = 
         sizeof(__CAHSIS_Manager.dataB.raw_data)/sizeof(__CAHSIS_Manager.dataB.raw_data[0]);
     __CAHSIS_Manager.dataB.transmitter.tx.addr = __CAHSIS_Manager.dataB.raw_data;
-    CAN_RegistTransmitter(CAN1, &__CAHSIS_Manager.dataB.transmitter);
+    spCAN_Controllers.user.registe_transmitter(CAN1, &__CAHSIS_Manager.dataB.transmitter);
 }
 
 void CHASIS_ControlLooper(void) {
@@ -229,8 +229,8 @@ void CHASIS_ControlLooper(void) {
         __CAHSIS_Manager.dataB.raw_data[2*i+1] = speed&0xff;
     }
     
-    CAN_SubmitChange(&__CAHSIS_Manager.dataA.transmitter);
-    CAN_SubmitChange(&__CAHSIS_Manager.dataB.transmitter);
+    spCAN_Controllers.user.send(&__CAHSIS_Manager.dataA.transmitter);
+    spCAN_Controllers.user.send(&__CAHSIS_Manager.dataB.transmitter);
 }
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

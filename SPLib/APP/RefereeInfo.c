@@ -239,8 +239,10 @@ void float2bytes(float chosen_value, uint8_t * res_message) {
 
 
 void Referee_OnBusIdle(void) {
-    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
-    Referee_OnBusIdle();
+    /* Start RC DMA and stop USART_DELE IRQ */
+    DMA_SetCurrDataCounter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+//    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
+//    Referee_OnBusIdle();
 }
 
 
@@ -276,7 +278,7 @@ void extShootData_interpret(uint8_t * extShootData_Message) {
     //实时功率热量数据(0x0004)
 void extPowerHeatData_interpret(uint8_t * extPowerHeatData_Message) 
 {
-  time_tick_1ms = TASK_GetMicrosecond();
+  time_tick_1ms = TASK_GetMilliSecond();
   uint32_t dt = time_tick_1ms-last_time_tick_1ms_1;
   extPowerHeatData.chassisVolt = _bytes2float(&extPowerHeatData_Message[0]);  // 底盘输出电压：V
     extPowerHeatData.chassisCurrent = _bytes2float(&extPowerHeatData_Message[4]);  // 底盘输出电流    :A

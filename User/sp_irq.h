@@ -58,7 +58,7 @@ typedef struct __spIRQ_CbUnit spIRQ_CbUnit_t;
 /**
  * @brief The empty spIRQ_CbUnit_t.
  */
-static const spIRQ_CbUnit_t             spIRQ_CbNull = {(IRQn_Type)-1, 0x00, NULL, NULL};
+static const spIRQ_CbUnit_t             spIRQ_CbNull = {(IRQn_Type)(NonMaskableInt_IRQn-2), 0x00, NULL, NULL};
 
 /**
  * @brief A reserved pool for spIRQ_CbUnit_t.

@@ -7,6 +7,7 @@
  ************************************************************/
 #include "Auto_aim.h"
 #include "gimbal.h"
+#include "sp_utility.h"
  
 frame frame_ex;//存储上一个视觉发来的结构体
 frame fram;//存储视觉数据的结构体
@@ -61,6 +62,14 @@ int     if_newframe = 0;//CAN2收到视觉信号标志位
 int     if_rotate_ok = 0;
 int         if_if_newframe=0;
 
+int miss = 0;
+float last_pitch=0;
+float last_yaw=0;
+char uart6_buff[256];
+
+uint8_t auto_aim_flag = 0;
+uint8_t small_power_flag = 0;
+
 uint32_t last_time_tick_1ms,last_last_time_tick_1ms;//上一个time_tick_1ms的数，上上个time_tick_1ms的数
 /***************************************************************************************
  *Name     : Auto_aim
@@ -72,398 +81,81 @@ uint32_t last_time_tick_1ms,last_last_time_tick_1ms;//上一个time_tick_1ms的�
 ****************************************************************************************/
 void Auto_aim(u8 *rx_buf,int len)
 {
-            #ifdef little_board//如果安装了周陈旺的板子
-
-                if(auto_aim_flag == 0xFF && small_power_flag == 0x00)//如果开启了自瞄而没开启打符模式
-                {
-                    if(if_newframe == 1)//如果从CAN2收到了视觉信号
-                 {
-                        last_last_time_tick_1ms=last_time_tick_1ms;;//更新时钟
-                        last_time_tick_1ms=time_tick_1ms;//controltask.c里面的计数变量，1ms加一次
-                        if(FirstFlag==1)
-                        {
-                                last_view_ch2 = parameter_yaw*Gimbal_info.yaw;//
-                                last_view_ch3 = parameter_pitch*Gimbal_info.pitch;//
-                                view_ch2 = last_view_ch2;
-                                view_ch3 = last_view_ch3;
-                                view_ch2_interval=0;
-                                view_ch3_interval=0;
-                                time_interval=30;
-                        }
-                        else
-                        {
-                                last_view_ch2 = view_ch2;
-                                last_view_ch3 = view_ch3;
-                                view_ch2 = parameter_yaw*Gimbal_info.yaw;
-                                view_ch3 = parameter_pitch*Gimbal_info.pitch;
-                                view_ch2_interval=view_ch2-last_view_ch2;
-                                view_ch3_interval=view_ch3-last_view_ch3;
-                                time_interval=last_time_tick_1ms-last_last_time_tick_1ms;
-                                if(time_interval<0)
-                                    time_interval=time_interval+10000;
-                                if(FirstFlag<=100)
-                                    FirstFlag++;
-                        }
-
-                                time_count=0;
-                    }
-                 
-                if(time_count<60)
-                {
-                    last_step_ch2=step_ch2;
-                    last_step_ch3=step_ch3;
-                    
-                    step_ch2=    view_ch2 +view_ch2_interval/time_interval*time_count;//线性插值预测
-                    step_ch3=    view_ch3 +view_ch3_interval/time_interval*time_count;//线性插值预测
-                    
-                    visual_yaw_pid_out=visual_yaw_kp*step_ch2+visual_yaw_kd*(step_ch2-last_step_ch2);//PD控制
-                    visual_pitch_pid_out=visual_pitch_kp*step_ch3+visual_pitch_kd*(step_ch3-last_step_ch3);//PD控制
-                    
-                    
-                        #ifdef gongkong
-                            
-                            if(FirstFlag<=20)
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 2.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 2.0:-2.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                            }
-                            else
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                            }
-                            
-                        #endif
-                                
-                        #ifdef miaosuan
-                        if(auto_aim_flag == 0xFF && small_power_flag == 0x00)
-                        {
-                            if(FirstFlag<=20)
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                            }
-                            else
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                            }
-                        }else if(auto_aim_flag == 0x00 && small_power_flag == 0xFF){
-                            if(FirstFlag<=20)
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 3.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 3.0:-3.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                            }
-                            else
-                            {
-                                Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                                Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                            }
-                            
-                        }
-                        #endif
-
-                }
-                    time_count++;
-                
-                 
-                if(time_count>100)
-                {
-                     FirstFlag=1;
-                }
-                
-                     if_newframe = 0;
-                 
-                }
-             else if(auto_aim_flag == 0x00 &&small_power_flag == 0xFF)
-             { 
-                 if(if_newframe == 1)
-                 {
-                        Gimbal_control.angle_yaw_set    -= fabs(Gimbal_info.yaw)< 16.0?  Gimbal_info.yaw :( Gimbal_info.yaw >0 ? 16.0:-16.0);
-                        Gimbal_control.angle_pitch_set  += fabs(Gimbal_info.pitch)<7.0? Gimbal_info.pitch :(Gimbal_info.pitch >0 ? 7.0 : -7.0);
-                     
-                     if_newframe = 0;
-                    
-                     if_rotate_ok = 1;
-                 }     
-             }
-    #elif !defined(SP19)
-  //如果没用小板子，利用串口2读取视觉数据
-    if(unpackFrame(rx_buf,len,&fram) == 0)  //解包成功
-    {    
-
-        if(fram.timestamp != frame_ex.timestamp)//如果前一帧数据和当前帧时间戳一样,目标丢失,不作为
-            {
-                
-                if_newframe = 1;            
-                
-            }
-            
-                frame_ex.timestamp = fram.timestamp;
-     }
-    if(auto_aim_flag == 0xFF && small_power_flag == 0x00)
-        {
-            if(if_newframe == 1)
-         {
-                 last_last_time_tick_1ms=last_time_tick_1ms;;
-                last_time_tick_1ms=time_tick_1ms;
-                if(FirstFlag==1)
-                {
-                        last_view_ch2 = parameter_yaw*fram.yaw;
-                        last_view_ch3 = parameter_pitch*fram.pitch;
-                        view_ch2 = last_view_ch2;
-                        view_ch3 = last_view_ch3;
-                        view_ch2_interval=0;
-                        view_ch3_interval=0;
-                      time_interval=30;
-                }
-                else
-                {
-                        last_view_ch2 = view_ch2;
-                        last_view_ch3 = view_ch3;
-                      view_ch2 = parameter_yaw*fram.yaw;
-                        view_ch3 = parameter_pitch*fram.pitch;
-                        view_ch2_interval=view_ch2-last_view_ch2;
-                        view_ch3_interval=view_ch3-last_view_ch3;
-                      time_interval=last_time_tick_1ms-last_last_time_tick_1ms;
-                      if(time_interval<0)
-                            time_interval=time_interval+10000;
-            if(FirstFlag<=100)
-                            FirstFlag++;
-                }
-
-                      time_count=0;
-            }
-         
-             if(time_count<60)
-        {
-            last_step_ch2=step_ch2;
-            last_step_ch3=step_ch3;
-            
-            step_ch2=    view_ch2 +view_ch2_interval/time_interval*time_count;//线性插值预测
-            step_ch3=    view_ch3 +view_ch3_interval/time_interval*time_count;//线性插值预测
-            
-            visual_yaw_pid_out=visual_yaw_kp*step_ch2+visual_yaw_kd*(step_ch2-last_step_ch2);//PD控制
-            visual_pitch_pid_out=visual_pitch_kp*step_ch3+visual_pitch_kd*(step_ch3-last_step_ch3);//PD控制
-            
-                #ifdef gongkong
-                    if(FirstFlag<=20)
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 3.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 3.0:-3.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                    }
-                    else
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                    }
-                #endif
-                        
-                #ifdef miaosuan
-                    
-                if(auto_aim_flag == 0xFF && small_power_flag == 0x00)
-                {
-                    if(FirstFlag<=20)
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                    }
-                    else
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                    }
-                }else if(auto_aim_flag == 0x00 && small_power_flag == 0xFF){
-                    if(FirstFlag<=20)
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 3.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 3.0:-3.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-                    }
-                    else
-                    {
-                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-                    }
-                    
-                }
-                    
-                #endif
-
-        }
-            time_count++;
-        
-         
-        if(time_count>100)
-        {
-             FirstFlag=1;
-        }
-        
-             if_newframe = 0;
-         
-        }
-     else if(auto_aim_flag == 0x00 &&small_power_flag == 0xFF)
-     { 
-         if(if_newframe == 1)
-         {
-            Gimbal_control.angle_yaw_set -= fabs(fram.yaw)< 16.0?  fram.yaw :( fram.yaw>0 ? 16.0:-16.0);
-            Gimbal_control.angle_pitch_set  += fabs(fram.pitch)<7.0? fram.pitch :(fram.pitch>0 ? 7.0 : -7.0);
-             
-             if_newframe = 0;
-            
-             if_rotate_ok = 1;
-         }     
-     }
-    
-    #else
-    if(unpackFrame(rx_buf,len,&fram) == 0)  //解包成功
+	 if(unpackFrame(rx_buf,len,&fram) == 0)  //解包成功
     {    
         if(fram.timestamp != frame_ex.timestamp)//如果前一帧数据和当前帧时间戳一样,目标丢失,不作为
         {
-            if_newframe = 1;            
+            if_newframe = 1;
         }
+				else
+				{
+					if_newframe = 0;
+				}
         frame_ex.timestamp = fram.timestamp;
     }
-//    if(auto_aim_flag == 0xFF && small_power_flag == 0x00)
-//    {
-//        if(if_newframe == 1)
-//        {
-//            last_last_time_tick_1ms = last_time_tick_1ms;;
-//            last_time_tick_1ms = TASK_GetMicrosecond();
-//            if(FirstFlag==1)
-//            {
-//                last_view_ch2 = parameter_yaw*fram.yaw;
-//                last_view_ch3 = parameter_pitch*fram.pitch;
-//                view_ch2 = last_view_ch2;
-//                view_ch3 = last_view_ch3;
-//                view_ch2_interval=0;
-//                view_ch3_interval=0;
-//                time_interval=30;
-//            }
-//            else
-//            {
-//                last_view_ch2 = view_ch2;
-//                last_view_ch3 = view_ch3;
-//                view_ch2 = parameter_yaw*fram.yaw;
-//                view_ch3 = parameter_pitch*fram.pitch;
-//                view_ch2_interval=view_ch2-last_view_ch2;
-//                view_ch3_interval=view_ch3-last_view_ch3;
-//                time_interval=last_time_tick_1ms-last_last_time_tick_1ms;
-//                if(time_interval<0)
-//                    time_interval=time_interval+10000;
-//                if(FirstFlag<=100)
-//                    FirstFlag++;
-//            }
-
-//            time_count=0;
-//        }
-//        if(time_count<60)
-//        {
-//            last_step_ch2=step_ch2;
-//            last_step_ch3=step_ch3;
-//            
-//            step_ch2=    view_ch2 +view_ch2_interval/time_interval*time_count;//线性插值预测
-//            step_ch3=    view_ch3 +view_ch3_interval/time_interval*time_count;//线性插值预测
-//            
-//            visual_yaw_pid_out=visual_yaw_kp*step_ch2+visual_yaw_kd*(step_ch2-last_step_ch2);//PD控制
-//            visual_pitch_pid_out=visual_pitch_kp*step_ch3+visual_pitch_kd*(step_ch3-last_step_ch3);//PD控制
-//            
-//                #ifdef gongkong
-//                    if(FirstFlag<=20)
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 3.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 3.0:-3.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-//                    }
-//                    else
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-//                    }
-//                #endif
-//                        
-//                #ifdef miaosuan
-//                    
-//                if(auto_aim_flag == 0xFF && small_power_flag == 0x00)
-//                {
-//                    if(FirstFlag<=20)
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-//                    }
-//                    else
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-//                    }
-//                }else if(auto_aim_flag == 0x00 && small_power_flag == 0xFF){
-//                    if(FirstFlag<=20)
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 3.0 ? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 3.0:-3.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<1.75? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 1.75 : -1.75);
-//                    }
-//                    else
-//                    {
-//                        Gimbal_control.angle_yaw_set    -= fabs(visual_yaw_pid_out)< 1.0? visual_yaw_pid_out :(visual_yaw_pid_out>0 ? 1.0:-1.0);
-//                        Gimbal_control.angle_pitch_set  += fabs(visual_pitch_pid_out)<5.0? visual_pitch_pid_out :(visual_pitch_pid_out>0 ? 5.0 : -5.0);
-//                    }
-//                    
-//                }
-//                    
-//                #endif
-//        }
-//        time_count++;
-//        
-//        if(time_count>100)
-//        {
-//             FirstFlag=1;
-//        }
-//        
-//         if_newframe = 0;
-//    }
-//    else 
+		else
+		{
+			if_newframe = 0;
+		}
     if(auto_aim_flag == 0x00 && small_power_flag == 0xFF)
     { 
         if(if_newframe == 1) {
-            spGIMBAL_Controller.user.update_target((fabs(fram.pitch)<7.0? fram.pitch :(fram.pitch>0 ? 7.0 : -7.0))/0.04394f,
-                -(fabs(fram.yaw)< 16.0?  fram.yaw :( fram.yaw>0 ? 16.0:-16.0))/0.04394f); 
+            spGIMBAL_Controller.user.update_target_limit(
+                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle + fram.pitch/0.04394f,
+                spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle - fram.yaw/0.04394f);
+            //yaw 10 5 0.5    pitch  2 10 0.2
+            if((-last_yaw+fram.yaw)!=1)
+                miss++;
+            u8 size = sprintf(uart6_buff, "%f,%d\r\n", fram.yaw, miss);
+            spDMA_Controllers.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
+            last_yaw=fram.yaw;
         }
     }
-    #endif
 }
 
 
 static uint8_t __view_buffer[128];
-UsartBuffer_t view_buffer = {
-    .buffer = __view_buffer,
-    .size = 128,
-    .curr_ptr = 0,
-    .last_ptr = 0
+struct {
+    UsartBuffer_t buffer;
+    float stamp, stamp_ex;
+    float freq;
+} view_buffer = {
+    .buffer = {
+        .buffer = __view_buffer,
+        .size = 128,
+        .curr_ptr = 0,
+        .last_ptr = 0
+    },
+    .stamp = 0.f,
+    .stamp_ex = 0.f,
+    .freq = 0.f
 };
-void Autoaim_USART_Interface(void) {
-    uint16_t size = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
-    DMA_Restart(spDMA_USART2_rx_stream, (uint32_t)view_buffer.buffer, 
-         (uint32_t)&USART2->DR, view_buffer.size);
-    Auto_aim(view_buffer.buffer, size);
+
+void Autoaim_Init(void) {
+    USART_RX_Config(USART2, 115200);
+    DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer.buffer, view_buffer.buffer.size, false);
+    USART_TX_Config(USART2, 115200);
+    DMA_USART_TX_Config(USART2);
+//        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
+    DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
+    spIRQ_Manager.registe(USART2_IRQn, USART_IT_IDLE, Autoaim_USART_Interface);
+    USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
+    USART_Cmd(USART2, ENABLE);
+    sendtoComputerInit();
 }
 
-//        uint16_t size;
-//        uint8_t buffer[128];
-//        view_buffer.curr_ptr = view_buffer.size - spDMA_USART2_rx_stream->NDTR;
-//        if(view_buffer.curr_ptr > view_buffer.last_ptr) {
-//            size = view_buffer.curr_ptr - view_buffer.last_ptr;
-//            DMA_CopyMem2Mem(
-//                (uint32_t)buffer, 
-//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
-//                size);
-//        } else if(view_buffer.curr_ptr < view_buffer.last_ptr) {
-//            size = view_buffer.size - view_buffer.last_ptr;
-//            DMA_CopyMem2Mem(
-//                (uint32_t)buffer, 
-//                (uint32_t)(&view_buffer.buffer[view_buffer.last_ptr]), 
-//                size);
-//            DMA_CopyMem2Mem(
-//                (uint32_t)(&buffer[size]), 
-//                (uint32_t)(view_buffer.buffer), 
-//                view_buffer.curr_ptr);
-//            size += view_buffer.curr_ptr;
-//        }
-//        view_buffer.last_ptr = view_buffer.curr_ptr;
+void Autoaim_USART_Interface(void) {
+    view_buffer.stamp_ex = view_buffer.stamp;
+    view_buffer.stamp = TASK_GetSecond();
+    view_buffer.freq = view_buffer.stamp - view_buffer.stamp_ex;
+    
+    uint16_t size = view_buffer.buffer.size - spDMA_USART2_rx_stream->NDTR;
+    spDMA_Controllers.controller.reset_counter(spDMA_USART2_rx_stream, view_buffer.buffer.size);
+    Auto_aim(view_buffer.buffer.buffer, size);
+    
+    LED8_BIT_ON(LED8_BIT4);
+    delay_us(100);
+    LED8_BIT_OFF(LED8_BIT4);
+}
+
+

@@ -197,8 +197,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART1();
         spUSART1_RCC_GPIO();
         GPIO_PinAFConfig(spUSART1_GPIO_TX, spUSART1_TX_Source, GPIO_AF_USART1);
-        GPIO_AF_Config(spUSART1_GPIO_TX, 
-            spGPIO_FromSource(spUSART1_TX_Source),
+        spGPIO_Controllers.alternal_config(spUSART1_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUSART1_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -208,8 +208,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART2();
         spUSART2_RCC_GPIO();
         GPIO_PinAFConfig(spUSART2_GPIO_TX, spUSART2_TX_Source, GPIO_AF_USART2);
-        GPIO_AF_Config(spUSART2_GPIO_TX, 
-            spGPIO_FromSource(spUSART2_TX_Source),
+        spGPIO_Controllers.alternal_config(spUSART2_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUSART2_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -219,8 +219,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART3();
         spUSART3_RCC_GPIO();
         GPIO_PinAFConfig(spUSART3_GPIO_TX, spUSART3_TX_Source, GPIO_AF_USART3);
-        GPIO_AF_Config(spUSART3_GPIO_TX, 
-            spGPIO_FromSource(spUSART3_TX_Source),
+        spGPIO_Controllers.alternal_config(spUSART3_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUSART3_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -230,8 +230,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART4();
         spUART4_RCC_GPIO();
         GPIO_PinAFConfig(spUART4_GPIO_TX, spUART4_TX_Source, GPIO_AF_UART4);
-        GPIO_AF_Config(spUART4_GPIO_TX, 
-            spGPIO_FromSource(spUART4_TX_Source),
+        spGPIO_Controllers.alternal_config(spUART4_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUART4_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -241,8 +241,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART5();
         spUART5_RCC_GPIO();
         GPIO_PinAFConfig(spUART5_GPIO_TX, spUART5_TX_Source, GPIO_AF_UART5);
-        GPIO_AF_Config(spUART5_GPIO_TX, 
-            spGPIO_FromSource(spUART5_TX_Source),
+        spGPIO_Controllers.alternal_config(spUART5_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUART5_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -252,8 +252,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART6();
         spUSART6_RCC_GPIO();
         GPIO_PinAFConfig(spUSART6_GPIO_TX, spUSART6_TX_Source, GPIO_AF_USART6);
-        GPIO_AF_Config(spUSART6_GPIO_TX, 
-            spGPIO_FromSource(spUSART6_TX_Source),
+        spGPIO_Controllers.alternal_config(spUSART6_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUSART6_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -263,8 +263,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART7();
         spUART7_RCC_GPIO();
         GPIO_PinAFConfig(spUART7_GPIO_TX, spUART7_TX_Source, GPIO_AF_UART7);
-        GPIO_AF_Config(spUART7_GPIO_TX, 
-            spGPIO_FromSource(spUART7_TX_Source),
+        spGPIO_Controllers.alternal_config(spUART7_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUART7_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -274,8 +274,8 @@ bool USART_TX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART8();
         spUART8_RCC_GPIO();
         GPIO_PinAFConfig(spUART8_GPIO_TX, spUART8_TX_Source, GPIO_AF_UART8);
-        GPIO_AF_Config(spUART8_GPIO_TX, 
-            spGPIO_FromSource(spUART8_TX_Source),
+        spGPIO_Controllers.alternal_config(spUART8_GPIO_TX, 
+            spGPIO_PinFromPinSource(spUART8_TX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -315,8 +315,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART1();
         spUSART1_RCC_GPIO();
         GPIO_PinAFConfig(spUSART1_GPIO_RX, spUSART1_RX_Source, GPIO_AF_USART1);
-        GPIO_AF_Config(spUSART1_GPIO_RX, 
-            spGPIO_FromSource(spUSART1_RX_Source),
+        spGPIO_Controllers.alternal_config(spUSART1_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUSART1_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -326,8 +326,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART2();
         spUSART2_RCC_GPIO();
         GPIO_PinAFConfig(spUSART2_GPIO_RX, spUSART2_RX_Source, GPIO_AF_USART2);
-        GPIO_AF_Config(spUSART2_GPIO_RX, 
-            spGPIO_FromSource(spUSART2_RX_Source),
+        spGPIO_Controllers.alternal_config(spUSART2_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUSART2_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -337,8 +337,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART3();
         spUSART3_RCC_GPIO();
         GPIO_PinAFConfig(spUSART3_GPIO_RX, spUSART3_RX_Source, GPIO_AF_USART3);
-        GPIO_AF_Config(spUSART3_GPIO_RX, 
-            spGPIO_FromSource(spUSART3_RX_Source),
+        spGPIO_Controllers.alternal_config(spUSART3_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUSART3_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -348,8 +348,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART4();
         spUART4_RCC_GPIO();
         GPIO_PinAFConfig(spUART4_GPIO_RX, spUART4_RX_Source, GPIO_AF_UART4);
-        GPIO_AF_Config(spUART4_GPIO_RX, 
-            spGPIO_FromSource(spUART4_RX_Source),
+        spGPIO_Controllers.alternal_config(spUART4_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUART4_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -359,8 +359,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART5();
         spUART5_RCC_GPIO();
         GPIO_PinAFConfig(spUART5_GPIO_RX, spUART5_RX_Source, GPIO_AF_UART5);
-        GPIO_AF_Config(spUART5_GPIO_RX, 
-            spGPIO_FromSource(spUART5_RX_Source),
+        spGPIO_Controllers.alternal_config(spUART5_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUART5_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -370,8 +370,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_USART6();
         spUSART6_RCC_GPIO();
         GPIO_PinAFConfig(spUSART6_GPIO_RX, spUSART6_RX_Source, GPIO_AF_USART6);
-        GPIO_AF_Config(spUSART6_GPIO_RX, 
-            spGPIO_FromSource(spUSART6_RX_Source),
+        spGPIO_Controllers.alternal_config(spUSART6_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUSART6_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -381,8 +381,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART7();
         spUART7_RCC_GPIO();
         GPIO_PinAFConfig(spUART7_GPIO_RX, spUART7_RX_Source, GPIO_AF_UART7);
-        GPIO_AF_Config(spUART7_GPIO_RX, 
-            spGPIO_FromSource(spUART7_RX_Source),
+        spGPIO_Controllers.alternal_config(spUART7_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUART7_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }
@@ -392,8 +392,8 @@ bool USART_RX_Config(USART_TypeDef* usart, uint32_t baudrate) {
         spRCC_Set_UART8();
         spUART8_RCC_GPIO();
         GPIO_PinAFConfig(spUART8_GPIO_RX, spUART8_RX_Source, GPIO_AF_UART8);
-        GPIO_AF_Config(spUART8_GPIO_RX, 
-            spGPIO_FromSource(spUART8_RX_Source),
+        spGPIO_Controllers.alternal_config(spUART8_GPIO_RX, 
+            spGPIO_PinFromPinSource(spUART8_RX_Source),
             GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_50MHz);
         goto uart_configuration;
     }

@@ -25,24 +25,46 @@
   * @{
   */
 
-/** @defgroup SPI
-  * @brief    SPI Module
+/** @defgroup CONFIG
+  * @brief    Project config
   * @{
   */
-
-
 
 /** @defgroup Commonly_Used_Macros
   * @ingroup  CONFIG
   * @{
   */
-#if !defined(SP19)
-    #error "Please specify SPxx in your porject!"
+#if !defined(SP)
+    #error "Please define SP in your porject!"
 #endif
 
-#if !defined(SP_FANTRY) && !defined(SP_HERO) && !defined(SP_ENGENEER) \
+//  <c> If using board typeA
+#define SP_USING_BOARD_TYPEA
+//  </c>
+
+//  <e1> Choose your robot type
+//    <o> RobotType
+//      <1=>FANTRY  <2=>HERO  <3=>ENGINEER  <4=>SENTRY  <5=>NONE
+#define sp_choose_robot_type                 4
+//  </e>
+
+#if defined(sp_choose_robot_type)
+    #if sp_choose_robot_type==0
+        #define SP_INFANTRY
+    #elif sp_choose_robot_type==2
+        #define SP_HERO
+    #elif sp_choose_robot_type==3
+        #define SP_ENGINEER
+    #elif sp_choose_robot_type==4
+        #define SP_SENTRY
+    #elif sp_choose_robot_type==5
+        #define SP_TEST
+    #endif
+#endif
+
+#if !defined(SP_INFANTRY) && !defined(SP_HERO) && !defined(SP_ENGINEER) \
     && !defined(SP_SENTRY) && !defined(SP_TEST)
-    #error "Please specify your robot type from SP_FANTRY, SP_HERO, SP_ENGENEER, SP_SENTRY or SP_TEST!"
+    #error "Please specify your robot type from SP_INFANTRY, SP_HERO, SP_ENGENEER, SP_SENTRY or SP_TEST!"
 #endif
 
 #include "stm32f4xx.h"
@@ -50,25 +72,19 @@
 #include <core_cm4.h>
 
 /* __packed keyword used to decrease the data type alignment to 1-byte */
-#if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+#if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 1)
     #define packed_struct       struct __attribute__((packed))
     #define packed_union        union __attribute__((packed))
 #else
     #define packed_struct       __packed struct
     #define packed_union        __packed union
 #endif
-
-#define spGPIO_FromSource(x)            (0x0001<<(x))   /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
-#define spUSART_PRINTF_USARTx           UART8           /* Select USART for overriding printf */
-
-//#define spCLOCK                         Systick
-//#define spRCC_Set_spCLOCK               spRCC_Set_TIM14
-//#define spClock_IRQn                    TIM8_TRG_COM_TIM14_IRQn
-//#define spClock_IRQHandler              TIM8_TRG_COM_TIM14_IRQHandler
     
-#define spSYSTIMER                      TIM14
-#define spRCC_Set_SYSTIMER              spRCC_Set_TIM14
-#define spSYSTIMER_IRQn                 TIM8_TRG_COM_TIM14_IRQn
+#define spINLINE __inline
+#ifndef spFORCE_INLINE
+    // #define portFORCE_INLINE __forceinline
+    #define spFORCE_INLINE __attribute__((always_inline))
+#endif
     
 /** @} */
 
@@ -78,19 +94,79 @@
   * @ingroup  CONFIG
   * @{
   */
+//  <h> System Module Select
+//  <o> spSYSTIMER
+//    <1=>TIM13  <2=>TIM14
+//    <i> USING chasis part
+#define sp_choose_clock                 2
+//  </h>
+
+#define spUSART_PRINTF_USARTx           UART8   /*<! Select USART for overriding printf */
+#if defined(sp_choose_clock)
+    #if sp_choose_clock==1
+        #define spSYSTIMER                      TIM13
+        #define spRCC_Set_SYSTIMER              spRCC_Set_TIM13
+        #define spSYSTIMER_IRQn                 TIM8_UP_TIM13_IRQHandler
+    #elif sp_choose_clock==2
+        #define spSYSTIMER                      TIM14
+        #define spRCC_Set_SYSTIMER              spRCC_Set_TIM14
+        #define spSYSTIMER_IRQn                 TIM8_TRG_COM_TIM14_IRQn
+    #endif
+#else
+    #define spSYSTIMER                          TIM14
+    #define spRCC_Set_SYSTIMER                  spRCC_Set_TIM14
+    #define spSYSTIMER_IRQn                     TIM8_TRG_COM_TIM14_IRQn
+#endif
+
+#define spCLOCKTIMER                            spSYSTIMER
+#define spRCC_Set_CLOCKTIMER                    spRCC_Set_SYSTIMER
+#define spCLOCKTIMER_IRQn                       spSYSTIMER_IRQn
+
+
+/** @brief <h> IRQ callback pool size */
+//  <h> IRQ callback pool size
+//    <o> USING_IRQ_POOL_SIZE       <32-256>
+#define USING_IRQ_POOL_SIZE         128         
+//  </h>
+
+/** @brief <h> Servo controller pool size */
+//  <h> Servo controller pool size
+//    <o> USING_SERVO_POOL_SIZE     <2-32>
+#define USING_SERVO_POOL_SIZE       12 
+//  </h>
 
 /**
   * @brief  Choose bullet test case 42mm/17mm
   * @note   42mm using motor 203 and 204, 17mm using PWM and motor 201
   */
 //  <h> Test Module Select
+//  <c1> USING_SENTRY_CHASIS
+//    <i> USING_SENTRY_CHASIS
+#define USING_SENTRY_CHASIS
+//  </c>
+
+//  <c1> USING_SPEEDBALANCE
+//    <i> USING_SPEEDBALANCE
+#define USING_SPEED_BALANCE
+//  </c>
+
+//  <c1> USING_FRICTION
+//    <i> USING_FRICTION
+#define USING_FRICTION
+//  </c>
+
+//  <c1> USING_FEED_MOTOR
+//    <i> USING_FEED_MOTOR
+#define USING_FEED_MOTOR
+//  </c>
+
 //  <c1> USING_CHASIS
 //    <i> USING chasis part
-#define USING_CHASIS
+//#define USING_CHASIS
 //  </c>
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
-#define USING_GIMBAL_MODE       0
+#define USING_GIMBAL_MODE       1
 //  <c1> USING_USB
 //    <i> Enable USB
 #define USING_USB
@@ -101,31 +177,55 @@
 //  </c>
 //  </h>
 
-#define Latitude_At_ShenZhen 22.57025f
+
+//  <h> Config FreeModbus
+//  <c1> USING_MODBUS
+//    <i> Enable FreeModbus
+//#define USING_MODBUS
+//  </c>
+
+//    <o> Choose Port
+//      <0=>USART6  <1=>USART3
+#define sp_choose_modbus_port                   0
+
+//    <o> Choose Timer
+//      <0=>TIM12  <1=>TIM11
+#define sp_choose_modbus_timer                  0
+//  </h>
+
+#ifdef USING_MODBUS
+    #if defined(sp_choose_modbus_port)
+        #if sp_choose_modbus_port==0
+            #define spMODBUS_PORT               USART6
+            #define spMODBUS_PORT_IRQ           USART6_IRQn
+        #elif sp_choose_modbus_port==1
+            #define spMODBUS_PORT               USART3
+            #define spMODBUS_PORT_IRQ           USART3_IRQn
+        #endif
+    #endif
+    
+    #if defined(sp_choose_modbus_timer)
+        #if sp_choose_modbus_timer==0
+            #define spMODBUS_TIMER              TIM12
+            #define spMODBUS_TIMER_IRQ          TIM8_BRK_TIM12_IRQn
+        #elif sp_choose_modbus_timer==1
+            #define spMODBUS_TIMER              TIM11
+            #define spMODBUS_TIMER_IRQ          TIM1_TRG_COM_TIM11_IRQn
+        #endif
+    #endif
+#endif
+
+#define Latitude_At_ShenZhen 1.57025f
 #define Latitude_At_ShangHai 31.18333f
 /** @} */
-
-
-/** @defgroup Pool_Size_Configuration
-  * @ingroup  CONFIG
-  * @{
-  */
-//  <h> IRQ callback pool size
-//    <o> USING_IRQ_POOL_SIZE       <32-256>
-#define USING_IRQ_POOL_SIZE         128
-//  </h>
-/** @} */  
-
-  
 
 
 /** @defgroup USART_Resource_Using_Configuration
   * @ingroup  CONFIG
   * @{
   */
-
 //  <h> USART Select
-//    <h> USART1
+
 //      <c1> USING_SP_USART1_TX
 //        <i> Enable USART1 transmit
 //#define USING_SP_USART1_TX
@@ -134,9 +234,8 @@
 //        <i> Enable USART1 read
 #define USING_SP_USART1_RX
 //      </c>
-//    </h>
 
-//    <h> USART2
+
 //      <c1> USING_SP_USART2_TX
 //        <i> Enable USART2 transmit
 #define USING_SP_USART2_TX
@@ -145,9 +244,8 @@
 //        <i> Enable USART2 read
 #define USING_SP_USART2_RX
 //      </c>
-//    </h>
 
-//    <h> USART3
+
 //      <c1> USING_SP_USART3_TX
 //        <i> Enable USART3 transmit
 #define USING_SP_USART3_TX
@@ -156,9 +254,8 @@
 //        <i> Enable USART3 read
 #define USING_SP_USART3_RX
 //      </c>
-//    </h>
 
-//    <h> UART4
+
 //      <c1> USING_SP_UART4_TX
 //        <i> Enable UART4 transmit
 //#define USING_SP_UART4_TX
@@ -167,9 +264,8 @@
 //        <i> Enable UART4 read
 //#define USING_SP_UART4_RX
 //      </c>
-//    </h>
 
-//    <h> UART5
+
 //      <c1> USING_SP_UART5_TX
 //        <i> Enable UART5 transmit
 //#define USING_SP_UART5_TX
@@ -178,9 +274,8 @@
 //        <i> Enable UART5 read
 //#define USING_SP_UART5_RX
 //      </c>
-//    </h>
 
-//    <h> USART6
+
 //      <c1> USING_SP_USART6_TX
 //        <i> Enable USART6 transmit
 #define USING_SP_USART6_TX
@@ -189,9 +284,9 @@
 //        <i> Enable USART6 read
 #define USING_SP_USART6_RX
 //      </c>
-//    </h>
 
-//    <h> UART7
+
+#if defined(SP_USING_BOARD_TYPEA)
 //      <c1> USING_SP_UART7_TX
 //        <i> Enable UART7 transmit
 #define USING_SP_UART7_TX
@@ -200,9 +295,9 @@
 //        <i> Enable UART7 read
 #define USING_SP_UART7_RX
 //      </c>
-//    </h>
+#endif
 
-//    <h> UART8
+#if defined(SP_USING_BOARD_TYPEA)
 //      <c1> USING_SP_UART8_TX
 //        <i> Enable UART8 transmit
 #define USING_SP_UART8_TX
@@ -211,7 +306,8 @@
 //        <i> Enable UART8 read
 #define USING_SP_UART8_RX
 //      </c>
-//    </h>
+#endif
+
 //  </h>
 /** @} */
 
@@ -241,11 +337,11 @@
 #endif
 /** @} */
 
+
 /** @defgroup SuperPower_Tasks
   * @ingroup  CONFIG
   * @{
   */
-
 extern void TASK_GlobalInit(void);
 extern void spCLOCK_Configuration(void);
 
@@ -275,7 +371,6 @@ extern void TASK_UILooper(TimerHandle_t xTimer);
 #endif
 /** @} */
 
-  
 
 /** @defgroup General_System_Functions
   * @ingroup  CONFIG
@@ -283,12 +378,23 @@ extern void TASK_UILooper(TimerHandle_t xTimer);
   */
 extern void delay_us(uint32_t us);
 extern void delay_ms(uint32_t ms);
-extern uint32_t TASK_GetMicrosecond(void);
-extern void TASK_GetMicrosecondPtr(unsigned long *count);
-extern spTimeStamp TASK_GetTimeStamp(void);
-extern float TASK_GetSecond(void);
-//extern float TASK_GetSecondFromTimeStamp(spTimeStamp* stamp);
+
+/**
+  * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
+  */
+void TASK_GetMicrosecondPtr(unsigned long *count);
+spTimeStamp TASK_GetTimeStamp(void);
+//uint32_t TASK_GetMicroSecond(void);
+uint32_t TASK_GetMilliSecond(void);
+float TASK_GetSecond(void);
+
+extern void spPortEnterCritical(void);
+extern void spPortExitCritical(void);
+
 /** @} */
+
+
+
   
   
 /** @defgroup IRQ_Handlers

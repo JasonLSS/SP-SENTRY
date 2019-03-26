@@ -190,6 +190,29 @@ DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t l
     return NULL;
 }
 
+void DMA_ResetCounter(DMA_Stream_TypeDef * stream, uint32_t size) {
+    /* Start RC DMA and stop USART_DELE IRQ */
+    DMA_Cmd(stream, DISABLE);
+    while(stream->CR & DMA_SxCR_EN);
+    DMA_SetCurrDataCounter(stream, size);
+    DMA_Cmd(stream, ENABLE);
+}
 
+
+
+
+const struct DMA_Controllers_Type spDMA_Controllers =  {
+    .controller = {
+        .start = DMA_Start,
+        .restart = DMA_Restart,
+        .clear_stream_bit = DMA_ClearStreamFlagBit,
+        .get_stream_bit = DMA_GetStreamFlagBit,
+        .reset_counter = DMA_ResetCounter
+    },
+    .mem2mem = {
+        .init = DMA_InitNull,
+        .copy = DMA_CopyMem2Mem
+    }
+};
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

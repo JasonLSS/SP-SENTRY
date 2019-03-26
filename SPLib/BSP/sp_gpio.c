@@ -14,9 +14,69 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_gpio.h"
 
+void GPIO_RCC(GPIO_TypeDef* GPIOx) {
+#ifdef spRCC_Set_GPIOA
+    if(GPIOx==GPIOA) {
+        spRCC_Set_GPIOA();
+    }
+#endif
+#ifdef spRCC_Set_GPIOB
+    if(GPIOx==GPIOB) {
+        spRCC_Set_GPIOB();
+    }
+#endif
+#ifdef spRCC_Set_GPIOC
+    if(GPIOx==GPIOC) {
+        spRCC_Set_GPIOC();
+    }
+#endif
+#ifdef spRCC_Set_GPIOD
+    if(GPIOx==GPIOD) {
+        spRCC_Set_GPIOD();
+    }
+#endif
+#ifdef spRCC_Set_GPIOE
+    if(GPIOx==GPIOE) {
+        spRCC_Set_GPIOE();
+    }
+#endif
+#ifdef spRCC_Set_GPIOF
+    if(GPIOx==GPIOF) {
+        spRCC_Set_GPIOF();
+    }
+#endif
+#ifdef spRCC_Set_GPIOG
+    if(GPIOx==GPIOG) {
+        spRCC_Set_GPIOG();
+    }
+#endif
+#ifdef spRCC_Set_GPIOH
+    if(GPIOx==GPIOH) {
+        spRCC_Set_GPIOH();
+    }
+#endif
+#ifdef spRCC_Set_GPIOI
+    if(GPIOx==GPIOI) {
+        spRCC_Set_GPIOI();
+    }
+#endif
+#ifdef spRCC_Set_GPIOJ
+    if(GPIOx==GPIOJ) {
+        spRCC_Set_GPIOJ();
+    }
+#endif
+#ifdef spRCC_Set_GPIOK
+    if(GPIOx==GPIOK) {
+        spRCC_Set_GPIOK();
+    }
+#endif
+}
+
+
 
 void GPIO_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef Modex, 
     GPIOOType_TypeDef OTyperx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
+        GPIO_RCC(GPIOx);
         GPIO_InitTypeDef GPIO_InitStructure;
         GPIO_InitStructure.GPIO_Pin     =       Pinx;
         GPIO_InitStructure.GPIO_Mode    =       Modex;
@@ -28,6 +88,7 @@ void GPIO_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef Modex,
 
 void GPIO_OUT_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOOType_TypeDef OTyperx, 
     GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
+        GPIO_RCC(GPIOx);
         GPIO_InitTypeDef GPIO_InitStructure;
         GPIO_InitStructure.GPIO_Pin     =       Pinx;
         GPIO_InitStructure.GPIO_Mode    =       GPIO_Mode_OUT;
@@ -38,6 +99,7 @@ void GPIO_OUT_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOOType_TypeDef OType
 }
 
 void GPIO_IN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
+        GPIO_RCC(GPIOx);
         GPIO_InitTypeDef GPIO_InitStructure;
         GPIO_InitStructure.GPIO_Pin     =       Pinx;
         GPIO_InitStructure.GPIO_Mode    =       GPIO_Mode_IN;
@@ -49,6 +111,7 @@ void GPIO_IN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, 
 
 void GPIO_AF_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, 
         GPIOOType_TypeDef OTyperx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
+        GPIO_RCC(GPIOx);
         GPIO_InitTypeDef GPIO_InitStructure;
         GPIO_InitStructure.GPIO_Pin     =       Pinx;
         GPIO_InitStructure.GPIO_Mode    =       GPIO_Mode_AF;
@@ -59,6 +122,7 @@ void GPIO_AF_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx,
 }
 
 void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+        GPIO_RCC(GPIOx);
         GPIO_InitTypeDef GPIO_InitStructure;
         GPIO_InitStructure.GPIO_Pin     =       Pinx;
         GPIO_InitStructure.GPIO_Mode    =       GPIO_Mode_AN;
@@ -66,6 +130,14 @@ void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
 
+
+const struct GPIO_Controllers_Type spGPIO_Controllers = {
+    .general_config = GPIO_Config,
+    .output_config = GPIO_OUT_Config,
+    .input_config = GPIO_IN_Config,
+    .alternal_config = GPIO_AF_Config,
+    .analog_config = GPIO_AN_Config
+};
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

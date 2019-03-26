@@ -115,48 +115,48 @@ void CAN1_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode)
     memset(__can1_receivers, 0x00, sizeof(__can1_receivers));
     memset(__can1_transmitters, 0x00, sizeof(__can1_transmitters));
 
-    //使能相关时钟
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);//使能PORTA时钟 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);//使能CAN1时钟
+    //?????????
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);//???PORTA??? 
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);//???CAN1???
 
-    //初始化GPIO
+    //?????GPIO
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0| GPIO_Pin_1;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;            //复用功能
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //推挽输出
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;            //???ù???
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //???????
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;      //100MHz
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //上拉
-    GPIO_Init(GPIOD, &GPIO_InitStructure);                  //初始化PA11,PA12
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //????
+    GPIO_Init(GPIOD, &GPIO_InitStructure);                  //?????PA11,PA12
 
-    //引脚复用映射配置
-    GPIO_PinAFConfig(GPIOD,GPIO_PinSource0,GPIO_AF_CAN1);   //GPIOD0复用为CAN1
-    GPIO_PinAFConfig(GPIOD,GPIO_PinSource1,GPIO_AF_CAN1);   //GPIOD1复用为CAN1
+    //??????????????
+    GPIO_PinAFConfig(GPIOD,GPIO_PinSource0,GPIO_AF_CAN1);   //GPIOD0?????CAN1
+    GPIO_PinAFConfig(GPIOD,GPIO_PinSource1,GPIO_AF_CAN1);   //GPIOD1?????CAN1
         
-    //CAN单元设置
-    CAN_InitStructure.CAN_TTCM=DISABLE;        //非时间触发通信模式   
-    CAN_InitStructure.CAN_ABOM=ENABLE;      //    DISABLE;    //软件自动离线管理      
-    CAN_InitStructure.CAN_AWUM=DISABLE;     //睡眠模式通过软件唤醒(清除CAN->MCR的SLEEP位)
-    CAN_InitStructure.CAN_NART=ENABLE;        //禁止报文自动传送 
-    CAN_InitStructure.CAN_RFLM=DISABLE;        //报文不锁定,新的覆盖旧的  
-    CAN_InitStructure.CAN_TXFP=DISABLE;        //优先级由报文标识符决定 
-    CAN_InitStructure.CAN_Mode= mode;        //模式设置 
-    CAN_InitStructure.CAN_SJW=tsjw;            //重新同步跳跃宽度(Tsjw)为tsjw+1个时间单位 CAN_SJW_1tq~CAN_SJW_4tq
-    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1范围CAN_BS1_1tq ~CAN_BS1_16tq
-    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2范围CAN_BS2_1tq ~    CAN_BS2_8tq
-    CAN_InitStructure.CAN_Prescaler=brp;    //分频系数(Fdiv)为brp+1    
-    CAN_Init(CAN1, &CAN_InitStructure);     // 初始化CAN1 
+    //CAN???????
+    CAN_InitStructure.CAN_TTCM=DISABLE;        //????????????   
+    CAN_InitStructure.CAN_ABOM=ENABLE;      //    DISABLE;    //??????????????      
+    CAN_InitStructure.CAN_AWUM=DISABLE;     //????????????????(???CAN->MCR??SLEEPλ)
+    CAN_InitStructure.CAN_NART=ENABLE;        //?????????????? 
+    CAN_InitStructure.CAN_RFLM=DISABLE;        //?????????,????????  
+    CAN_InitStructure.CAN_TXFP=DISABLE;        //?????????????????? 
+    CAN_InitStructure.CAN_Mode= mode;        //?????? 
+    CAN_InitStructure.CAN_SJW=tsjw;            //??????????????(Tsjw)?tsjw+1?????λ CAN_SJW_1tq~CAN_SJW_4tq
+    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1??ΧCAN_BS1_1tq ~CAN_BS1_16tq
+    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2??ΧCAN_BS2_1tq ~    CAN_BS2_8tq
+    CAN_InitStructure.CAN_Prescaler=brp;    //??????(Fdiv)?brp+1    
+    CAN_Init(CAN1, &CAN_InitStructure);     // ?????CAN1 
 
-    //配置过滤器
-    CAN_FilterInitStructure.CAN_FilterNumber=0;      //过滤器0
+    //???ù?????
+    CAN_FilterInitStructure.CAN_FilterNumber=0;      //??????0
     CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask; 
-    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit; //32位 
-    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;////32位ID
+    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit; //32λ 
+    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;////32λID
     CAN_FilterInitStructure.CAN_FilterIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;//32位MASK
+    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;//32λMASK
     CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO0;//过滤器0关联到FIFO0
-    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE; //激活过滤器0
-    CAN_FilterInit(&CAN_FilterInitStructure);//滤波器初始化
-    CAN_ITConfig(CAN1,CAN_IT_FMP0,ENABLE);//FIFO0消息挂号中断允许.            
+    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO0;//??????0??????FIFO0
+    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE; //?????????0
+    CAN_FilterInit(&CAN_FilterInitStructure);//??????????
+    CAN_ITConfig(CAN1,CAN_IT_FMP0,ENABLE);//FIFO0???????ж?????.            
   
 //      NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 1);
 }
@@ -171,78 +171,92 @@ void CAN2_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode)
     memset(__can2_receivers, 0x00, sizeof(__can2_receivers));
     memset(__can2_transmitters, 0x00, sizeof(__can2_transmitters));
 
-    //使能相关时钟
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);//使能GPIOB时钟
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN2, ENABLE);//使能CAN2时钟
+    //?????????
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);//???GPIOB???
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN2, ENABLE);//???CAN2???
 
-    //初始化GPIO
+    //?????GPIO
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12| GPIO_Pin_13;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;//复用功能
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//推挽输出
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;//???ù???
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//???????
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//上拉
-    GPIO_Init(GPIOB, &GPIO_InitStructure);//初始化PA11,PA12
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//????
+    GPIO_Init(GPIOB, &GPIO_InitStructure);//?????PA11,PA12
 
-    //引脚复用映射配置
-    GPIO_PinAFConfig(GPIOB,GPIO_PinSource12,GPIO_AF_CAN2); //GPIOB12复用为CAN2
-    GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_CAN2); //GPIOB13复用为CAN2
+    //??????????????
+    GPIO_PinAFConfig(GPIOB,GPIO_PinSource12,GPIO_AF_CAN2); //GPIOB12?????CAN2
+    GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_CAN2); //GPIOB13?????CAN2
         
-    //CAN单元设置
-    CAN_InitStructure.CAN_TTCM=DISABLE;     //非时间触发通信模式
-    CAN_InitStructure.CAN_ABOM=ENABLE;      //软件自动离线管理
-    CAN_InitStructure.CAN_AWUM=DISABLE;     //睡眠模式通过软件唤醒(清除CAN->MCR的SLEEP位)
-    CAN_InitStructure.CAN_NART=ENABLE;      //禁止报文自动传送 
-    CAN_InitStructure.CAN_RFLM=DISABLE;     //报文不锁定,新的覆盖旧的  
-    CAN_InitStructure.CAN_TXFP=DISABLE;     //优先级由报文标识符决定 
-    CAN_InitStructure.CAN_Mode= mode;       //模式设置 
-    CAN_InitStructure.CAN_SJW=tsjw;         //重新同步跳跃宽度(Tsjw)为tsjw+1个时间单位 CAN_SJW_1tq~CAN_SJW_4tq
-    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1范围CAN_BS1_1tq ~CAN_BS1_16tq
-    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2范围CAN_BS2_1tq ~    CAN_BS2_8tq
-    CAN_InitStructure.CAN_Prescaler=brp;    //分频系数(Fdiv)为brp+1    
-    CAN_Init(CAN2, &CAN_InitStructure);     // 初始化CAN2 
+    //CAN???????
+    CAN_InitStructure.CAN_TTCM=DISABLE;     //????????????
+    CAN_InitStructure.CAN_ABOM=ENABLE;      //??????????????
+    CAN_InitStructure.CAN_AWUM=DISABLE;     //????????????????(???CAN->MCR??SLEEPλ)
+    CAN_InitStructure.CAN_NART=ENABLE;      //?????????????? 
+    CAN_InitStructure.CAN_RFLM=DISABLE;     //?????????,????????  
+    CAN_InitStructure.CAN_TXFP=DISABLE;     //?????????????????? 
+    CAN_InitStructure.CAN_Mode= mode;       //?????? 
+    CAN_InitStructure.CAN_SJW=tsjw;         //??????????????(Tsjw)?tsjw+1?????λ CAN_SJW_1tq~CAN_SJW_4tq
+    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1??ΧCAN_BS1_1tq ~CAN_BS1_16tq
+    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2??ΧCAN_BS2_1tq ~    CAN_BS2_8tq
+    CAN_InitStructure.CAN_Prescaler=brp;    //??????(Fdiv)?brp+1    
+    CAN_Init(CAN2, &CAN_InitStructure);     // ?????CAN2 
 
-    //配置过滤器
-    CAN_FilterInitStructure.CAN_FilterNumber=14;                        //过滤器1
+    //???ù?????
+    CAN_FilterInitStructure.CAN_FilterNumber=14;                        //??????1
     CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask; 
-    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;      //32位 
-    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;                    //32位ID
+    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;      //32λ 
+    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;                    //32λID
     CAN_FilterInitStructure.CAN_FilterIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;                //32位MASK
+    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;                //32λMASK
     CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;  //过滤器0关联到FIFO1
-    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;                //激活过滤器1
-    CAN_FilterInit(&CAN_FilterInitStructure);                           //滤波器初始化
+    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;  //??????0??????FIFO1
+    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;                //?????????1
+    CAN_FilterInit(&CAN_FilterInitStructure);                           //??????????
 
-    CAN_ITConfig(CAN2,CAN_IT_FMP1,ENABLE);//FIFO1消息挂号中断允许.            
+    CAN_ITConfig(CAN2,CAN_IT_FMP1,ENABLE);//FIFO1???????ж?????.            
   
 //      NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 1);
 }
 
-void CAN1_MsgSendLoop(void)
-{
-    uint8_t i, size=sizeof(__can1_transmitters)/sizeof(__can1_transmitters[0]);
-    for(i=0; i<size; i++) {
-        if(__can1_transmitters[i] && __can1_transmitters[i]->tx.changed) {
-            __CAN_SendMsg(CAN1, __can1_transmitters[i]);
-            /* Clear flag */
-            __can1_transmitters[i]->tx.changed = false;
-        }
+
+
+void spCAN_Init(CAN_TypeDef* canx, uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode) {
+    
+    assert_param(canx == CAN1 || canx == CAN2);
+    
+    if(canx == CAN1) {
+        // Enable CAN1, baudrate=1Mbps
+        CAN1_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
+    } else if(canx == CAN2) {
+        // Enable CAN2, baudrate=1Mbps
+        CAN2_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
     }
 }
 
-void CAN2_MsgSendLoop(void)
+void spCAN_MsgSendLoop(CAN_TypeDef* canx)
 {
-    uint8_t i, size=sizeof(__can2_transmitters)/sizeof(__can2_transmitters[0]);
-    for(i=0; i<size; i++) {
-        if(__can2_transmitters[i] && __can2_transmitters[i]->tx.changed) {
-            __CAN_SendMsg(CAN2, __can2_transmitters[i]);
-            /* Clear flag */
-            __can2_transmitters[i]->tx.changed = false;
+    assert_param(canx == CAN1 || canx == CAN2);
+    
+    if(canx == CAN1) {
+        uint8_t i, size=sizeof(__can1_transmitters)/sizeof(__can1_transmitters[0]);
+        for(i=0; i<size; i++) {
+            if(__can1_transmitters[i] && __can1_transmitters[i]->tx.changed) {
+                __CAN_SendMsg(CAN1, __can1_transmitters[i]);
+                /* Clear flag */
+                __can1_transmitters[i]->tx.changed = false;
+            }
+        }
+    } else if(canx == CAN2) {
+        uint8_t i, size=sizeof(__can2_transmitters)/sizeof(__can2_transmitters[0]);
+        for(i=0; i<size; i++) {
+            if(__can2_transmitters[i] && __can2_transmitters[i]->tx.changed) {
+                __CAN_SendMsg(CAN2, __can2_transmitters[i]);
+                /* Clear flag */
+                __can2_transmitters[i]->tx.changed = false;
+            }
         }
     }
 }
-
-
 
 
 
@@ -288,14 +302,27 @@ bool CAN_RegistTransmitter(CAN_TypeDef* canx, CAN_Transmitter* transmitter) {
     return false;
 }
 
+void CAN_SubmitChange(CAN_Transmitter* transmitter) {
+    transmitter->tx.changed = true;
+}
 
 void CAN_SendMsg(CAN_Transmitter* transmitter) {
     CAN_SubmitChange(transmitter);
 }
 
-void CAN_SubmitChange(CAN_Transmitter* transmitter) {
-    transmitter->tx.changed = true;
-}
+
+
+const struct CAN_Controllers_Type spCAN_Controllers =  {
+    ._system = {
+        .init = spCAN_Init,
+        .transmit_looper = spCAN_MsgSendLoop
+    },
+    .user = {
+        .registe_receiver = CAN_RegistReceiver,
+        .registe_transmitter = CAN_RegistTransmitter,
+        .send = CAN_SendMsg,
+    }
+};
 
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

@@ -69,8 +69,6 @@ RC_ManagerType                      RC_Manager;                 /*!< Remote cont
   */ 
 void __RC_DataConvert(void) {
     
-    RC_Manager.stamp = TASK_GetSecond();
-    
     if( RC_VALIDATE_CHANNEL(RC_Manager.raw_rc_data.ch0) &&
         RC_VALIDATE_CHANNEL(RC_Manager.raw_rc_data.ch1) &&
         RC_VALIDATE_CHANNEL(RC_Manager.raw_rc_data.ch2) &&
@@ -78,7 +76,6 @@ void __RC_DataConvert(void) {
         RC_VALIDATE_SWITCH(RC_Manager.raw_rc_data.s1) &&
         RC_VALIDATE_SWITCH(RC_Manager.raw_rc_data.s2)) {
         
-        RC_Manager.valid = true;
         RC_Manager.cvt_rc_data.rc.ch0 = RC_Manager.raw_rc_data.ch0 - 1024;
         RC_Manager.cvt_rc_data.rc.ch1 = RC_Manager.raw_rc_data.ch1 - 1024;
         RC_Manager.cvt_rc_data.rc.ch2 = RC_Manager.raw_rc_data.ch2 - 1024;
@@ -95,14 +92,12 @@ void __RC_DataConvert(void) {
 
         RC_Manager.stamp_ex = RC_Manager.cvt_rc_data.stamp = RC_Manager.stamp;
     } else {
-        RC_Manager.valid = false;
         return;
     }
 }
 
 void __RC_DataClear(void) {
     
-    RC_Manager.valid = false;
     RC_Manager.cvt_rc_data.rc.ch0 = 0;
     RC_Manager.cvt_rc_data.rc.ch1 = 0;
     RC_Manager.cvt_rc_data.rc.ch2 = 0;
@@ -119,34 +114,39 @@ void __RC_DataClear(void) {
 }
 
 void RC_OnError(RC_InfoType info) {
+    RC_Manager.valid = false;
+#if defined(SP_USING_BOARD_TYPEA)
     if((RC_InfoType)info == RC_WRONG_DATA) {
         LED8_BIT_ON(LED8_BIT1);
     } else if((RC_InfoType)info == RC_LOSS_SIGNAL) {
         LED8_BIT_ON(LED8_BIT0);
     }
-//    /* Stop RC DMA and start USART_DELE IRQ */
-//    NVIC_IRQDisable(DMA2_Stream5_IRQn);
-//    USART_ITConfig(USART1, USART_IT_IDLE, ENABLE);
+#endif
 }
 
 void RC_OnRecovery(void) {
+    RC_Manager.valid = true;
+#if defined(SP_USING_BOARD_TYPEA)
     LED8_BIT_OFF(LED8_BIT0);
     LED8_BIT_OFF(LED8_BIT1);
+#endif
 }
 
 void RC_OnBusIdle(void) {
+    RC_Manager.stamp = TASK_GetSecond();
     /* Start RC DMA and stop USART_DELE IRQ */
-    DMA_SetCurrDataCounter(spDMA_USART1_rx_stream, sizeof(RC_Manager.raw_rc_data));
+    spDMA_Controllers.controller.reset_counter(spDMA_USART1_rx_stream, sizeof(RC_Manager.raw_rc_data));
+    __RC_DataConvert();
 }
 
 void RC_ReceiverChecker(void) {
     /* Converted data has the same timestamp with manage means data valid */
     float time = TASK_GetSecond();
-    if(time - RC_Manager.stamp > 0.05f) {
+    if(time - RC_Manager.stamp > 0.1f) {
         /* Long time not get signal. */
         RC_OnError(RC_LOSS_SIGNAL);
         return;
-    } else if(RC_Manager.stamp - RC_Manager.stamp_ex > 0.05f) {
+    } else if(RC_Manager.stamp - RC_Manager.stamp_ex > 0.1f) {
         /* Long time not get valid data. */
         RC_OnError(RC_WRONG_DATA);
         return;
@@ -162,7 +162,7 @@ bool RC_ReceiverInit(void) {
         return false;
     }
     /* Clear all flags before enable */
-    DMA_ClearStreamFlagBit(spDMA_USART1_rx_stream, DMA_CRx);
+    spDMA_Controllers.controller.clear_stream_bit(spDMA_USART1_rx_stream, DMA_CRx);
     /* Enable stream interrupt and start DMA */
     DMA_ITConfig(spDMA_USART1_rx_stream, DMA_IT_TC, ENABLE);
     DMA_Cmd(spDMA_USART1_rx_stream, ENABLE);
@@ -176,7 +176,7 @@ bool RC_ReceiverInit(void) {
     
     /* Registe IRQ callbacks */
     spIRQ_Manager.registe(USART1_IRQn, USART_IT_IDLE, RC_OnBusIdle);
-    spIRQ_Manager.registe(DMA2_Stream5_IRQn, DMA_IT_TCIF5, __RC_DataConvert);
+    spIRQ_Manager.registe(DMA2_Stream5_IRQn, DMA_IT_TCIF5, NULL);
     
     return true;
 }
@@ -191,9 +191,9 @@ bool RC_ReceiverInit(void) {
   */
 uint16_t RC_GetState(RC_DataType* recv) {
     if(RC_Manager.valid) {
-        DMA_Stream_TypeDef* dmas = DMA_CopyMem2Mem((uint32_t)recv, 
+        DMA_Stream_TypeDef* dmas = spDMA_Controllers.mem2mem.copy((uint32_t)recv, 
             (uint32_t)&RC_Manager.cvt_rc_data, sizeof(RC_Manager.cvt_rc_data));
-        while(DMA_GetStreamFlagBit(dmas, DMA_CR_CTCIFx)==false);
+        while(spDMA_Controllers.controller.get_stream_bit(dmas, DMA_CR_CTCIFx)==false);
         return sizeof(RC_Manager.raw_rc_data) - dmas->NDTR;
     } else {
         __RC_DataClear();

@@ -195,7 +195,7 @@ void __MOTOR_MountCAN(void* motor, CAN_TypeDef* canx, uint16_t stdid) {
                 break;
         }
         
-        if(CAN_RegistReceiver(canx, &__motor->data.receiver)){
+        if(spCAN_Controllers.user.registe_receiver(canx, &__motor->data.receiver)){
             __motor->flags.can_mounted = true;
         }
     }
@@ -266,7 +266,7 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor) {
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
-    __motor->state.speed = (msg_data->Data[2]<<8) | msg_data->Data[3];
+    __motor->state.speed = (int16_t)(msg_data->Data[2]<<8) | msg_data->Data[3];
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
     /* Use angle calculation only when using position PID */
@@ -310,7 +310,7 @@ void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, void* motor) {
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
-    __motor->state.speed = (msg_data->Data[2]<<8) | msg_data->Data[3];
+    __motor->state.speed = (int16_t)(msg_data->Data[2]<<8) | msg_data->Data[3];
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
     /* Use angle calculation only when using position PID */

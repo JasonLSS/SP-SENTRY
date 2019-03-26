@@ -37,25 +37,10 @@
   * @ingroup    Utility
   * @{
   */
-  
-typedef struct {
-    uint8_t             changed:1;
-    uint8_t             stopping:4;
-    volatile float      speed[3];
-    uint16_t            target;
-    volatile int16_t    output[3];
-    PID_Type            pid;
-    volatile uint32_t   counters[3];
-    uint32_t            counter;
-//    uint32_t        counter;            // for test
-} PWMFriction_Type;
-
 extern float speeder;
 
-
-
-
 typedef struct {
+    float           timestamp;
     uint8_t         on_press:1;
     uint8_t         on_release:1;
     spPinSet        gpio_pin;
@@ -64,34 +49,46 @@ typedef struct {
 extern spKeyController spUserKey;
 
 
-
-
 #define LASER_ON()          GPIO_SetBits(GPIOG,GPIO_Pin_13)
 #define LASER_OFF()         GPIO_ResetBits(GPIOG,GPIO_Pin_13)
 
+#if defined(SP_USING_BOARD_TYPEA)
+    #define LED_R_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
+    #define LED_R_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
+    #define LED_R_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
+    
+    #define LED_G_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_11)
+    #define LED_G_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
+    #define LED_G_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
 
-#define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
-#define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
-#define LED_G_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
-#define LED_R_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_11)
-#define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
-#define LED_R_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
-// A-board
-#define LED8_BIT0           GPIO_Pin_1
-#define LED8_BIT1           GPIO_Pin_2
-#define LED8_BIT2           GPIO_Pin_3
-#define LED8_BIT3           GPIO_Pin_4
-#define LED8_BIT4           GPIO_Pin_5
-#define LED8_BIT5           GPIO_Pin_6
-#define LED8_BIT6           GPIO_Pin_7
-#define LED8_BIT7           GPIO_Pin_8
-#define LED8_BIT_ON(x)      GPIO_ResetBits(GPIOG,x)
-#define LED8_BIT_OFF(x)     GPIO_SetBits(GPIOG,x)
-#define LED8_BIT_TOGGLE(x)  GPIOG->ODR ^= (x)
-#define LED8_OUTPUT(x)      GPIOG->ODR = (GPIOG->ODR&(~0x1fe))|((~x&0xff)<<1)
-
-#define BUZZER_ON(a)        TIM_SetCompare1(TIM12, a);
-#define BUZZER_OFF()        TIM_SetCompare1(TIM12, 0);
+    #define BUZZER_ON(a)        TIM_SetDuty(TIM12, 0, 80.f)
+    #define BUZZER_OFF()        TIM_SetDuty(TIM12, 0, 0)
+    
+    // A-board
+    #define LED8_BIT0           GPIO_Pin_1
+    #define LED8_BIT1           GPIO_Pin_2
+    #define LED8_BIT2           GPIO_Pin_3
+    #define LED8_BIT3           GPIO_Pin_4
+    #define LED8_BIT4           GPIO_Pin_5
+    #define LED8_BIT5           GPIO_Pin_6
+    #define LED8_BIT6           GPIO_Pin_7
+    #define LED8_BIT7           GPIO_Pin_8
+    #define LED8_BIT_ON(x)      GPIO_ResetBits(GPIOG,x)
+    #define LED8_BIT_OFF(x)     GPIO_SetBits(GPIOG,x)
+    #define LED8_BIT_TOGGLE(x)  GPIOG->ODR ^= (x)
+    #define LED8_OUTPUT(x)      GPIOG->ODR = (GPIOG->ODR&(~0x1fe))|(~((x&0xff)<<1))
+#else
+    #define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
+    #define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
+    #define LED_G_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
+    
+    #define LED_R_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_7)
+    #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_7)
+    #define LED_R_TOGGLE()      (GPIOE->ODR)^= GPIO_Pin_7
+    
+    #define BUZZER_ON(a)        TIM_SetDuty(TIM3, 0, 90.f)
+    #define BUZZER_OFF()        TIM_SetDuty(TIM3, 0, 0)
+#endif
 
 /**
   * @}
@@ -130,6 +127,7 @@ void Led_Configuration(void);
 void Led8_Configuration(void);
 void TIM6_Configuration(void);
 void KEY_Configuration(void);
+void Power_Configuration(void);
 /**
   * @}
   */
@@ -191,16 +189,11 @@ void CHASIS_Move(float speedX, float speedY, float rad);
   * @}
   */
 
-/** @defgroup   FrictionOpe
-  * @note       Friction Operations
-  * @ingroup    Utility
-  * @{
-  */
-void Friction_Init(void);
-void Friction_Looper(uint32_t target);
-/**
-  * @}
-  */
+
+bool TIM_Init(TIM_TypeDef *Timx, float frequency, bool isstart);
+void TIM_SetDuty(TIM_TypeDef *Timx, uint8_t channel, float duty);
+float TIM_GetDuty(TIM_TypeDef *Timx, uint8_t channel);
+void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel);
 
 
 /**

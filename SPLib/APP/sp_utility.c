@@ -49,105 +49,117 @@ __INLINE void NVIC_IRQDisable(uint8_t irq) {
 
 
 
+
 void Buzzer_Init(void) {
-    //PB4
-    GPIO_InitTypeDef GPIO_InitStructure;
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+#if defined(SP_USING_BOARD_TYPEA)
+    /* TIM12CH1 + PH6 */
+    GPIO_PinAFConfig(GPIOH, GPIO_PinSource6, GPIO_AF_TIM12); 
+    spGPIO_Controllers.alternal_config(GPIOH, GPIO_Pin_6, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    
+    TIM_Init(TIM12, 583.3f, false);
     TIM_OCInitTypeDef  TIM_OCInitStructure;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OCInitStructure.TIM_Pulse = 0;
     
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM12,ENABLE);        //TIM4时钟使能    
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOH, ENABLE);       //使能PORTB时钟    
-    GPIO_PinAFConfig(GPIOH,GPIO_PinSource6,GPIO_AF_TIM12);      //GPIOH9复用为定时器12
+    TIM_OC1Init(TIM12, &TIM_OCInitStructure);
+    TIM_OC1PreloadConfig(TIM12, TIM_OCPreload_Enable);
     
-    /* TIM3 */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6  ;                 //GPIOB 6 7
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;                //复用功能
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;           //速度100MHz
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;              //推挽复用输出
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;                //上拉
-    GPIO_Init(GPIOH,&GPIO_InitStructure);                       //初始化
-      
-    TIM_TimeBaseStructure.TIM_Period=2000;          //自动重装载值    
-    TIM_TimeBaseStructure.TIM_Prescaler=72-1;       //定时器分频               ///******这里改过
-    TIM_TimeBaseStructure.TIM_CounterMode=TIM_CounterMode_Up; //向上计数模式
-    TIM_TimeBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1;
+    TIM_ARRPreloadConfig(TIM12,ENABLE);
+    TIM_CtrlPWMOutputs(TIM12, ENABLE);
+    TIM_Cmd(TIM12, ENABLE);
     
-    TIM_ITConfig(TIM12,TIM_IT_Update,ENABLE);       //允许定时器12更新中断
-    TIM_TimeBaseInit(TIM12,&TIM_TimeBaseStructure); //初始化定时器12
-    
-    //初始化TIM3 Channel1 PWM模式     
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;   //选择定时器模式:TIM脉冲宽度调制模式2
-     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;  //比较输出使能
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High ;      //输出极性:TIM输出比较极性低
-    TIM_OC1Init(TIM12, &TIM_OCInitStructure);           //根据T指定的参数初始化外设TIM1 4OC1
-
-    TIM_OC1PreloadConfig(TIM12, TIM_OCPreload_Enable);  //使能TIM4在CCR1上的预装载寄存器
-  
-    TIM_ARRPreloadConfig(TIM12,ENABLE);                 //ARPE使能 
-    TIM_Cmd(TIM12, ENABLE);                             //使能TIM14
     BUZZER_OFF();
+#else
+    /* TIM3CH1 + PB4 */
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_TIM3); 
+    spGPIO_Controllers.alternal_config(GPIOB, GPIO_Pin_4, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    
+    TIM_Init(TIM3, 2000, false);
+    TIM_OCInitTypeDef  TIM_OCInitStructure;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OCInitStructure.TIM_Pulse = 0;
+    
+    TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+    TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable);
+    
+    TIM_ARRPreloadConfig(TIM3,ENABLE);
+    TIM_CtrlPWMOutputs(TIM3, ENABLE);
+    TIM_Cmd(TIM3, ENABLE);
+    
+    BUZZER_OFF();
+#endif
+
 }
-void Led_Configuration(void) {         
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE | RCC_AHB1Periph_GPIOF , ENABLE);
 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;           //普通输出模式
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //推挽输出
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;      //100MHz
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //上拉
-    GPIO_Init(GPIOF, &GPIO_InitStructure);                  //初始化
-
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;              // A-board
-    GPIO_Init(GPIOE, &GPIO_InitStructure);                  //初始化
-
+void Led_Configuration(void) {
+#if defined(SP_USING_BOARD_TYPEA)
+    /* PE11 + PF14 */
+    spGPIO_Controllers.output_config(GPIOE, GPIO_Pin_11, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO_Controllers.output_config(GPIOF, GPIO_Pin_14, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+#else
+    /* PF14 + PE7 */
+    spGPIO_Controllers.output_config(GPIOF, GPIO_Pin_14, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO_Controllers.output_config(GPIOE, GPIO_Pin_7, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+#endif
+    
     LED_G_OFF();
     LED_R_ON();
 }
-
-void Led8_Configuration(void) {         
+void Led8_Configuration(void) {
+#if defined(SP_USING_BOARD_TYPEA)
     GPIO_InitTypeDef  GPIO_InitStructure;
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG , ENABLE);
 
-    GPIO_InitStructure.GPIO_Pin = 0xff;                     //0x00~0x80
+    GPIO_InitStructure.GPIO_Pin = 0x1fe;                     //0x00~0x80
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;           //普通输出模式
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //推挽输出
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;      //100MHz
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //下拉（控制逻辑为正常逻辑）
     GPIO_Init(GPIOG, &GPIO_InitStructure);                  //初始化
     
+		spGPIO_Controllers.output_config(GPIOG,GPIO_Pin_13,GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+		GPIO_SetBits(GPIOG,GPIO_Pin_13);
+		
     LED8_OUTPUT(0x00);
+#endif
 }
-
-
-void TIM6_Configuration(void) {
-    spRCC_Set_TIM6();       /* 84MHz */
-    
-    TIM_TimeBaseInitTypeDef tim_base_initer;
-    /* 200Hz */
-    tim_base_initer.TIM_Prescaler = 840-1;
-    tim_base_initer.TIM_Period = 500-1;
-    tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
-    tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
-    
-    TIM_TimeBaseInit(TIM6, &tim_base_initer);
-    TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
-    
-    TIM_Cmd(TIM6, ENABLE);
+void Power_Configuration(void) {
+#if defined(SP_USING_BOARD_TYPEA)
+    spRCC_Set_GPIOH();
+    spGPIO_Controllers.output_config(GPIOH, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5, 
+        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    GPIO_SetBits(GPIOH,GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5);
+#endif
 }
 
 
 
+//void TIM6_Configuration(void) {
+//spRCC_Set_TIM6();       /* 84MHz */
+
+//TIM_TimeBaseInitTypeDef tim_base_initer;
+///* 200Hz */
+//tim_base_initer.TIM_Prescaler = 840-1;
+//tim_base_initer.TIM_Period = 500-1;
+//tim_base_initer.TIM_ClockDivision = TIM_CKD_DIV1;
+//tim_base_initer.TIM_CounterMode = TIM_CounterMode_Up;
+
+//TIM_TimeBaseInit(TIM6, &tim_base_initer);
+//TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
+
+//TIM_Cmd(TIM6, ENABLE);
+//}
 
 
 void EXTI2_IRQHandler(void) {
     if(EXTI_GetITStatus(EXTI_Line2)) {
-//        if(spUserKey.gpio_pin.gpio->IDR & GPIO_IDR_ID1) {
-//            spUserKey.on_release = true;
-//        } else {
-//            
-//        }
-        spUserKey.on_press = true;
+        float time = TASK_GetSecond();
+        if(time - spUserKey.timestamp > 0.01f) spUserKey.on_press = true;
+        spUserKey.timestamp = time;
         EXTI_ClearITPendingBit(EXTI_Line2);
     }
 }
@@ -159,7 +171,7 @@ spKeyController spUserKey = {
 #define spEXIT_LineFromPinSource(ln)        (0x0001<<(ln))
 void KEY_Configuration(void) {
     spRCC_Set_SYSCFG();
-    GPIO_IN_Config(spUserKey.gpio_pin.gpio, 
+    spGPIO_Controllers.input_config(spUserKey.gpio_pin.gpio, 
         spGPIO_PinFromPinSource(spUserKey.gpio_pin.pin_source), 
         GPIO_PuPd_UP, GPIO_Speed_100MHz);
     
@@ -211,6 +223,7 @@ uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size) {
     CRC_ResetDR();
     return CRC_CalcBlockCRC(buffer, size);
 }
+
 
 
 
@@ -310,326 +323,129 @@ void CHASIS_Move(float speedX, float speedY, float rad) {
 
 
 
-
-PWMFriction_Type    Friction_CH1;
-PWMFriction_Type    Friction_CH2;
-/**
-  * @brief  
-  * @note   
-  * @param  
-  * @retval 
-  */ 
-void PulseCapture(void) {
-    
-    GPIO_InitTypeDef  GPIO_InitStructure;
-
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG , ENABLE);//
-    
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13 ;    //ó?óú?¤1a        //ó?óú?????¤1a
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//??í¨ê?3??￡ê?
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//í?íìê?3?
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//é?à-
-    GPIO_Init(GPIOG, &GPIO_InitStructure);//3?ê??ˉ    
-    LASER_ON();
-    
-    TIM_TimeBaseInitTypeDef             TIM_TimeBaseStructure;
-    TIM_ICInitTypeDef                   TIM_ICInitStructure;
- 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2|RCC_APB1Periph_TIM3,ENABLE);
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA|RCC_AHB1Periph_DMA1, ENABLE);
-
-    GPIO_PinAFConfig(GPIOA,GPIO_PinSource1,GPIO_AF_TIM2);
-    GPIO_PinAFConfig(GPIOA,GPIO_PinSource3,GPIO_AF_TIM2);
-    
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1 | GPIO_Pin_3;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA,&GPIO_InitStructure);
-    
-    TIM_TimeBaseStructure.TIM_Period=50000-1;   // 20Hz
-    TIM_TimeBaseStructure.TIM_Prescaler=84-1;
-    TIM_TimeBaseStructure.TIM_CounterMode=TIM_CounterMode_Up;
-    TIM_TimeBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1;
-    TIM_TimeBaseInit(TIM2,&TIM_TimeBaseStructure);
-    
-    TIM_ICInitStructure.TIM_Channel = TIM_Channel_2;
-    TIM_ICInitStructure.TIM_ICPolarity = TIM_ICPolarity_Rising;
-    TIM_ICInitStructure.TIM_ICSelection = TIM_ICSelection_DirectTI;
-    TIM_ICInitStructure.TIM_ICPrescaler = TIM_ICPSC_DIV4;
-    TIM_ICInitStructure.TIM_ICFilter = 0x10;        // Attention
-    TIM_ICInit(TIM2, &TIM_ICInitStructure);
-    
-    TIM_ICInitStructure.TIM_Channel = TIM_Channel_4;
-    TIM_ICInit(TIM2, &TIM_ICInitStructure);
-    
-    TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
-    TIM_DMACmd(TIM2, TIM_DMA_CC2|TIM_DMA_CC4, ENABLE);
-    TIM_SetCounter(TIM2, 0);
-
-//    NVIC_IRQEnable(TIM2_IRQn, 0, 2);
-    
-    //TODO: TIM2_CH2/4 IRQ
-    /* -------------- Configure DMA -----------------------------------------*/
-    DMA_InitTypeDef dma;
-    DMA_DeInit(DMA1_Stream5);
-    dma.DMA_Channel = DMA_Channel_3;    // TIM2_CH1
-    dma.DMA_PeripheralBaseAddr = (uint32_t)&(TIM2->CCR1);
-    dma.DMA_Memory0BaseAddr = (uint32_t)Friction_CH1.counters;   
-    dma.DMA_DIR = DMA_DIR_PeripheralToMemory;
-    dma.DMA_BufferSize = sizeof(Friction_CH1.counters)/sizeof(Friction_CH1.counters[0]);
-    dma.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    dma.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    dma.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-    dma.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-    dma.DMA_Mode = DMA_Mode_Circular;
-    dma.DMA_Priority = DMA_Priority_High;
-    dma.DMA_FIFOMode = DMA_FIFOMode_Disable;
-    dma.DMA_FIFOThreshold = DMA_FIFOThreshold_1QuarterFull;
-    dma.DMA_MemoryBurst = DMA_Mode_Normal;
-    dma.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-//    DMA_Init(DMA1_Stream5, &dma);
-//    DMA_ITConfig(DMA1_Stream5,DMA_IT_TC,ENABLE);
-//    DMA_Cmd(DMA1_Stream5,ENABLE);
-    
-    DMA_DeInit(DMA1_Stream6);                     
-    dma.DMA_Channel = DMA_Channel_3;    // TIM2_CH2
-    dma.DMA_PeripheralBaseAddr = (uint32_t)&(TIM2->CCR2);
-    dma.DMA_Memory0BaseAddr = (uint32_t)Friction_CH2.counters;   
-    dma.DMA_BufferSize = sizeof(Friction_CH2.counters)/sizeof(Friction_CH2.counters[0]);
-    DMA_Init(DMA1_Stream6, &dma);
-    DMA_ITConfig(DMA1_Stream6,DMA_IT_TC,ENABLE);
-    DMA_Cmd(DMA1_Stream6,ENABLE);
-    
-//    NVIC_IRQEnable(DMA1_Stream5_IRQn, 0, 1);
-//    NVIC_IRQEnable(DMA1_Stream6_IRQn, 0, 1);
-    
-    TIM_Cmd(TIM2, ENABLE);
-}
-
-void PWM_Output(void)
+/** 
+  * @brief  Config a timer with base counter.
+  * @param  Timx: TIM[1~14]
+  * @param  frequency: PWM frequency.
+  * @param  isstart: If start right now.
+  * @rteval If succeed
+  */
+#include "stm32f4xx_rcc.h"
+bool TIM_Init(
+    TIM_TypeDef *Timx, 
+    float frequency,
+    bool isstart)
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-    TIM_OCInitTypeDef  TIM_OCInitStructure;
+    /* If timer is not being ocupied. */
+    if(Timx->CR1 & TIM_CR1_CEN_Msk)
+        return false;
+    /* Enbale TIM clock */
+    if(Timx==TIM1) {
+        spRCC_Set_TIM1();
+    }
+    else if(Timx==TIM2) {
+        spRCC_Set_TIM2();
+    }
+    else if(Timx==TIM3) {
+        spRCC_Set_TIM3();
+    }
+    else if(Timx==TIM4) {
+        spRCC_Set_TIM4();
+    }
+    else if(Timx==TIM5) {
+        spRCC_Set_TIM5();
+    }
+    else if(Timx==TIM6) {
+        spRCC_Set_TIM6();
+    }
+    else if(Timx==TIM7) {
+        spRCC_Set_TIM7();
+    }
+    else if(Timx==TIM8) {
+        spRCC_Set_TIM8();
+    }
+    else if(Timx==TIM9) {
+        spRCC_Set_TIM9();
+    }
+    else if(Timx==TIM10) {
+        spRCC_Set_TIM10();
+    }
+    else if(Timx==TIM11) {
+        spRCC_Set_TIM11();
+    }
+    else if(Timx==TIM12) {
+        spRCC_Set_TIM12();
+    }
+    else if(Timx==TIM13) {
+        spRCC_Set_TIM13();
+    }
+    else if(Timx==TIM14) {
+        spRCC_Set_TIM14();
+    }
+    else
+        return false;
     
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM8,ENABLE);      //TIM14时钟使能    
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOI,ENABLE);     //使能PORTF时钟    
+    /* Calculate arrangement value(peroid) and prescaler. */
+    uint32_t bus_freq = SystemCoreClock;
     
-    GPIO_PinAFConfig(GPIOI,GPIO_PinSource5,GPIO_AF_TIM8); //GPIOF9复用为定时器
-    GPIO_PinAFConfig(GPIOI,GPIO_PinSource6,GPIO_AF_TIM8); //GPIOF9复用为定时器
-    GPIO_PinAFConfig(GPIOI,GPIO_PinSource7,GPIO_AF_TIM8); //GPIOF9复用为定时器
-    GPIO_PinAFConfig(GPIOI,GPIO_PinSource2,GPIO_AF_TIM8); //GPIOF9复用为定时器
+    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
+       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
+        bus_freq /= 2;
+    }
+    uint32_t peroid = bus_freq / frequency;
+    uint32_t prescaler = 1;
+    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
+    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
+        prescaler = bus_freq / 1000000;
+        peroid /= prescaler;
+    }
+    TIM_TimeBaseInitTypeDef     tim_initstruct;
+    tim_initstruct.TIM_Prescaler            =   prescaler - 1;
+    tim_initstruct.TIM_Period               =   peroid - 1;
+    tim_initstruct.TIM_CounterMode          =   TIM_CounterMode_Up;
+    tim_initstruct.TIM_ClockDivision        =   TIM_CKD_DIV1; 
+    TIM_TimeBaseInit(Timx, &tim_initstruct);
     
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_2;    //GPIOI
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;        //复用功能
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;   //速度100MHz
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;      //推挽复用输出
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;        //上拉
-    GPIO_Init(GPIOI,&GPIO_InitStructure);               //初始化PF9
-      
-    TIM_TimeBaseStructure.TIM_Prescaler=168*4-1;  //定时器分频
-    TIM_TimeBaseStructure.TIM_Period=1000-1;   //自动重装载值
-    TIM_TimeBaseStructure.TIM_CounterMode=TIM_CounterMode_Up; //向上计数模式
-    TIM_TimeBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1; 
-    TIM_TimeBaseInit(TIM8,&TIM_TimeBaseStructure);//初始化定时器14
-    
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2; //选择定时器模式:TIM脉冲宽度调制模式2
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable; //比较输出使能
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High; //输出极性:TIM输出比较极性低
-    TIM_OCInitStructure.TIM_Pulse = 0;
-    
-    TIM_OC1Init(TIM8, &TIM_OCInitStructure);
-    TIM_OC1PreloadConfig(TIM8, TIM_OCPreload_Enable);
-
-    TIM_OC2Init(TIM8, &TIM_OCInitStructure);
-    TIM_OC2PreloadConfig(TIM8, TIM_OCPreload_Enable);
-    
-    TIM_OC3Init(TIM8, &TIM_OCInitStructure);
-    TIM_OC3PreloadConfig(TIM8, TIM_OCPreload_Enable);
-    
-    TIM_OC4Init(TIM8, &TIM_OCInitStructure);
-    TIM_OC4PreloadConfig(TIM8, TIM_OCPreload_Enable);
- 
-    TIM_ARRPreloadConfig(TIM8,ENABLE);//ARPE使能 
-    TIM_CtrlPWMOutputs(TIM8,ENABLE);    //For TIM8 PWM
-    TIM_Cmd(TIM8, ENABLE);  //使能TIM14
+    if(isstart) TIM_Cmd(Timx, ENABLE);
+    return true;
 }
 
-
-void TIM2_IRQHandler(void)      //50ms产生一次中断
-{
-    if(TIM_GetITStatus(TIM2,TIM_IT_Update) == SET) {
-        Friction_CH1.stopping ++;
-        if(Friction_CH1.stopping >= 5) {
-        #ifdef USING_FRICTION_FILTER
-            MovingAverageFilter_f32((float*)Friction_CH1.speed, 
-                sizeof(Friction_CH1.speed)/sizeof(Friction_CH1.speed[0]), 0, 15);
-        #else
-            Friction_CH1.speed[0] = 0;
-        #endif
-            Friction_CH1.stopping = 5;
-        }
-        
-        
-        Friction_CH2.stopping ++;
-        if(Friction_CH2.stopping >= 5) {
-        #ifdef USING_FRICTION_FILTER
-            MovingAverageFilter_f32((float*)Friction_CH2.speed, 
-                sizeof(Friction_CH2.speed)/sizeof(Friction_CH2.speed[0]), 0, 15);
-        #else
-            Friction_CH2.speed[0] = 0;
-        #endif
-            Friction_CH2.stopping = 5;
-        }
-        
-        TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
-    }
+void TIM_SetDuty(TIM_TypeDef *Timx, uint8_t channel, float duty) {
+    if(channel > 2) return;
+    duty = (duty>100.f)?100.f:( (duty<0.f)?0.f:duty );
+    ((uint32_t*)(&Timx->CCR1))[channel] = (uint32_t)((Timx->ARR+1)*duty/100.f);
 }
 
-// 1.615*set+53.87  = 10^6/counter (div8)
-float COMPENSATE  = -0.f;
-float MAFilter_Threshold = 50.f;
-void dmaFrictionUpdata(PWMFriction_Type* friction) {
-    uint8_t overflow = 0;
-    uint8_t size=sizeof(friction->counters)/sizeof(friction->counters[0])-1;
-    
-    friction->stopping = 0;
-    for(uint8_t i=1; i<size; i++) {
-        overflow += (friction->counters[i]<friction->counters[i-1]);
-    }
-    friction->counter = (friction->counters[size-1] +
-        overflow * (TIM2->ARR+1) - friction->counters[0])/(size-1);
-    /* Using limited moving average */
-    #ifdef USING_FRICTION_FILTER
-        MovingAverageFilter_f32((float*)friction->speed, 
-                sizeof(friction->speed)/sizeof(friction->speed[0]), 
-                (friction->counter>0)? (619195.05f/(2*friction->counter)-33.356f+COMPENSATE):0, 
-                MAFilter_Threshold);
-    #else
-        friction->speed[0] = (friction->counter>0)? (619195.05f/(2*friction->counter)-33.356f+COMPENSATE):0;
-    #endif
-    friction->changed = 1;
-//        friction->counter = counter;
+float TIM_GetDuty(TIM_TypeDef *Timx, uint8_t channel) {
+    if(channel > 2) return 0.f;
+    return (((uint32_t*)(&Timx->CCR1))[channel])*1.f/((uint32_t)(Timx->ARR+1))*100.f;
 }
 
-float delta_lim = 2;
-float dspd_gain = 1.6f, dspd_gain2 = 0.0f;
-void looperUpdateFriction(PWMFriction_Type* friction) {
-    friction->output[2] = friction->output[1];
-    friction->output[1] = friction->output[0];
+void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel) {
     
-    float d_spd = friction->speed[0] - friction->speed[1];
-    float d2_spd = friction->speed[1] - friction->speed[2];
-    if(friction->target < 10) {
-        friction->output[0] = 0;
-        friction->pid.sum_error = 0;
+    float duty = TIM_GetDuty(Timx, channel);
+    
+    /* Calculate arrangement value(peroid) and prescaler. */
+    uint32_t bus_freq = SystemCoreClock;
+    
+    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
+       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
+        bus_freq /= 2;
     }
-    else if(d_spd < 0) {
-        friction->output[0] += fabs(d_spd) * dspd_gain + fabs(d2_spd)*dspd_gain2;
+    uint32_t peroid = bus_freq / frequency;
+    uint32_t prescaler = 1;
+    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
+    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
+        prescaler = bus_freq / 1000000;
+        peroid /= prescaler;
     }
-    else {
-        friction->output[0] = friction->target;
-    }
     
-    friction->speed[1] = friction->speed[0];
-    friction->speed[2] = friction->speed[1];
+    TIM_Cmd(Timx, DISABLE);
+    Timx->PSC = prescaler - 1;
+    Timx->ARR = peroid - 1;
+    TIM_Cmd(Timx, ENABLE);
     
-//    else if(friction->output[0] < friction->target - 25) {
-//        friction->output[0] +=  delta_lim;
-//    } else {
-//        friction->output[0] = friction->target;
-//    }
-    
-//    else if(friction->output[0]<friction->target - 3) {
-//        friction->output[0] = friction->target + 10;
-//    } else {
-//        friction->output[0] = friction->target;
-//    }
-    
-//        // PID_ControllerDriver_Incremental
-//        if(friction->speed[0] - friction->target < -3) {
-//            friction->output[0] = friction->target*2 - friction->speed[0];
-//        } else {
-//            friction->output[0] = friction->target;
-//        }
-////        friction->output[0] = friction->output[0] + PID_ControllerDriver(&friction->pid, 
-////            friction->target, friction->speed[0]);
-}
-
-
-//void DMA1_Stream5_IRQHandler(void)
-//{
-//    if(DMA_GetITStatus(DMA1_Stream5, DMA_IT_TCIF5)) {
-//        
-//        dmaFrictionUpdata(&Friction_CH1);
-//        
-//        DMA_ClearFlag(DMA1_Stream5, DMA_IT_TCIF5);
-//        DMA_ClearITPendingBit(DMA1_Stream5, DMA_IT_TCIF5);
-//    }
-//}
-
-void DMA1_Stream6_IRQHandler(void)
-{
-    if(DMA_GetITStatus(DMA1_Stream6, DMA_IT_TCIF6)) {
-        
-        dmaFrictionUpdata(&Friction_CH2);
-        
-        DMA_ClearFlag(DMA1_Stream6, DMA_IT_TCIF6);
-        DMA_ClearITPendingBit(DMA1_Stream6, DMA_IT_TCIF6);
-    }
-}
-
-
-#define Friction_SPEED_p               0.06f
-#define Friction_SPEED_i               0.005f
-#define Friction_SPEED_d               0.01f
-#define Friction_INTE_limitI           60.f
-#define DELTA_TIME                     0.01f
-
-void Friction_Init(void) {
-    PWM_Output();
-    PulseCapture();
-    
-    PID_ControllerInit(&Friction_CH1.pid, Friction_INTE_limitI, (uint16_t)-1, 160, DELTA_TIME);
-    Friction_CH1.pid.Kp = Friction_SPEED_p;
-    Friction_CH1.pid.Ki = Friction_SPEED_i;
-    Friction_CH1.pid.Kd = Friction_SPEED_d;
-    Friction_CH1.pid.intergration_separation = 20.f;
-    Friction_CH1.pid.functions.output_filter = MovingAverageFilter_f32;
-    
-    PID_ControllerInit(&Friction_CH2.pid, Friction_INTE_limitI, (uint16_t)-1, 160, DELTA_TIME);
-    Friction_CH2.pid.Kp = Friction_SPEED_p;
-    Friction_CH2.pid.Ki = Friction_SPEED_i;
-    Friction_CH2.pid.Kd = Friction_SPEED_d;
-    Friction_CH2.pid.intergration_separation = 20.f;
-    Friction_CH2.pid.functions.output_filter = MovingAverageFilter_f32;
-}
-
-
-uint8_t DELTA_SPEED = 3;
-float SPEED_THRESHOLD = 4;
-uint32_t check = 0;
-void Friction_Looper(uint32_t target) {
-    // static uint32_t target = 0, 
-    // Clear changed flag
-//    Friction_CH1.changed ^= Friction_CH1.changed;
-//    Friction_CH2.changed ^= Friction_CH2.changed;
-    
-    Friction_CH1.target = Friction_CH2.target = target;
-    looperUpdateFriction(&Friction_CH1);
-    looperUpdateFriction(&Friction_CH2);
-    
-    TIM_SetCompare1(TIM8, 800-Friction_CH1.output[0] );
-    TIM_SetCompare2(TIM8, 800-Friction_CH2.output[0] );
-    TIM_SetCompare3(TIM8, check);
-    TIM_SetCompare4(TIM8, check);
-    
-//    TIM_SetCompare1(TIM8, target + 200);
-//    TIM_SetCompare2(TIM8, target + 200);
-//    printf("%d,%d,%d\r\n", target, Friction_CH1.counter, Friction_CH2.counter);
+    TIM_SetDuty(Timx, channel, duty);
 }
 
 /**
