@@ -1,9 +1,9 @@
 /**
   ******************************************************************************
   * @file       task.c
-  * @author     YTom
-  * @version    v0.0-alpha
-  * @date       2018.Nov.11
+  * @author     LSS
+  * @version    v0.2-alpha
+  * @date       2019.Mar.27
   * @brief      Background/Basic task manager module
   * @usage      This module mainly includes:
   *             (+) Global task initialization and module configuration
@@ -18,18 +18,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_conf.h"
 
-#include "sp_chasis.h"
 #include "sp_utility.h"
 #include "sp_rc.h"
 #include "sp_imu.h"
 
 #include <math.h>
-
+#include <string.h>
 #include "sp_can.h"
 #include "sp_pid.h"
 #include "gimbal.h"
 #include "Auto_aim.h"
 #include "sp_shoot.h"
+#include "sp_sensor.h"
+#include "sp_chasis.h"
+#include "RefereeInfo.h"
 
 /** @addtogroup SP
   * @brief      SuperPower
@@ -148,11 +150,6 @@ struct {
     0, 0, 0, 0
 };
 
-#ifdef USING_SPEED_BALANCE
-PID_Type speedbalance;
-int16_t speed1;
-int16_t speed2;
-#endif
 
 
 
@@ -227,16 +224,16 @@ void TASK_GlobalInit() {
         USART_Cmd(UART7, ENABLE);
 
         Autoaim_Init();
-
-
+				
+				IIC_Init();
     }
 
     /**
       * @brief  System layer initialize
       */
     {
-        MOTOR_ControlInit();
-        CHASIS_ControlInit();
+        spMOTOR._system.init();
+			
         spGIMBAL_Controller._system.init();
         /* Enable Remote Controller Receiver */
         RC_ReceiverInit();
@@ -256,37 +253,15 @@ void TASK_GlobalInit() {
       */
     {
 #ifdef USING_SENTRY_CHASIS
-        MOTOR_CrtlType_CAN* motor201 = CHASIS_EnableMotor(Motor201, RM_3508_P19, false);
-        MOTOR_CrtlType_CAN* motor202 = CHASIS_EnableMotor(Motor202, RM_3508_P19, false);
-
-        if(motor201) {
-            motor201->control.speed_pid->Kp = 10.0f;
-            motor201->control.speed_pid->Ki = 0.0f;
-            motor201->control.speed_pid->Kd = 1.0f;
-            motor201->control.speed_pid->intergration_limit = 1000;
-            motor201->control.speed_pid->intergration_separation = 800;
-
-            motor201->control.output_limit = 10000;
-        }
-
-        if(motor202) {
-            motor202->control.speed_pid->Kp = 9.0f;
-            motor202->control.speed_pid->Ki = 0.0f;
-            motor202->control.speed_pid->Kd = 1.0f;
-            motor202->control.speed_pid->intergration_limit = 1000;
-            motor202->control.speed_pid->intergration_separation = 800;
-
-            motor202->control.output_limit = 10000;
-        }
+       spCHASIS._system.init();
 #endif
-#ifdef USING_SPEED_BALANCE
-        PID_ControllerInit(&speedbalance, 500, 0xFFFF, 100, 0.01f);
-        PID_SetGains(&speedbalance, 1.0f, 5.0f, 0.001f);     // For init
-        speedbalance.intergration_separation = 100;
-#endif
+
     }
 
     Shooting_Control_Init();
+#ifdef CHASIS_POWER_LIMIT
+		init_referee_info();
+#endif
     /**
       * @brief  Sundries and initialize
       */
@@ -303,101 +278,77 @@ RC_DataType recv;
   * @brief  System layer control loop in background
   */
 void TASK_ControlLooper() {
-    
+/*------------------------------------------------------------------------*/
+/* Sundries and uiltilies looper [PROTECTED] */
+/*------------------------------------------------------------------------*/
     task_counter++;
-    
     RC_GetState(&recv);
-
-    /** 
-      * @brief  Sundries and uiltilies looper
-      */
 #ifdef USING_USB
-    USB_TaskLoop();
+		USB_TaskLoop();
 #endif
-    
-    /** 
-      * @brief  Peripheral layer looper
-      */
+/*------------------------------------------------------------------------*/
+/* Peripheral layer looper [PRIVATE] */
+/*------------------------------------------------------------------------*/
     {
+				#ifdef USING_SENTRY_CHASIS
+						spCHASIS._system.looper(task_counter, &recv);
+				#endif
+				static RC_DataType recv_ex;
         if(task_counter%10 == 1) {
-					
+						if(recv.rc.s2==RC_SW_UP) {
+								if(recv.rc.s1==RC_SW_MID) {
+										robotMode = CRUISE_MODE;
+								} else if(recv.rc.s1==RC_SW_UP)
+										robotMode = STATIC_ATTACK_MODE;
+						} else if(recv.rc.s2==RC_SW_DOWN) {  // hand operation mode
+								robotMode = REMOTE_MODE;
+						} else {
+								robotMode = STANDBY_MODE;
+						}
         } else if(task_counter%10 == 3) {
-					Shooting_Control_Looper();
+						Shooting_Control_Looper();
         } else if(task_counter%10 == 5) {
-          #ifdef USING_SENTRY_CHASIS
-						static int16_t speed = 0;
-           	if(recv.rc.s2==RC_SW_UP) {
-                auto_aim_flag = 0; 
-								small_power_flag = 0xff;
-            } else if(recv.rc.s2==RC_SW_DOWN) {
-							  auto_aim_flag = 0xff;
-								small_power_flag = 0;
-								speed = (abs(recv.rc.ch2)<20?0:recv.rc.ch2);
-							
-            } else {
-                CHASIS_SetMotorSpeed(Motor201, 0);
-								CHASIS_SetMotorSpeed(Motor202, 0);
-                auto_aim_flag = 0; small_power_flag = 0;
-            }
-						#ifdef USING_SPEED_BALANCE
-								MOTOR_CrtlType_CAN* motor201 = CHASIS_GetMotor(Motor201);
-								MOTOR_CrtlType_CAN* motor202 = CHASIS_GetMotor(Motor202);
-								int16_t SpeedDifference = motor201->state.speed - motor202->state.speed;
-								float speedchange = PID_ControllerDriver(&speedbalance,0,SpeedDifference);
-								CHASIS_SetMotorSpeed(Motor201, speed + speedchange);
-							  CHASIS_SetMotorSpeed(Motor202, speed);
-						#else
-								CHASIS_SetMotorSpeed(Motor201, speed);
-								CHASIS_SetMotorSpeed(Motor202, speed);
-						#endif
-          #endif
-        } else if(task_counter%10 == 7) {
-						static RC_DataType recv_ex;
-            #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-							if(recv.rc.s2 ^ recv_ex.rc.s2) {
-                if(recv.rc.s2==RC_SW_UP) {
-                    auto_aim_flag = 0;
-                    small_power_flag = 0xff;
-                    /*visual pid change*/
-                    spGIMBAL_Controller.user.visual_pid_init();
-                } else if(recv.rc.s2==RC_SW_DOWN) {
-                    auto_aim_flag = 0xff;
-                    small_power_flag = 0;
-                    spGIMBAL_Controller.user.pid_init();    //change pid to normal
-                } else {
-                    auto_aim_flag = 0;
-                    small_power_flag = 0;
-                }
-							} 
-							
-							if(recv.rc.s2==RC_SW_UP) {
-								robotMode = CRUISE_MODE;
-							} else if(recv.rc.s2==RC_SW_DOWN) {  // hand operation mode
-									robotMode = REMOTE_MODE;
-							} else {
-									robotMode = STANDBY_MODE;
-							}
-							spGIMBAL_Controller._system.statelooper();
-						#endif
+								if(recv.rc.s2 ^ recv_ex.rc.s2) {
+										if(recv.rc.s2==RC_SW_UP) {
+												auto_aim_flag = 0;
+												small_power_flag = 0xff;
+										} else if(recv.rc.s2==RC_SW_DOWN) {
+												auto_aim_flag = 0xff;
+												small_power_flag = 0;
+										} else {
+												auto_aim_flag = 0;
+												small_power_flag = 0;
+										}
+								} 
+								spGIMBAL_Controller._system.statelooper();
             recv_ex = recv;
+        } else if(task_counter%10 == 7) {
+						
         }
-        
-
-    }
-    /** 
-      * @brief  System layer looper
-      */
+//				if(task_counter%5 == 0)
+//				{
+//					sendtoComputer();
+//				}
+		}
+/*------------------------------------------------------------------------*/
+/* System layer looper [PRIVATE] */
+/*------------------------------------------------------------------------*/
     {
         
     }
-    /** 
-      * @brief  Low layer looper
-      */
+/*------------------------------------------------------------------------*/
+/* Low layer looper [PUBLIC] */
+/*------------------------------------------------------------------------*/
     {
-        // Singal light
-        if(task_counter%499 == 0) {
-            LED_G_TOGGLE(); LED_R_TOGGLE();
+        /* Singal light */
+        if(RC_isValid()) {
+            if(task_counter%499 == 0) {
+                LED_G_TOGGLE(); LED_R_TOGGLE();
+            }
+        } else {
+            LED_G_OFF(); LED_R_ON();
         }
+        
     }
 }
 
@@ -428,13 +379,10 @@ void TASK_Backend(void) {
     uint32_t ctime = TASK_GetMilliSecond();
 
     if(ctime%10 == 0) {
-#ifndef USING_MOTOR_TEST
-        MOTOR_ControlLooper();
-#endif
 #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
         spGIMBAL_Controller._system.looper();
 #endif
-        CHASIS_ControlLooper();
+        spMOTOR._system.looper();
     }
     spCAN_Controllers._system.transmit_looper(CAN1);
     spCAN_Controllers._system.transmit_looper(CAN2);
@@ -456,7 +404,7 @@ void PendSV_Handler(void) {
 void TASK_TimerInit(void) {
     spRCC_Set_SYSTIMER();
     /* 1000Hz */
-    TIM_Init(spSYSTIMER, 1000, false);
+    spTIMER.init(spSYSTIMER, 1000, false);
     TIM_ITConfig(spSYSTIMER, TIM_IT_Update, ENABLE);
     NVIC_IRQEnable(spSYSTIMER_IRQn, 0, 0);
     TIM_Cmd(spSYSTIMER, ENABLE);

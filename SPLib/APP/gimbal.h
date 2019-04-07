@@ -22,7 +22,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_conf.h"
 #include "sp_motor.h"
-#include "sp_chasis.h"
 #include "sp_dma.h"
 #include "sp_rc.h"
 
@@ -61,6 +60,7 @@ extern struct __GIMBAL_Controller_Type {
 				void (*update_target_limit)(float target_pitch, float target_yaw);    /*!< Update gimbal pitch and yaw target with limit. */
 				void (*pid_init)();    																								/*!< change gimbal pitch and yaw pid to original mode. */
 				void (*visual_pid_init) ();                                                /*!< change gimbal pitch and yaw pid to visual mode. */
+				void (*cruise_pid_init) ();                                                /*!< change gimbal pitch and yaw pid to cruise mode. */
     } user;
 } spGIMBAL_Controller;
 /** @} */

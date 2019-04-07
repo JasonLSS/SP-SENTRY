@@ -33,16 +33,38 @@
 #include <stdint.h>
 #include "stm32f4xx.h"
 #include <arm_math.h>
+#include <math.h>
 
 
-#define spMATH_RPM2RAD(x)       ((x)*0.104719753f)
-#define spMATH_RAD2RPM(x)       ((x)*9.549296748f)
+
 
      
 /** @defgroup   Common Mathematical Functions
   * @ingroup    MATH
   * @{
   */
+
+/**
+  * @brief  Unit conversion from RPM to rad/s.
+  */ 
+#define spMATH_RPM2RAD(x)       ((x)*0.104719753f)
+
+/**
+  * @brief  Unit conversion from rad/s to RPM.
+  */ 
+#define spMATH_RAD2RPM(x)       ((x)*9.549296748f)
+
+/**
+  * @brief  Unit conversion from rad to deg.
+  */ 
+#define spMATH_RAD2DEG(x)       ((x)*57.29578049f)
+
+/**
+  * @brief  Unit conversion from deg to rad.
+  */ 
+#define spMATH_DEG2RAD(x)       ((x)*0.017453292f)
+
+
 
 /**
   * @brief  Reset values for a float32 array
@@ -55,15 +77,38 @@ static __inline void memset_f32(float* array, float value, uint16_t size) {
 
 /**
   * @brief  Carmack's Unusual Inverse Square Root
+        Fast inverse square-root
+        See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
   */
-static __inline float invSqrt(float x) {
-    float xhalf = 0.5f * x;
-    int i = *(int*)&x;              // get bits for floating value
-    i = 0x5f375a86 - (i >> 1);      // gives initial guess y0
-    x = *(float*)&i;                // convert bits back to float
-    x = x * (1.5f - xhalf * x * x); // Newton step, repeating increases accuracy
-    return x;
+static __inline float inv_sqrt(float x) {
+    float halfx = 0.5f * x;
+    float y = x;
+    long i = *(long*)&y;
+    i = 0x5f3759df - (i>>1);
+    y = *(float*)&i;
+    y = y * (1.5f - (halfx * y * y));
+    y = y * (1.5f - (halfx * y * y));
+    return y;
 }
+
+
+/**
+  * @brief  Exchange two values.
+  * @param A: pointer of first value, which should be cast to uint8_t* type.
+  * @param B: pointer of second value, which should be cast to uint8_t* type.
+  * @param size: size of the value.
+  */ 
+static __inline void swap(void* A, void* B, uint16_t size) {
+    uint8_t* ptr_a = (uint8_t*)A;
+    uint8_t* ptr_b = (uint8_t*)B;
+    
+    for(uint16_t i=0; i<size; i++) {
+        ptr_a[i] ^= ptr_b[i];
+        ptr_b[i] ^= ptr_a[i];
+        ptr_a[i] ^= ptr_b[i];
+    }
+}
+
 
 /** 
   * @}
@@ -91,7 +136,12 @@ static __inline float sign(float x) {
   * @param  limit: bilateral limitation
   * @note   x will output between [-limit, limit]
   */ 
-extern __inline float limit_bilateral(float x, float limit);
+static __inline float limit_bilateral(float x, float limit) {
+    if(fabs(x)>fabs(limit)) {
+        return fabs(limit)*sign(x);
+    }
+    return x;
+}
 
 /**
   * @brief  Make loop restriction of value in a bilateral range
@@ -110,7 +160,12 @@ extern __inline float limit_bilateral_loop(float x, float limit);
   * @param  max: upper bound of input value
   * @note   x will output between [min, max]
   */ 
-extern __inline float limit_minmax(float x, float min, float max);
+static __inline float limit_minmax(float x, float min, float max) {
+    if(min>max) {
+        swap((uint8_t*)&min, (uint8_t*)&max, sizeof(min));
+    }
+    return (x>max)?max:((x<min)?min:x);
+}
 
 /**
   * @brief  Make bilateral deadzone for value
@@ -118,7 +173,10 @@ extern __inline float limit_minmax(float x, float min, float max);
   * @param  deadzone: bilateral deadzone
   * @note   x between (-deadzone, deadzone) will be filtered.
   */ 
-extern __inline float limit_deadzone_bilateral(float x, float deadzone);
+static __inline float limit_deadzone_bilateral(float x, float deadzone) {
+    deadzone = fabs(deadzone);
+    return (x<deadzone && x>-deadzone)?0:x;
+}
 
 /**
   * @brief  Make minmax deadzone for value
@@ -127,7 +185,46 @@ extern __inline float limit_deadzone_bilateral(float x, float deadzone);
   * @param  max: upper bound of deadzone
   * @note   x between (-min, max) will be filtered.
   */ 
-extern __inline float limit_deadzone_minmax(float x, float min, float max);
+static __inline float limit_deadzone_minmax(float x, float min, float max) {
+    if(min>max) {
+        swap((uint8_t*)&min, (uint8_t*)&max, sizeof(min));
+    }
+    return (x<max && x>min)?0:x;
+}
+
+/**
+  * @brief  Use exp type offset sigmoid function.
+  * @param  x: value for limiting
+  * @param  d: half of the growth range
+  * @param  M: max output value
+  * @note   Excpression: \f[ M(2\frac{e^{\frac{6}{d}x}}{e^{\frac{6}{d}x} + 1}-1),|x|<M \f]
+  */ 
+static __inline float sigmoid_offset(float x, float d, float M) {
+    d = fabs(d);
+    M = fabs(M);
+    if(fabs(x) < M) {
+        float expval = exp(x*6.f/d);
+        return (2.f*expval/(expval+1)-1.f)*M;
+    }
+    return x;
+}
+
+/**
+  * @brief  Redefine vlaue performance in deadzone.
+  * @param  x: value for limiting
+  * @param  d: half of the growth range
+  * @param  M: max output value
+  * @note   x in (-n,n) will be 0, x in (-m,-n) wiil be -gain, x in (n,m) wiil be gain, otherwise will be x.
+  */ 
+static __inline float deadzone_gain(float x, float n, float m) {
+    n = fabs(n);
+    m = fabs(m);
+    if(fabs(x) > m)
+        return x;
+    if(fabs(x) < n)
+        return 0;
+    return m*sign(x);
+}
 
 /** 
   * @}

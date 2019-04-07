@@ -76,36 +76,43 @@ u16 crc16Check(u8 *buff,u32 len)
  *Output   ：int（0为成功）
  *Description ：解包同时进行8位CRC校验
 ****************************************************************************************/
-int unpackFrame(u8 *buff,u16 len,frame *fram)
+int unpackFrame(u8 *buff, u16 len, frame *fram)
 {    
-    u16 i=0;
-    while(buff[i]!=0xff||buff[i+1]!=0xff)    
-    {
-        i++;
-        if(i>44)
-            break;
-    }    
-    if(i==45)
-    {
-        if(buff[i]!=0xff||buff[0]!=0xff)
-            return 1;
-    }
-    if(i<23)
-    {
-      memcpy(fram,(buff+i),sizeof(frame));
-    }
-    else
-    {
-        memcpy(fram,(buff+i),46-i);
-        memcpy(((u8 *)fram)+46-i,buff,sizeof(frame)-46+i);
-    }
-    if(fram->crc8check==crc8Check((u8 *)fram,sizeof(frame)-1))
-    {
-        memset(buff,0x00,46);
-        return 0;
-    }
-    else
-        return 2;
+		if(len>=sizeof(frame)) {
+				memcpy(fram, (buff+(len-sizeof(frame))), sizeof(frame));
+				if(fram->crc8check == crc8Check((u8*)fram, sizeof(frame)-1)) {
+						return 0;
+				}
+		}
+		return -1;
+	
+//    u16 i=0;
+//    while(buff[i]!=0xff||buff[i+1]!=0xff)    
+//    {
+//        i++;
+//        if(i>44)
+//            break;
+//    }    
+//    if(i == sizeof(frame)) {
+//        if(buff[i]!=0xff||buff[0]!=0xff)
+//            return 1;
+//    }
+//    if(i<23)
+//    {
+//				memcpy(fram,(buff+i),sizeof(frame));
+//    }
+//    else
+//    {
+//        memcpy(fram,(buff+i),46-i);
+//        memcpy(((u8 *)fram)+46-i,buff,sizeof(frame)-46+i);
+//    }
+//    if(fram->crc8check==crc8Check((u8 *)fram,sizeof(frame)-1))
+//    {
+//        memset(buff,0x00,46);
+//        return 0;
+//    }
+//    else
+//        return 2;
 }
 /***************************************************************************************
  *Name     : packFrame
@@ -141,11 +148,13 @@ void packFrame1(u8 *buff,frame *fram)
 ****************************************************************************************/
 void sendtoComputer(void)
 {
-    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
-    sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
+    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f ;
+//		sendtoCom_frame.yaw ++;
+//		sendtoCom_frame.timestamp ++;
+		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
-    packFrame1(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
+    packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
     spDMA_Controllers.controller.start(spDMA_USART2_tx_stream, (uint32_t)sendbuffer, (uint32_t)&USART2->DR, sizeof(sendtoCom_frame));
 //    DMA_Cmd(DMA1_Stream6,ENABLE);
 //    USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
@@ -161,7 +170,7 @@ void sendtoComputerInit(void)
 {
     sendtoCom_frame.head[0]=0xff;
     sendtoCom_frame.head[1]=0xff;
-    
+    sendtoCom_frame.timestamp = 0x00;
     sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
     sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;

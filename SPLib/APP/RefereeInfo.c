@@ -7,18 +7,28 @@ update: 2017.5.7
 ******************/
 
 #include "RefereeInfo.h"
+#include "sp_utility.h"
 
-uint8_t cmdID;  // 数据包ID
-// 裁判信息相关结构体
-extGameRobotState_t extGameRobotState;   // 比赛进程信息（0x0001）
-extRobotHurt_t extRobotHurt;  // 伤害数据(0x0002)
-extShootData_t extShootData;  // 实时射击信息(0x0003)
-extPowerHeatData_t extPowerHeatData;//实时功率热量数据(0x0004)
-tStudentPropInfo StudentPropInfo; // 赛场信息(0x0005)
-extGameRobotPos_t extGameRobotPos;// 机器人位置和枪口朝向信息(0x0008)
-extShowData_t extShowData;  // 学生上传自定义数据(0x0006)
 
-uint8_t referee_buffer[128] = {0x00};
+uint16_t cmd_id;  // 数据包ID
+// 裁判信息相关结构体  
+ext_game_state_t                           ext_game_state;// 比赛状态数据（0x0001）
+ext_game_result_t                          ext_game_result;//比赛结果数据(0x0002)
+ext_game_robot_survivors_t                 ext_game_robot_survivors;//机器人存存活数据（0x0003）
+ext_event_data_t                           ext_event_data;//场地时事件数据（0x0101）
+ext_supply_projectile_action_t             ext_supply_projectile_action;//补给站动作标识（0x0102）
+ext_supply_projectile_booking_t            ext_supply_projectile_booking;//补给站预约子弹（0x0103）
+ext_game_robot_state_t                     ext_game_robot_state;//比赛机器人状态(0x0201)
+ext_power_heat_data_t                      ext_power_heat_data;////实时功率热量数据（0x0202）
+ext_game_robot_pos_t                       ext_game_robot_pos;//机器人位置（0x0203）
+ext_buff_musk_t                            ext_buff_musk;//机器人增益（0x0204）
+aerial_robot_energy_t                      aerial_robot_energy;//空中机器人能量状态（0x0205）
+ext_robot_hurt_t                           ext_robot_hurt;//伤害状态（0x0206）
+ext_shoot_data_t                           ext_shoot_data;//实时射击信息（0x0207）
+
+ext_student_interactive_header_data_t      ext_student_interactive_header_data;//交互数据接收信息（0x0301）
+client_custom_data_t                       client_custom_data;
+//robot_interactive_data_t                   robot_interactive_data;
 
 const uint8_t sof=0xA5;  // 帧头
 uint8_t custom_info_counter=0;  // 自定义数据包序号
@@ -26,7 +36,7 @@ uint8_t seq = 0;  // 发过来的包序号
 uint8_t seq_real=0;
 
 Bytes2Float bytes2float;  // flaot和字节互转
-Bytes2U32 bytes2u32;  // flaot和u16互转
+Bytes2U32 bytes2u32;  // flaot和uint16_t互转
 
 uint8_t referee_message[64];  // 完整数据帧存放, 理论44就够。
 int message_byte_counter = 0;  // 字节存放位置计数
@@ -34,15 +44,25 @@ uint8_t blood_counter=0;  // (debug)被打计数
 
 
 uint32_t last_time_tick_1ms_1 = 0;
-uint32_t time_tick_1ms=0;
+uint32_t time_interval_1=0;
+uint8_t referee_buffer[128] = {0x00};
 
-void init_referee_info() {
-    extGameRobotPos.x = 0;
-    extGameRobotPos.y = 0;
-    extGameRobotPos.z = 0;
-    extGameRobotPos.yaw = 0;
-    extPowerHeatData.shooterHeat0 = 0;
-    extPowerHeatData.shooterHeat1 = 0;
+void init_referee_info(void) {
+		ext_game_robot_pos.x = 0;
+		ext_game_robot_pos.y = 0;
+		ext_game_robot_pos.z = 0;
+		ext_game_robot_pos.yaw = 0;
+		ext_power_heat_data.shooter_heat0 = 0;
+		ext_power_heat_data.shooter_heat1= 0;
+	
+		USART_RX_Config(USART6, 115200);
+    DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), false);
+    USART_TX_Config(USART6, 115200);
+    DMA_USART_TX_Config(USART6);
+    DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
+    spIRQ_Manager.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+    USART_Cmd(USART6, ENABLE);
 }
 
 //crc8 生成多项式:G(x)=x8+x5+x4+1
@@ -198,6 +218,10 @@ void Append_CRC16_Check_Sum(uint8_t * pchMessage,uint32_t dwLength) {
 }
 
 
+///////////////////
+
+
+
 // 单字节数组转u16(2字节), 高低位反序
 uint16_t _bytes2u16(uint8_t * chosen_Message) {
     uint32_t temp=0;
@@ -215,7 +239,7 @@ uint32_t _bytes4u32(uint8_t * chosen_Message) {
     bytes2u32.b[1] = chosen_Message[1];
     bytes2u32.b[2] = chosen_Message[2];
     bytes2u32.b[3] = chosen_Message[3];
-    return bytes2u32.u32_value;
+    return bytes2u32.uint32_t_value;
 }
 
 
@@ -238,183 +262,226 @@ void float2bytes(float chosen_value, uint8_t * res_message) {
 }
 
 
-void Referee_OnBusIdle(void) {
-    /* Start RC DMA and stop USART_DELE IRQ */
-    DMA_SetCurrDataCounter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
-//    DMA_Start(spDMA_USART6_rx_stream, (uint32_t)&USART6->DR, (uint32_t)referee_buffer, sizeof(referee_buffer));
-//    Referee_OnBusIdle();
-}
 
 
 // 比赛机器人状态（0x0001）, 发送频率为10Hz。
-void extGameRobotState_interpret(uint8_t * extGameRobotState_Message) {
-      extGameRobotState.stageRemianTime = _bytes2u16(&extGameRobotState_Message[0]);
-        extGameRobotState.gameProgress = extGameRobotState_Message[2];
-        extGameRobotState.robotLevel = extGameRobotState_Message[3];
-        extGameRobotState.remainHP = _bytes2u16(&extGameRobotState_Message[4]);
-      extGameRobotState.maxHP = _bytes2u16(&extGameRobotState_Message[6]);
-}
-
-
- //伤害数据(0x0002)，受到伤害时发送
-void extRobotHurt_interpret(uint8_t * extRobotHurt_Message) {
-    uint8_t _temp;
-    _temp = extRobotHurt_Message[0];
-        extRobotHurt.armorType = _temp&0xff;  // 标识装甲ID(4bits)
-    extRobotHurt.hurtType = (_temp>>4);  // 血量变化类型(4bits)
-    blood_counter ++;  // 击打计数
-    return;
-}
-
-int shoot_counter_referee=0;
- //实时射击信息(0x0003)
-void extShootData_interpret(uint8_t * extShootData_Message) {
-    extShootData.bulletType = extShootData_Message[0];  // 子弹类型
-    extShootData.bulletFreq = extShootData_Message[1];  // 子弹射频（发/s）
-    extShootData.bulletSpeed = _bytes2float(&extShootData_Message[2]);  // 子弹射速（m/s）
-    shoot_counter_referee++;
-    return;
-}
-    //实时功率热量数据(0x0004)
-void extPowerHeatData_interpret(uint8_t * extPowerHeatData_Message) 
+void ext_game_state_interpret(uint8_t * ext_game_state_Message)
 {
-  time_tick_1ms = TASK_GetMilliSecond();
-  uint32_t dt = time_tick_1ms-last_time_tick_1ms_1;
-  extPowerHeatData.chassisVolt = _bytes2float(&extPowerHeatData_Message[0]);  // 底盘输出电压：V
-    extPowerHeatData.chassisCurrent = _bytes2float(&extPowerHeatData_Message[4]);  // 底盘输出电流    :A
-    extPowerHeatData.chassisPower = _bytes2float(&extPowerHeatData_Message[8]);  // 底盘输出功率:W
-    extPowerHeatData.chassisPowerBuffer = _bytes2float(&extPowerHeatData_Message[12]);  // 底盘功率缓冲:W
-    extPowerHeatData.shooterHeat0 = _bytes2u16(&extPowerHeatData_Message[16]);  //17mm枪口热量
-    extPowerHeatData.shooterHeat1 = _bytes2u16(&extPowerHeatData_Message[18]);  //42mm枪口热量
-    last_time_tick_1ms_1 = time_tick_1ms;
-    return;
+	uint8_t *a;
+	memcpy(a,ext_game_state_Message,1);
+	ext_game_state.game_type=(*a)>>4;
+	ext_game_state.game_progress=(*a)&0x000f;
+	
+	memcpy((uint8_t*)&ext_game_state.stage_remain_time,ext_game_state_Message+1,1);
+}
+
+//比赛结果数据(0x0002)
+void  ext_game_result_interpret(uint8_t * ext_game_result_t_Message)
+{
+	ext_game_result.winner=*ext_game_result_t_Message;
+
+}
+
+//机器人存存活数据（0x0003）
+void ext_game_robot_survivors_interpret(uint8_t * ext_game_robot_survivors_t_Message)
+{
+	memcpy((uint8_t*)&ext_game_robot_survivors.robot_legion,ext_game_robot_survivors_t_Message,2);
+}
+
+//场地时事件数据（0x0101）...........这个得重写，差的太多
+void ext_event_data_interpret(uint8_t * ext_event_data_t_Message)
+{
+	memcpy((uint8_t*)&ext_event_data.event_type,ext_event_data_t_Message,4);
+}
+
+//补给站动作标识（0x0102）
+void ext_supply_projectile_action_interpret(uint8_t * ext_supply_projectile_action_Message)
+{
+	memcpy((uint8_t*)&ext_supply_projectile_action.supply_projectile_id,ext_supply_projectile_action_Message,1);
+	memcpy((uint8_t*)&ext_supply_projectile_action.supply_robot_id,ext_supply_projectile_action_Message+1,1);
+	memcpy((uint8_t*)&ext_supply_projectile_action.supply_projectile_step,ext_supply_projectile_action_Message+2,1);
+}
+
+//补给站预约子弹（0x0103）
+void ext_supply_projectile_booking_interpret(uint8_t * ext_supply_projectile_booking_Message)
+{
+	memcpy((uint8_t*)&ext_supply_projectile_booking.supply_projectile_id,ext_supply_projectile_booking_Message,1);
+	memcpy((uint8_t*)&ext_supply_projectile_booking.supply_num,ext_supply_projectile_booking_Message+1,1);
+}
+
+//比赛机器人状态(0x0201)
+void ext_game_robot_state_interpret(uint8_t * ext_game_robot_state_Message)
+{
+	memcpy((uint8_t*)&ext_game_robot_state.robot_id,ext_game_robot_state_Message,1);
+	memcpy((uint8_t*)&ext_game_robot_state.robot_level,ext_game_robot_state_Message+1,1);
+	memcpy((uint8_t*)&ext_game_robot_state.remain_HP,ext_game_robot_state_Message+2,2);
+	memcpy((uint8_t*)&ext_game_robot_state.max_HP,ext_game_robot_state_Message+4,2);
+	memcpy((uint8_t*)&ext_game_robot_state.shooter_heat0_cooling_rate,ext_game_robot_state_Message+6,2);
+	memcpy((uint8_t*)&ext_game_robot_state.shooter_heat0_cooling_limit,ext_game_robot_state_Message+8,2);
+	memcpy((uint8_t*)&ext_game_robot_state.shooter_heat1_cooling_rate,ext_game_robot_state_Message+10,2);
+	memcpy((uint8_t*)&ext_game_robot_state.shooter_heat1_cooling_limit,ext_game_robot_state_Message+12,2);
+	
+	uint8_t a;
+	memcpy(&a,ext_game_robot_state_Message+14,1);/////////////////
+	
+	ext_game_robot_state.mains_power_gimbal_output=a>>7;
+	ext_game_robot_state.mains_power_chassis_output=(a>>6)&0x0001;
+	ext_game_robot_state.mains_power_shooter_output=(a>>5)&0x0001;
+	
+}
+
+///////实时功率热量数据（0x0202）
+void ext_power_heat_data_interpret(uint8_t * ext_power_heat_data_Message)
+{
+	
+	memcpy((uint8_t*)&ext_power_heat_data.chassis_volt,ext_power_heat_data_Message,2);
+	memcpy((uint8_t*)&ext_power_heat_data.chassis_current,ext_power_heat_data_Message+2,2);
+	memcpy((uint8_t*)&ext_power_heat_data.chassis_power,ext_power_heat_data_Message+4,4);
+	// float temp;
+	//ext_power_heat_data.chassis_power=_bytes2float(ext_power_heat_data_Message+4);
+	//ext_power_heat_data.chassis_power_buffer=_bytes2float(ext_power_heat_data_Message+8);
+	memcpy((uint8_t*)&ext_power_heat_data.chassis_power_buffer,(ext_power_heat_data_Message+8),2);
+	memcpy((uint8_t*)&ext_power_heat_data.shooter_heat0,ext_power_heat_data_Message+10,2);
+	memcpy((uint8_t*)&ext_power_heat_data.shooter_heat1,ext_power_heat_data_Message+12,2);
+	
 }
 
 
-// 机器人位置和枪口朝向信息(0x0008)
-void extGameRobotPos_interpret(uint8_t * extGameRobotPos_Message) {
-  extGameRobotPos.x = _bytes2float(&extGameRobotPos_Message[0]);  // x轴坐标，单位米
-    extGameRobotPos.y = _bytes2float(&extGameRobotPos_Message[4]);  // y轴坐标，单位米
-    extGameRobotPos.z = _bytes2float(&extGameRobotPos_Message[8]);  // z轴坐标，单位米
-    extGameRobotPos.yaw = _bytes2float(&extGameRobotPos_Message[12]);  // yaw轴角度，单位°
-    return;
+////机器人位置（0x0203）
+void ext_game_robot_pos_interpret(uint8_t * ext_game_robot_pos_Message)
+{
+	memcpy((uint8_t*)&ext_game_robot_pos.x,ext_game_robot_pos_Message,4);
+	memcpy((uint8_t*)&ext_game_robot_pos.y,ext_game_robot_pos_Message+4,4);
+	memcpy((uint8_t*)&ext_game_robot_pos.z,ext_game_robot_pos_Message+8,4);
+	memcpy((uint8_t*)&ext_game_robot_pos.yaw,ext_game_robot_pos_Message+12,4);
+	
 }
 
-
-void StudentPropInfo_interpret(uint8_t * RealShootData_Message) {
-    uint8_t _temp;
-    _temp = RealShootData_Message[0];
-    StudentPropInfo.RobotColor = _temp;
-    StudentPropInfo.RedBaseSta = (_temp>>2);
-    StudentPropInfo.BlueBaseSta = (_temp>>4);
-    StudentPropInfo.IslandLanding = (_temp>>6);
-    
-    _temp = RealShootData_Message[1];
-    StudentPropInfo.RedAirPortSta = (_temp);
-    StudentPropInfo.BlueAirPortSta = (_temp>>4);
-    
-    _temp = RealShootData_Message[2];
-    StudentPropInfo.No1PillarSta = (_temp);
-    StudentPropInfo.No2PillarSta = (_temp>>4);
-    
-    _temp = RealShootData_Message[3];
-    StudentPropInfo.No3PillarSta = (_temp);
-    StudentPropInfo.No4PillarSta = (_temp>>4);
-    
-    _temp = RealShootData_Message[4];
-    StudentPropInfo.No5PillarSta = (_temp);
-    StudentPropInfo.No6PillarSta = (_temp>>4);
-    
-    _temp = RealShootData_Message[5];
-    StudentPropInfo.RedBulletBoxSta = (_temp);
-    StudentPropInfo.BlueBulletBoxSta = (_temp>>4);
-    
-    StudentPropInfo.RedBulletBoxSta = _bytes2u16(&RealShootData_Message[6]);
-    StudentPropInfo.BlueBulletBoxSta = _bytes2u16(&RealShootData_Message[8]);
-    
-    _temp = RealShootData_Message[10];
-    StudentPropInfo.No0BigRuneSta = (_temp);
-    StudentPropInfo.No1BigRuneSta = (_temp>>4);
-    
-    StudentPropInfo.AddDefendPrecent=RealShootData_Message[11];    
+////机器人增益（0x0204）
+void ext_buff_musk_interpret(uint8_t * ext_buff_musk_Message)
+{
+	memcpy((uint8_t*)&ext_buff_musk.power_rune_buff,ext_buff_musk_Message,1);
+	
 }
+
+//空中机器人能量状态（0x0205）
+void aerial_robot_energy_interpret(uint8_t * aerial_robot_energy_Message)
+{
+	memcpy((uint8_t*)&aerial_robot_energy.energy_point,aerial_robot_energy_Message,1);
+	memcpy((uint8_t*)&aerial_robot_energy.attack_time,aerial_robot_energy_Message+1,2);
+}
+
+////伤害状态（0x0206）
+void  ext_robot_hurt_interpret(uint8_t *  ext_robot_hurt_Message)
+{
+	uint8_t a;
+	memcpy((uint8_t*)&a,ext_robot_hurt_Message,1);
+	
+	ext_robot_hurt.armor_id=a>>4;
+	ext_robot_hurt.hurt_type=a&0x000f;
+}
+
+////实时射击信息（0x0207）
+void ext_shoot_data_interpret(uint8_t * ext_shoot_data_Message)
+{
+	memcpy((uint8_t*)&ext_shoot_data.bullet_type,ext_shoot_data_Message,1);
+	memcpy((uint8_t*)&ext_shoot_data.bullet_freq,ext_shoot_data_Message+1,1);
+	memcpy((uint8_t*)&ext_shoot_data.bullet_speed,ext_shoot_data_Message+2,4);
+}
+
+////交互数据接收信息（0x0301）
+void ext_student_interactive_header_data_interpret(uint8_t * ext_student_interactive_header_data_Message)
+{
+	memcpy((uint8_t*)&ext_student_interactive_header_data.data_cmd_id,ext_student_interactive_header_data_Message,2);
+	memcpy((uint8_t*)&ext_student_interactive_header_data.send_ID,ext_student_interactive_header_data_Message+2,2);
+	memcpy((uint8_t*)&ext_student_interactive_header_data.receiver_ID,ext_student_interactive_header_data_Message+4,2);
+}
+//////////////////////////////////////////////////
+//客户端自定义数据（0x0301），内容ID：data_cmd(0xD180)
+void client_custom_data_interpret(uint8_t * client_custom_data_Message)
+{
+	memcpy((uint8_t*)&client_custom_data.data1,client_custom_data_Message+6,4);
+	memcpy((uint8_t*)&client_custom_data.data2,client_custom_data_Message+10,4);
+	memcpy((uint8_t*)&client_custom_data.data3,client_custom_data_Message+14,4);
+	memcpy((uint8_t*)&client_custom_data.masks,client_custom_data_Message+18,1);
+	
+}
+
+//void robot_interactive_data_interpret(uint8_t * robot_interactive_data_Message)
+//{
+	//memcpy(&robot_interactive_data.data,robot_interactive_data_Message,sizeof(data));
+	
+//}
 
 // 完整校验数据帧, CRC8和CRC16
 uint8_t Verify_frame(uint8_t * frame) {
     int frame_length;
-    if(frame[0]!= sof) return false;
+	if(frame[0]!= sof) return false;
     frame_length = _bytes2u16(&frame[1]) + 5 + 2 + 2;
     if(Verify_CRC8_Check_Sum(frame, 5) && Verify_CRC16_Check_Sum(frame, frame_length)) {
-//        if(seq > frame[3]) {
-//            return false;
-//        }
-//        else {
-//            seq = frame[3];
-//            return true;
-//        }
-        return true;
+//		if(seq > frame[3]) {
+//			return false;
+//		}
+//		else {
+//			seq = frame[3];
+//			return true;
+//		}
+		return true;
     }
     else {
         return false;
     }
 }
 
-uint8_t blink_time=0;
-// 数字闪烁显示测试
-void data_blink(void) {
-    blink_time++;
-    if(blink_time<60) {
-//        blink_time=0;
-        extShowData.data3=8;
-        return;
-    }
-    if(blink_time<120) {
-        extShowData.data3 = 8.8888888888888888f;
-        return;
-    }
-    if(blink_time>120)  {
-        blink_time=0;
-        return;
-    }
+void update_from_dma(void) {
+		uint8_t bt = USART6->DR;
+		for(int i=0;i<sizeof(referee_buffer);i++)
+        	referee_info_update(referee_buffer[i]);
+//		printf("%f",ext_power_heat_data.chassis_power);
+//		printf("\r\n");
+		spDMA_Controllers.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+    return;
 }
-
-
-//void update_from_dma(void) {
-//    int i;
-//    uint8_t USART6_dma_x2[2*USART6_dma_rx_len];
-//    memcpy(USART6_dma_x2,USART6_dma,USART6_dma_rx_len);
-//    memcpy(USART6_dma_x2+USART6_dma_rx_len,USART6_dma,USART6_dma_rx_len);
-
-//    for(i=0;i<USART6_dma_rx_len;i++) {
-//        frame_interpret(USART6_dma_x2+i);
-//    }
-//    return;
-//}
 
 uint8_t blood_seq=0;
 // 使用完整数据帧更新全部裁判信息相关结构体。(带校验)
 uint8_t frame_interpret(uint8_t * frame) { 
-    if(Verify_frame(frame) == true) {
-        if(seq_real>=frame[3]&&(seq_real-frame[3])<100) {
-            return false;
-        }
-//        offical_data_flag=0;
-    cmdID = _bytes2u16(&frame[5]);
-        seq_real=frame[3];
-        switch(cmdID) {
-            case 1: extGameRobotState_interpret(&frame[7]);break;  // 比赛进程信息
-            case 2: extRobotHurt_interpret(&frame[7]);break; // 伤害数据
-            case 3: extShootData_interpret(&frame[7]);break;  // 实时射击数据
-                        case 4: extPowerHeatData_interpret(&frame[7]);break;  //实时功率热量数据
-                      case 8: extGameRobotPos_interpret(&frame[7]);break;  //// 机器人位置和枪口朝向信息
-            //case 5:StudentPropInfo_interpret(&frame[7]);break;  //赛场信息
+   if(Verify_frame(frame) == true) {
+		if(seq_real>=frame[3]&&(seq_real-frame[3])<100) {
+			return false;
+		}
+//		offical_data_flag=0;
+		memcpy(&cmd_id,&frame[5],2);
+    //cmdID = _bytes2u16(&frame[5]);/////////////////////////////
+		seq_real=frame[3];
+        switch(cmd_id) {
+					case 0x0001:ext_game_state_interpret(&frame[7]);break;
+					case 0x0002:ext_game_result_interpret(&frame[7]);break;
+					case 0x0003:ext_game_robot_survivors_interpret(&frame[7]);break;
+				  case 0x0101:ext_event_data_interpret(&frame[7]);break;
+					case 0x0102:ext_supply_projectile_action_interpret(&frame[7]);break;
+			  	case 0x0103:ext_supply_projectile_booking_interpret(&frame[7]);break;
+					case 0x0201:ext_game_robot_state_interpret(&frame[7]);break;
+			  	case 0x0202:ext_power_heat_data_interpret(&frame[7]);break;
+					case 0x0203:ext_game_robot_pos_interpret(&frame[7]);break;
+					case 0x0204:ext_buff_musk_interpret(&frame[7]);break;
+					case 0x0205:aerial_robot_energy_interpret(&frame[7]);break;
+					case 0x0206:ext_robot_hurt_interpret(&frame[7]);break;
+					case 0x0207:ext_shoot_data_interpret(&frame[7]);break;
+					case 0x0301:ext_student_interactive_header_data_interpret(&frame[7]);break;
+           // case 1: extGameRobotState_interpret(&frame[7]);break;  // 比赛进程信息
+            //case 2: extRobotHurt_interpret(&frame[7]);break; // 伤害数据
+            //case 3: extShootData_interpret(&frame[7]);break;  // 实时射击数据
+						//case 4: extPowerHeatData_interpret(&frame[7]);break;  //实时功率热量数据
+					  //case 8: extGameRobotPos_interpret(&frame[7]);break;  //// 机器人位置和枪口朝向信息
+			//case 5:StudentPropInfo_interpret(&frame[7]);break;  //赛场信息
             default: break;
         }
-        return true;
+		return true;
     }
-    else {
-        return false;
-    }
+	else {
+		return false;
+	}
 }
 
 // 弃用
@@ -436,24 +503,26 @@ void referee_info_update(uint8_t single_byte) {
 
 
 // 自定义数据帧, 封装入指针custom_frame，长度 = 5+2+13+2 = 22
+                                              //13+6+5+2+2=28
 // 调用前请确保全局变量extShowData结构体已更新值
-void custom_frame_pack(uint8_t * custom_frame) {
-    custom_frame[0] = sof;
-    custom_frame[1] = 12;  // data length
-    custom_frame[2] = 0x00;
-    custom_frame[3] = custom_info_counter;  // seq包序号
-    Append_CRC8_Check_Sum(custom_frame, 5);
-    // cmdID
-    custom_frame[5] = 0x05;
-    custom_frame[6] = 0x00;
-    // 自定义数据，每个4字节(float)
-    float2bytes(extShowData.data1, &custom_frame[7]);
-    float2bytes(extShowData.data2, &custom_frame[11]);
-    float2bytes(extShowData.data3, &custom_frame[15]);
-        extShowData.mask = custom_frame[19];
-    Append_CRC16_Check_Sum(custom_frame, 22);
-    // 计数器自增
-    custom_info_counter++;
-    return;
-}
+//void custom_frame_pack(uint8_t * custom_frame) {
+//    custom_frame[0] = sof;
+//    custom_frame[1] = 12;  // data length
+//    custom_frame[2] = 0x00;
+//    custom_frame[3] = custom_info_counter;  // seq包序号
+//    Append_CRC8_Check_Sum(custom_frame, 5);
+//    // cmdID
+//    custom_frame[5] = 0x05;
+//    custom_frame[6] = 0x00;
+//    // 自定义数据，每个4字节(float)
+//    float2bytes(extShowData.data1, &custom_frame[7]);
+//    float2bytes(extShowData.data2, &custom_frame[11]);
+//    float2bytes(extShowData.data3, &custom_frame[15]);
+//		extShowData.mask = custom_frame[19];
+//    Append_CRC16_Check_Sum(custom_frame, 22);
+//    // 计数器自增
+//    custom_info_counter++;
+//    return;
+//}
+
 

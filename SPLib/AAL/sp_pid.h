@@ -23,6 +23,7 @@
 #include <string.h>
 #include <math.h>
 #include "sp_type.h"
+#include "sp_conf.h"
 
 
 #define PID_CHANGERATE_THRESHOLD        0.5f        /* Value whos change rate over this will be replaced 
@@ -44,7 +45,9 @@
   * @note   
   */ 
 typedef struct {
-    float Kp, Ki, Kd, dT;
+    float Kp, Ki, Kd;
+    
+    float time_stamp, delta_time;
     
     double sum_error;
     float target;                           /* Current target. */
@@ -54,10 +57,10 @@ typedef struct {
     
     float intergration_separation;
     
-    uint16_t differential_limit;            /* Limit of differential term. */
-    uint16_t intergration_limit;            /* Limit of intergration term. */
-    uint16_t output_limit;                  /* Limit of output value. */
-    uint16_t delta_limit;                   /* Limit of output increment. */
+    float differential_limit;            /* Limit of differential term. */
+    float intergration_limit;            /* Limit of intergration term. */
+    float output_limit;                  /* Limit of output value. */
+    float delta_limit;                   /* Limit of output increment. */
     
     struct {
         uint8_t     target_changed:1;
@@ -88,7 +91,8 @@ typedef struct {
   * @param  dt: intergration and differential delta time
   * @note   Limitations MUST be given
   */ 
-void PID_ControllerInit(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t lim_out, float dt);
+void PID_ControllerInit(PID_Type* pid, float lim_i, float lim_d, float lim_out);
+void PID_ControllerInit_withDt(PID_Type* pid, float lim_i, float lim_d, float lim_out, float dt);
 
 /**
   * @brief  PID controller driver for calculating controller output
@@ -97,7 +101,7 @@ void PID_ControllerInit(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t 
   * @retval PID controller output
   */ 
 float PID_ControllerDriver(PID_Type* pid, float target, float input);
-float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input, uint16_t lim_delta);
+float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input, float lim_delta);
 
 float PID_ControllerDriver_test(PID_Type* pid, float target, float input);
 
@@ -122,7 +126,7 @@ void PID_SetGains(PID_Type* pid, float kp, float ki, float kd);
   * @param  lim_d: differential limit
   * @param  lim_out: output limit
   */ 
-void PID_UpdateLimits(PID_Type* pid, uint16_t lim_i, uint16_t lim_d, uint16_t lim_out);
+void PID_UpdateLimits(PID_Type* pid, float lim_i, float lim_d, float lim_out);
 
 
 /**

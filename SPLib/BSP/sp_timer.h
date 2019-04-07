@@ -1,0 +1,97 @@
+/**
+  ******************************************************************************
+  * @file       sp_timer.c
+  * @author     YTom
+  * @version    v0.0-alpha
+  * @date       2018.Nov.25
+  * @brief      General GPIO config module
+  ******************************************************************************
+  * @license
+  *
+  ******************************************************************************
+  */
+
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __SP_TIMER_H
+#define __SP_TIMER_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+/** @addtogroup SP
+  * @brief      SuperPower
+  * @{
+  */
+
+/** @defgroup TIMER
+  * @brief    TIMER Module
+  * @{
+  */
+
+#include "stm32f4xx_tim.h"
+#include "sp_conf.h"
+
+
+/** @defgroup TIMER_Declarations
+  * @brief    Exported Function Declarations
+  * @ingroup  TIMER
+  * @{
+  */
+
+/** @} */
+
+
+/** @defgroup TIMER_APIs
+  * @brief    TIMER user operations
+  * @ingroup  TIMER
+  * @{
+  */
+extern const struct TIMER_Controllers_Type {
+    /** 
+      * @brief  Config a timer with base counter.
+      * @param  Timx: TIM[1~14]
+      * @param  frequency: PWM frequency.
+      * @param  isstart: If start right now.
+      * @retval If succeed
+      */
+    bool (*init)(TIM_TypeDef *Timx,  float frequency, bool isstart);
+    /** 
+      * @brief  Set timer channel's compare value (PWM duty).
+      * @param  Timx: TIM[1~14]
+      * @param  channel: channel [0~3] for channel1~4 if there 4 channels in the  Timx (or [0~1])
+      * @param  duty: in unit %.
+      */
+    void (*set_duty)(TIM_TypeDef *Timx, uint8_t channel, float duty);
+    /** 
+      * @brief  Config a timer with base counter.
+      * @param  Timx: TIM[1~14]
+      * @param  channel: channel [0~3] for channel1~4 if there 4 channels in the  Timx (or [0~1])
+      * @retval duty in uint %.
+      */
+    float (*get_duty)(TIM_TypeDef *Timx, uint8_t channel);
+    /** 
+      * @brief  Config a timer with base counter.
+      * @param  Timx: TIM[1~14]
+      * @param  frequency: PWM frequency.
+      * @param  channel: channel [0~3] for channel1~4 if there 4 channels in the  Timx (or [0~1])
+      */
+    void (*set_frequency)(TIM_TypeDef *Timx, float frequency, uint8_t channel);
+} spTIMER;
+/** @} */
+
+/**
+  * @}
+  */
+  
+/**
+  * @}
+  */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /*__SP_GPIO_H */
+
+/************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

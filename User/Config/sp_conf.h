@@ -160,6 +160,11 @@
 #define USING_FEED_MOTOR
 //  </c>
 
+//  <c1> CHASIS_POWER_LIMIT
+//    <i> CHASIS_POWER_LIMIT
+#define CHASIS_POWER_LIMIT
+//  </c>
+
 //  <c1> USING_CHASIS
 //    <i> USING chasis part
 //#define USING_CHASIS
@@ -323,7 +328,7 @@
 #include "sp_dma.h"
 #include "sp_usart.h"
 #include "sp_can.h"
-
+#include "sp_timer.h"
 
 #ifdef USING_USB
     #include "usb.h"

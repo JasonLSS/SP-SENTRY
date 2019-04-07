@@ -32,15 +32,15 @@
 #define DELTA_TIME                     0.01f
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
 
-#define Feed_SPEED 3000
+static const float Feed_SPEED = 10.f;
 
 static uint16_t max_shoot_speed = 40;
 
 PWMFriction_Type    Friction_CH1;
 PWMFriction_Type    Friction_CH2;
 MOTOR_CrtlType_CAN* Feed_motor;
-RobotMode robotMode=CRUISE_MODE;
-RobotMode robotMode_ex=CRUISE_MODE;
+RobotMode robotMode=		STANDBY_MODE;
+RobotMode robotMode_ex=	STANDBY_MODE;
 
 extern RC_DataType recv;
 
@@ -317,14 +317,14 @@ void Friction_Init(void) {
     PWM_Output();
 //    PulseCapture();
     
-    PID_ControllerInit(&Friction_CH1.pid, Friction_INTE_limitI, (uint16_t)-1, 160, DELTA_TIME);
+    PID_ControllerInit(&Friction_CH1.pid, Friction_INTE_limitI, (uint16_t)-1, 160);
     Friction_CH1.pid.Kp = Friction_SPEED_p;
     Friction_CH1.pid.Ki = Friction_SPEED_i;
     Friction_CH1.pid.Kd = Friction_SPEED_d;
     Friction_CH1.pid.intergration_separation = 20.f;
     Friction_CH1.pid.functions.output_filter = MovingAverageFilter_f32;
     
-    PID_ControllerInit(&Friction_CH2.pid, Friction_INTE_limitI, (uint16_t)-1, 160, DELTA_TIME);
+    PID_ControllerInit(&Friction_CH2.pid, Friction_INTE_limitI, (uint16_t)-1, 160);
     Friction_CH2.pid.Kp = Friction_SPEED_p;
     Friction_CH2.pid.Ki = Friction_SPEED_i;
     Friction_CH2.pid.Kd = Friction_SPEED_d;
@@ -356,14 +356,14 @@ void Friction_Looper(void) {
     looperUpdateFriction(&Friction_CH1);
     looperUpdateFriction(&Friction_CH2);
     if(frictionState == Friction_ON){
-			TIM_SetCompare1(TIM8, 800-Friction_CH1.output[0] );
-			TIM_SetCompare2(TIM8, 800-Friction_CH2.output[0] );
+			TIM_SetCompare1(TIM8, 200 + Friction_CH1.output[0] );
+			TIM_SetCompare2(TIM8, 200 + Friction_CH2.output[0] );
 			TIM_SetCompare3(TIM8, check);
 			TIM_SetCompare4(TIM8, check);
     }
 		else{
-			TIM_SetCompare1(TIM8, 800);
-			TIM_SetCompare2(TIM8, 800);
+			TIM_SetCompare1(TIM8, 200);
+			TIM_SetCompare2(TIM8, 200);
 			TIM_SetCompare3(TIM8, check);
 			TIM_SetCompare4(TIM8, check);
 		}
@@ -379,34 +379,34 @@ void Shooting_Control_Init (void){
         #endif
         
         #ifdef USING_FEED_MOTOR
-					MOTOR_CrtlType_CAN* motor203 = CHASIS_EnableMotor(Motor203, RM_2006_P36, false);
-					motor203->control.speed_pid->Kp = 3.0f;
+					MOTOR_CrtlType_CAN* motor203 = spMOTOR.user.enable(CAN1, Motor203, RM_2006_P36, false);
+					motor203->control.speed_pid->Kp = 500.0f;
 					motor203->control.speed_pid->Ki = 0.0f;
-					motor203->control.speed_pid->Kd = 0.01f;
-					motor203->control.speed_pid->intergration_limit = 1000;
-					motor203->control.speed_pid->intergration_separation = 800;
+					motor203->control.speed_pid->Kd = 1.f;
+					motor203->control.speed_pid->intergration_limit = 5*PI;
+					motor203->control.speed_pid->intergration_separation = PI;
 					motor203->control.output_limit = 5000;
-					Feed_motor = CHASIS_GetMotor(Motor203);
+					Feed_motor = motor203;
         #endif
 }
 
 void Feed_Motor_ON(void){
-	CHASIS_SetMotorSpeed(Motor203, Feed_SPEED);
+	spMOTOR.user.set_speed(CAN1, Motor203, Feed_SPEED);
 }
 
 void Feed_Motor_OFF(void){
-	CHASIS_SetMotorSpeed(Motor203, 0);
+	spMOTOR.user.set_speed(CAN1, Motor203, 0);
 }
 
 void Feed_Motor_BACK(void){
-	CHASIS_SetMotorSpeed(Motor203, -Feed_SPEED);
+	spMOTOR.user.set_speed(CAN1, Motor203, -Feed_SPEED);
 }
 
 void Feed_Motor_Looper(void){
 	static int16_t stop_flag = 0;
 	static int16_t times = 0;
-	static int16_t motor_position = 0;
-	static int16_t motor_position_ex = 100;
+	static float motor_position = 0;
+	static float motor_position_ex = 0.1f;
 	motor_position = Feed_motor->state.current;
 	if(shootState == Shoot_OFF){
 		Feed_Motor_OFF();
@@ -429,7 +429,7 @@ void Feed_Motor_Looper(void){
 			}
 		}
 	 static int16_t times2 = 0;
-		if(fabs(motor_position - motor_position_ex) < 10.0f && stop_flag == 0){
+		if(fabs(motor_position - motor_position_ex) < 10.0f/8192.f*2.f*PI && stop_flag == 0){
 			times2++;
 			if(times2 > 3){
 				stop_flag = 1;

@@ -16,38 +16,44 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_motor.h"
 
-/* Private typedef -----------------------------------------------------------*/
-
-
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-#define MOTOR_OUTPUTLIMIT_INIT          12000               /* Motor ouput default limitation, real range +-16384 */
-
-#define CAN_MOTOR_ID_MASK               0x0F                /* Motor ID mask for resolving index */
-#define CAN_STUCK_FILTER                38.0f               /* Minium of delta encoder angle, 
+#define MOTOR_OUTPUTLIMIT_INIT              12000               /* Motor ouput default limitation, real range +-16384 */
+#define CAN_STUCK_FILTER                    38.0f               /* Minium of delta encoder angle, 
                                                                 delta angle under this will be regarded as stuck */
-#define CAN_MOTOR_ENCODER2RAD           2607.5946f          /* Convert encoder value to radial value */
-#define CAN1_MOTOR_COUNT                8                   /* Total number of possible motors */
-#define CAN2_MOTOR_COUNT                8                   /* Total number of possible motors */
-#define MOTOR_STUCK_THRESHOLD           1000
+#define MOTOR_STUCK_THRESHOLD               1000
+#define MOTOR_ENCODER_CONVERT               (0.0439453125f)     /* Convert encoder value 0~8192 to 0~360deg */
 
+#define CAN_MOTOR_RM3510_P27                (27.f)
+#define CAN_MOTOR_RM2006_P36                (36.f)
+#define CAN_MOTOR_RM2006_P96                (96.f)
+#define CAN_MOTOR_RM3510_3508_P19           (3591.f/187.f)       /* Motor's Mechanical trasmission ratio 
+                                                                    Real value is 3591/187 = 19.2032f @RM3508 */
+                                                                    
+#define CAN_TRANS_STDID(x)                  ((x==0)*0x200 + (x==1)*0x1FF + (x==2)*0x2FF)
 
-#define CAN_MOTOR_RM3510_P27            (27.f)
-#define CAN_MOTOR_RM2006_P36            (36.f)
-#define CAN_MOTOR_RM2006_P96            (96.f)
-#define CAN_MOTOR_RM3510_3508_P19       (3591.f/187.f)       /* Motor's Mechanical trasmission ratio 
-                                                                Real value is 3591/187 = 19.2032f @RM3508 */
+/**
+  * @brief  Motor control parameters
+  */
+#define MOTOR_MaxOutput                     8000
+#define MOTOR_CAN_IDOFFSET                  0x201
 
+/**
+  * @brief  PID parameters for motor control
+  */
+#define PIDVAL_CM_SPEED_IntegralLimit       200
+#define PIDVAL_CM_POSI_IntegralLimit        200
 
-/* Private variables ---------------------------------------------------------*/
 /**
   * @brief  Motor pool (global motor resource)
   */
-MOTOR_CrtlType_CAN                      MOTORs[MOTOR_POOLSIZE] = {0x00};
+MOTOR_CrtlType_CAN                          MOTORs[MOTOR_POOLSIZE] = {0x00};
+
+/**
+  * @brief  CAN1/CAN2 received message buffer
+  */
+PID_Type                                    __CHASIS_SpeedPID[MOTOR_POOLSIZE];
+PID_Type                                    __CHASIS_PositionPID[MOTOR_POOLSIZE];
 
 
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
 /**
   * @brief  Limit controller output sending via CAN
   * @param  MotorCurrent: current control value
@@ -59,14 +65,12 @@ float __MOTOR_OutputLimit(MOTOR_CrtlType_CAN* __motor, float value) {
         (value < -__motor->control.output_limit)?-__motor->control.output_limit:value;
 }
 
-
 /**
   * @brief  Enable a motor and request its resouce
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
   */ 
-void __MOTOR_Init(void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_Init(MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
     if(!__motor->flags.enable) {
         __motor->flags.enable = true;
     }
@@ -76,9 +80,8 @@ void __MOTOR_Init(void* motor) {
   * @brief  Disable a motor and release its resouce
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
   */ 
-void __MOTOR_Destroy(void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_Destroy(MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
     if(__motor->flags.enable) {
         __motor->flags.enable = false;
     }
@@ -89,16 +92,14 @@ void __MOTOR_Destroy(void* motor) {
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
   * @param  target: Motion target, differ by motor type (speed, position)
   */ 
-void __MOTOR_SetTarget(void* motor, float target) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_SetTarget(MOTOR_CrtlType_CAN* __motor, float target) {
+    if(!__motor) return;
      __motor->control.target = target;
 //    __motor->control.target = (target > __motor->control.target_limit)?__motor->control.target_limit:
 //        (target < -__motor->control.target_limit)?-__motor->control.target_limit:target;
 }
-void __MOTOR_SetTargetDelta(void* motor, float delta) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_SetTargetDelta(MOTOR_CrtlType_CAN* __motor, float delta) {
+    if(!__motor) return;
      __motor->control.target += delta;
 //    __motor->control.target = (target > __motor->control.target_limit)?__motor->control.target_limit:
 //        (target < -__motor->control.target_limit)?-__motor->control.target_limit:target;
@@ -109,14 +110,12 @@ void __MOTOR_SetTargetDelta(void* motor, float delta) {
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
   * @param  limit: Set output(current control value) limit
   */ 
-void __MOTOR_SetOutputLimit(void* motor, float limit) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_SetOutputLimit(MOTOR_CrtlType_CAN* __motor, float limit) {
+    if(!__motor) return;
     __motor->control.output_limit = limit;
 }
-//void __MOTOR_SetTargetLimit(void* motor, float limit) {
-//    if(!motor) return;
-//    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+//void __MOTOR_SetTargetLimit(MOTOR_CrtlType_CAN* __motor, float limit) {
+//    if(!__motor) return;
 //    __motor->control.target_limit = limit;
 //}
 
@@ -125,96 +124,31 @@ void __MOTOR_SetOutputLimit(void* motor, float limit) {
   * @param  motor: Pointer of the motor @ref MOTOR_CrtlType_CAN
   * @param  limit: Set output(current control value) limit
   */ 
-void __MOTOR_SetSpeedPID(void* motor, PID_Type* pid) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_SetSpeedPID(MOTOR_CrtlType_CAN* __motor, PID_Type* pid) {
+    if(!__motor) return;
     __motor->control.speed_pid = pid;
 }
 
-void __MOTOR_SetPositionPID(void* motor, PID_Type* pid) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_SetPositionPID(MOTOR_CrtlType_CAN* __motor, PID_Type* pid) {
+    if(!__motor) return;
     __motor->control.position_pid = pid;
 }
 
-/**
-  * @brief  Mount motor on CAN-bus
-  */ 
-void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor);
-void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor);
-void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, void* motor);
-void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, void* motor);
 
-void __MOTOR_MountCAN(void* motor, CAN_TypeDef* canx, uint16_t stdid) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
-    if(!__motor->flags.can_mounted && stdid) {
-        memset(&__motor->data.receiver, 0x00, sizeof(__motor->data.receiver));
-        
-//        switch(__motor->flags.rm_type) {
-//            case RM_6025_PITCH:
-//                __motor->data.receiver.std_id = 0x206;
-//                break;
-//            case RM_6623_YAW:
-//                __motor->data.receiver.std_id = 0x205;
-//                break;
-//            case RM_3508_P19:
-//            case RM_3510_P19:
-//            case RM_2006_P36:
-//            case RM_3510_P27:
-//            case GM_3510:
-//            default:
-//                break;
-//        }
-        __motor->data.receiver.std_id = stdid;
-
-        __motor->data.receiver.owner = __motor;
-        __motor->data.receiver.rx.addr = __motor->data.raw_data;
-        __motor->data.receiver.rx.size = sizeof(__motor->data.raw_data)/sizeof(__motor->data.raw_data[0]);
-        
-        void __MOTOR_DataResolve(CanRxMsg*, void*);
-        switch(__motor->flags.rm_type) {
-            case RM_3508_P19:
-            case RM_3510_P19:
-            case RM_3510_P27:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM3510_3508;
-                break;
-            case RM_2006_P36:
-            case RM_2006_P96:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM2006;
-                break;
-            case RM_6025_PITCH:
-            case RM_6623_YAW:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_RM6xxx;
-                break;
-            case GM_3510:
-                __motor->data.receiver.resolver = __MOTOR_DataResolve_GM3510;
-                break;
-            default:
-                __motor->data.receiver.resolver = NULL;
-                break;
-        }
-        
-        if(spCAN_Controllers.user.registe_receiver(canx, &__motor->data.receiver)){
-            __motor->flags.can_mounted = true;
-        }
-    }
-}
 
 /**
   * @brief  Pre-defined CAN-data resolvoing function for RM3508/RM3510/RM2006
   */ 
-void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
 
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
     if(__motor->flags.rm_type == RM_3508_P19 || __motor->flags.rm_type == RM_3510_P19) {
-        __motor->state.speed = (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_3508_P19;
+        __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_3508_P19 );
     } else if(__motor->flags.rm_type == RM_3510_P27) {
-        __motor->state.speed = (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_P27;
+        __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM3510_P27 );
     }
     
     if(__motor->flags.rm_type == RM_3508_P19) {
@@ -234,9 +168,9 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor) {
         delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
 
         if(__motor->flags.rm_type == RM_3508_P19 || __motor->flags.rm_type == RM_3510_P19) {
-            __motor->state.angle += delta/CAN_MOTOR_RM3510_3508_P19;
+            __motor->state.angle += spMATH_DEG2RAD(delta/CAN_MOTOR_RM3510_3508_P19*MOTOR_ENCODER_CONVERT);
         } else if(__motor->flags.rm_type == RM_3510_P27) {
-            __motor->state.angle += delta/CAN_MOTOR_RM3510_P27;
+            __motor->state.angle += spMATH_DEG2RAD(delta/CAN_MOTOR_RM3510_P27*MOTOR_ENCODER_CONVERT);
         }
         
         /* Too small delta angle is regarded as static/stuck */
@@ -259,14 +193,17 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, void* motor) {
 }
 
 
-void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
 
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
-    __motor->state.speed = (int16_t)(msg_data->Data[2]<<8) | msg_data->Data[3];
+    if(__motor->flags.rm_type == RM_2006_P36) {
+        __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM2006_P36 );
+    } else if(__motor->flags.rm_type == RM_2006_P96) {
+        __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3])/CAN_MOTOR_RM2006_P96 );
+    }
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
     /* Use angle calculation only when using position PID */
@@ -279,9 +216,9 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor) {
             delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
             
             if(__motor->flags.rm_type == RM_2006_P36) {
-                __motor->state.angle += delta/CAN_MOTOR_RM2006_P36;
+                __motor->state.angle += spMATH_DEG2RAD(delta/CAN_MOTOR_RM2006_P36*MOTOR_ENCODER_CONVERT);
             } else if(__motor->flags.rm_type == RM_2006_P96) {
-                __motor->state.angle += delta/CAN_MOTOR_RM2006_P96;
+                __motor->state.angle += spMATH_DEG2RAD(delta/CAN_MOTOR_RM2006_P96*MOTOR_ENCODER_CONVERT);
             }
             
             /* Too small delta angle is regarded as static/stuck */
@@ -303,14 +240,13 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, void* motor) {
     __motor->data.receiver.rx.changed = false;
 }
 
-void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
 
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
-    __motor->state.speed = (int16_t)(msg_data->Data[2]<<8) | msg_data->Data[3];
+    __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3]) );
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
     /* Use angle calculation only when using position PID */
@@ -321,7 +257,7 @@ void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, void* motor) {
             delta = __motor->state.__motor_angel_curr - __motor->state.__motor_angel_last;
             /* For motor cannot cover 4092 in a sampling period */
             delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
-            __motor->state.angle += delta;
+            __motor->state.angle += spMATH_DEG2RAD(delta*MOTOR_ENCODER_CONVERT);
             /* Too small delta angle is regarded as static/stuck */
             if((delta<CAN_STUCK_FILTER)&&(delta>-CAN_STUCK_FILTER)){
                 __motor->state.mortor_stuckflag += 
@@ -341,9 +277,8 @@ void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, void* motor) {
     __motor->data.receiver.rx.changed = false;
 }
 
-void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, void* motor) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
+void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor) {
+    if(!__motor) return;
 
     /* BYTE0+BYTE1 = mechanical angle */
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
@@ -357,7 +292,7 @@ void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, void* motor) {
             delta = __motor->state.__motor_angel_curr - __motor->state.__motor_angel_last;
             /* For motor cannot cover 4092 in a sampling period */
             delta += (delta>4096)?-8192:((delta<-4096)?8192:0);
-            __motor->state.angle += delta;
+            __motor->state.angle += spMATH_DEG2RAD(delta*MOTOR_ENCODER_CONVERT);
             /* Too small delta angle is regarded as static/stuck */
             if((delta<CAN_STUCK_FILTER)&&(delta>-CAN_STUCK_FILTER)){
                 __motor->state.mortor_stuckflag += 
@@ -377,11 +312,52 @@ void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, void* motor) {
     __motor->data.receiver.rx.changed = false;
 }
 
+/**
+  * @brief  Mount motor on CAN-bus
+  */ 
+void __MOTOR_MountCAN(MOTOR_CrtlType_CAN* __motor, CAN_TypeDef* canx, uint16_t stdid) {
+    if(!__motor) return;
+    
+    if(!__motor->flags.can_mounted && stdid) {
+        memset(&__motor->data.receiver, 0x00, sizeof(__motor->data.receiver));
+        
+        __motor->data.receiver.std_id = stdid;
 
+        __motor->data.receiver.owner = __motor;
+        __motor->data.receiver.rx.addr = __motor->data.raw_data;
+        __motor->data.receiver.rx.size = sizeof(__motor->data.raw_data)/sizeof(__motor->data.raw_data[0]);
+        
+        switch(__motor->flags.rm_type) {
+            case RM_3508_P19:
+            case RM_3510_P19:
+            case RM_3510_P27:
+                __motor->data.receiver.resolver = (ResolverCallback_t)__MOTOR_DataResolve_RM3510_3508;
+                break;
+            case RM_2006_P36:
+            case RM_2006_P96:
+                __motor->data.receiver.resolver = (ResolverCallback_t)__MOTOR_DataResolve_RM2006;
+                break;
+            case RM_6025_PITCH:
+            case RM_6623_YAW:
+                __motor->data.receiver.resolver = (ResolverCallback_t)__MOTOR_DataResolve_RM6xxx;
+                break;
+            case GM_3510:
+                __motor->data.receiver.resolver = (ResolverCallback_t)__MOTOR_DataResolve_GM3510;
+                break;
+            default:
+                __motor->data.receiver.resolver = NULL;
+                break;
+        }
+        
+        if(spCAN_Controllers.user.registe_receiver(canx, &__motor->data.receiver)){
+            __motor->flags.can_mounted = true;
+        }
+    }
+}
 
-
-
-
+/**
+  * @brief  Get an instance of @ref MOTOR_CrtlType_CAN type.
+  */ 
 MOTOR_CrtlType_CAN* MOTOR_RM_GetInstance(MOTOR_RM_Types type) {
     uint8_t i, size = sizeof(MOTORs)/sizeof(MOTORs[0]);
     for(i=0; i<size; i++) {
@@ -396,17 +372,8 @@ MOTOR_CrtlType_CAN* MOTOR_RM_GetInstance(MOTOR_RM_Types type) {
 //            MOTORs[i].control.target_limit = MOTOR_OUTPUTLIMIT_INIT;      /* Make motor output default limit. */
             MOTORs[i].state.__motor_angel_last = -1;                        /* Save last angle value, init with -1 means not 
                                                                                get value yet. */
-            /* Bind menber functions */
-            MOTORs[i].__private.init = __MOTOR_Init;
-//            MOTORs[i].implement.set_targetlimit = __MOTOR_SetTargetLimit;
-            MOTORs[i].implement.set_outputlimit = __MOTOR_SetOutputLimit;
-            MOTORs[i].implement.set_target = __MOTOR_SetTarget;
-            MOTORs[i].implement.set_speed_pid = __MOTOR_SetSpeedPID;
-            MOTORs[i].implement.set_position_pid = __MOTOR_SetPositionPID;
-            MOTORs[i].implement.mount_can = __MOTOR_MountCAN;
-            
             /* Call init function */
-            MOTORs[i].__private.init(&MOTORs[i]);
+            __MOTOR_Init(&MOTORs[i]);
             
             return &MOTORs[i];
         }
@@ -414,12 +381,181 @@ MOTOR_CrtlType_CAN* MOTOR_RM_GetInstance(MOTOR_RM_Types type) {
     return NULL;
 }
 
-void MOTOR_SetDataResolve(MOTOR_CrtlType_CAN* motor, tFuncMemberNoParam func) {
-    if(!motor) return;
-    MOTOR_CrtlType_CAN* __motor = (MOTOR_CrtlType_CAN*)motor;
-    __motor->__private.data_resolve = func;
+/**
+  * @brief  Config function to resolve feedback data.
+  * @note   Function type @ref tFuncMemberNoParam
+  */ 
+void MOTOR_SetDataResolve(MOTOR_CrtlType_CAN* __motor, ResolverCallback_t func) {
+    if(!__motor) return;
+    __motor->data.receiver.resolver = func;
 }
 
+
+
+
+
+
+  //TODO: CAN monitor
+  //TODO: Stuck monitor
+
+typedef struct {
+    CAN_TypeDef*                 canx;
+    MOTOR_CrtlType_CAN*          motors[CAN_MOTOR_COUNT];
+    /**
+      * @brief  Raw data from CAN
+      * @note   Each CAN-bus can connect with 8 motors under address 0x200 @ref RoboMaster_Motor_Manual
+      *         (+)Freq         1kHz
+      *         (+)Angle        0~8192 = 0~360deg (for rotor before deceleration )
+      *         (+)SpeedUnit    RPM (for rotor before deceleration )
+      *         (+)TempUnit     Celsius Degree
+      */
+    struct {
+        CAN_Transmitter         transmitter;
+        uint8_t                 raw_data[8];
+    } datas[4];       /* For motor201~motor204 */
+//    struct {
+//        CAN_Transmitter         transmitter;
+//        int16_t                 raw_data[4];
+//    } dataB;        /* For motor205~motor208 */
+//    struct {
+//        CAN_Transmitter         transmitter;
+//        int16_t                 raw_data[4];
+//    } dataC;        /* For motor209~motor20C */
+} __MOTOR_BusManagerType;
+
+__MOTOR_BusManagerType            __MOTOR_CAN1_Manager;
+__MOTOR_BusManagerType            __MOTOR_CAN2_Manager;
+
+
+
+/**
+  * @brief  Control single motor's movement
+  */
+MOTOR_CrtlType_CAN* CHASIS_AddMonitor(
+    CAN_TypeDef* CANx,
+    CHASIS_MotorIdType motorx, 
+    MOTOR_RM_Types type) 
+{
+    if(CANx!=CAN1 && CANx!=CAN2) return NULL;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+
+    /* Check accessibility */
+    if(!((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]))) {
+        return NULL;
+    }
+    if( manager->motors[(uint8_t)motorx] && manager->motors[(uint8_t)motorx]->flags.enable ) {
+        return manager->motors[(uint8_t)motorx];
+    }
+    
+    /* Init new motor */
+    manager->motors[(uint8_t)motorx] = MOTOR_RM_GetInstance(type);
+    __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], 0);
+    __MOTOR_MountCAN(manager->motors[(uint8_t)motorx], manager->canx, MOTOR_CAN_IDOFFSET+(uint8_t)motorx);
+    
+    __MOTOR_SetSpeedPID(manager->motors[(uint8_t)motorx], NULL);
+    __MOTOR_SetPositionPID(manager->motors[(uint8_t)motorx], NULL);
+    
+    return manager->motors[(uint8_t)motorx];
+}
+
+MOTOR_CrtlType_CAN* CHASIS_EnableMotor(
+    CAN_TypeDef* CANx,
+    CHASIS_MotorIdType motorx, 
+    MOTOR_RM_Types type, 
+    bool is_pos_pid) 
+{
+    if(CANx!=CAN1 && CANx!=CAN2) return NULL;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+
+    /* Check accessibility */
+    if(!((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]))) {
+        return NULL;
+    }
+    if( manager->motors[(uint8_t)motorx] && manager->motors[(uint8_t)motorx]->flags.enable ) {
+        return manager->motors[(uint8_t)motorx];
+    }
+    
+    /* Init new motor */
+    manager->motors[(uint8_t)motorx] = MOTOR_RM_GetInstance(type);
+    __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], 0);
+    __MOTOR_MountCAN(manager->motors[(uint8_t)motorx], manager->canx, MOTOR_CAN_IDOFFSET+(uint8_t)motorx);
+    
+    PID_ControllerInit(&__CHASIS_SpeedPID[(uint8_t)motorx], PIDVAL_CM_SPEED_IntegralLimit, 
+        0xFFFF, MOTOR_MaxOutput);
+    
+    __MOTOR_SetSpeedPID(manager->motors[(uint8_t)motorx], &__CHASIS_SpeedPID[(uint8_t)motorx]);
+    
+    /* Init position PID controller if used */
+    if(is_pos_pid) {
+        PID_ControllerInit(&__CHASIS_PositionPID[(uint8_t)motorx], PIDVAL_CM_POSI_IntegralLimit, 
+            0xFFFF, MOTOR_MaxOutput);
+        
+        __MOTOR_SetPositionPID(manager->motors[(uint8_t)motorx], &__CHASIS_PositionPID[(uint8_t)motorx]);
+    }
+    
+    return manager->motors[(uint8_t)motorx];
+}
+
+void CHASIS_SetMotorSpeed(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float speed) {
+    if(CANx!=CAN1 && CANx!=CAN2) return;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+    if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
+        manager->motors[(uint8_t)motorx] &&
+        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.speed_pid ) {
+        __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], speed);
+    }
+}
+
+void CHASIS_SetMotorPosition(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float position) {
+    if(CANx!=CAN1 && CANx!=CAN2) return;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+    if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
+        manager->motors[(uint8_t)motorx] &&
+        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.position_pid ) {
+        __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], position);
+    }
+}
+
+void CHASIS_SetMotorRelativePosition(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float relaposition) {
+    if(CANx!=CAN1 && CANx!=CAN2) return;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+    if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
+        manager->motors[(uint8_t)motorx] &&
+        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.position_pid ) {
+        __MOTOR_SetTargetDelta(manager->motors[(uint8_t)motorx], relaposition);
+    }
+}
+
+MOTOR_CrtlType_CAN* CHASIS_GetMotor(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+    if(CANx!=CAN1 && CANx!=CAN2) return NULL;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+    if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
+        manager->motors[(uint8_t)motorx] && manager->motors[(uint8_t)motorx]->flags.enable) {
+        return manager->motors[(uint8_t)motorx];
+    } else
+        return NULL;
+}
+
+ /**
+   * @brief  Stop chasis movement via CAN-bus
+   */
+void __CHASIS_Stop(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+    if(CANx!=CAN1 && CANx!=CAN2) return;
+    __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
+    uint8_t i, size=sizeof(manager->motors)/sizeof(manager->motors[0]);
+    if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
+        manager->motors[(uint8_t)motorx] && manager->motors[(uint8_t)motorx]->flags.enable) {
+        /* Position target is current value means stop in position PID mode. */
+        if(manager->motors[(uint8_t)motorx]->control.position_pid) {
+            manager->motors[(uint8_t)motorx]->control.position_pid->target = \
+                manager->motors[(uint8_t)motorx]->state.angle;
+        }
+        if(manager->motors[(uint8_t)motorx]->control.speed_pid) {
+            manager->motors[(uint8_t)motorx]->control.speed_pid->target = 0;
+        }
+        manager->motors[(uint8_t)motorx]->control.output = 0;
+    }
+ }
 
 
 
@@ -433,11 +569,76 @@ void MOTOR_ControlInit(void) {
     for(i=0; i<size; i++) {
         memset(&MOTORs[i], 0x00, sizeof(MOTORs[i]));
     }
+
+    memset(&__MOTOR_CAN1_Manager, 0x00, sizeof(__MOTOR_CAN1_Manager));
+    memset(&__MOTOR_CAN2_Manager, 0x00, sizeof(__MOTOR_CAN2_Manager));
+    
+    __MOTOR_CAN1_Manager.canx = CAN1;
+    __MOTOR_CAN2_Manager.canx = CAN2;
+    
+    size = sizeof(__MOTOR_CAN1_Manager.datas)/sizeof(__MOTOR_CAN1_Manager.datas[0]);
+    for(i=0; i<size; i++) {
+        __MOTOR_CAN1_Manager.datas[i].transmitter.std_id = CAN_TRANS_STDID(i);
+        __MOTOR_CAN1_Manager.datas[i].transmitter.tx.size = sizeof(__MOTOR_CAN1_Manager.datas[i].raw_data)/sizeof(__MOTOR_CAN1_Manager.datas[i].raw_data[0]);
+        __MOTOR_CAN1_Manager.datas[i].transmitter.tx.addr = __MOTOR_CAN1_Manager.datas[i].raw_data;
+        spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN1_Manager.canx, &__MOTOR_CAN1_Manager.datas[i].transmitter);
+    }
+    
+    size = sizeof(__MOTOR_CAN2_Manager.datas)/sizeof(__MOTOR_CAN2_Manager.datas[0]);
+    for(i=0; i<size; i++) {
+        __MOTOR_CAN2_Manager.datas[i].transmitter.std_id = CAN_TRANS_STDID(i);
+        __MOTOR_CAN2_Manager.datas[i].transmitter.tx.size = sizeof(__MOTOR_CAN2_Manager.datas[i].raw_data)/sizeof(__MOTOR_CAN2_Manager.datas[i].raw_data[0]);
+        __MOTOR_CAN2_Manager.datas[i].transmitter.tx.addr = __MOTOR_CAN2_Manager.datas[i].raw_data;
+        spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN2_Manager.canx, &__MOTOR_CAN2_Manager.datas[i].transmitter);
+    }
+    
+//    /* Mount mortor201~mortor204 to CAN chasis control */
+//    __MOTOR_CAN1_Manager.dataA.transmitter.std_id = CAN_TRANS_STDID_1;
+//    __MOTOR_CAN1_Manager.dataA.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN1_Manager.dataA.raw_data)/sizeof(__MOTOR_CAN1_Manager.dataA.raw_data[0]);
+//    __MOTOR_CAN1_Manager.dataA.transmitter.tx.addr = __MOTOR_CAN1_Manager.dataA.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN1_Manager.canx, &__MOTOR_CAN1_Manager.dataA.transmitter);
+//    
+//    /* Mount mortor205~mortor208 to CAN chasis control */
+//    __MOTOR_CAN1_Manager.dataB.transmitter.std_id = CAN_TRANS_STDID_2;
+//    __MOTOR_CAN1_Manager.dataB.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN1_Manager.dataB.raw_data)/sizeof(__MOTOR_CAN1_Manager.dataB.raw_data[0]);
+//    __MOTOR_CAN1_Manager.dataB.transmitter.tx.addr = __MOTOR_CAN1_Manager.dataB.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN1_Manager.canx, &__MOTOR_CAN1_Manager.dataB.transmitter);
+//    
+//        /* Mount mortor205~mortor208 to CAN chasis control */
+//    __MOTOR_CAN1_Manager.dataB.transmitter.std_id = CAN_TRANS_STDID_3;
+//    __MOTOR_CAN1_Manager.dataB.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN1_Manager.dataB.raw_data)/sizeof(__MOTOR_CAN1_Manager.dataB.raw_data[0]);
+//    __MOTOR_CAN1_Manager.dataB.transmitter.tx.addr = __MOTOR_CAN1_Manager.dataB.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN1_Manager.canx, &__MOTOR_CAN1_Manager.dataB.transmitter);
+//    
+
+//    /* Mount mortor201~mortor204 to CAN chasis control */
+//    __MOTOR_CAN2_Manager.dataA.transmitter.std_id = CAN_TRANS_STDID_1;
+//    __MOTOR_CAN2_Manager.dataA.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN2_Manager.dataA.raw_data)/sizeof(__MOTOR_CAN2_Manager.dataA.raw_data[0]);
+//    __MOTOR_CAN2_Manager.dataA.transmitter.tx.addr = __MOTOR_CAN2_Manager.dataA.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN2_Manager.canx, &__MOTOR_CAN2_Manager.dataA.transmitter);
+//    
+//    /* Mount mortor205~mortor208 to CAN chasis control */
+//    __MOTOR_CAN2_Manager.dataB.transmitter.std_id = CAN_TRANS_STDID_2;
+//    __MOTOR_CAN2_Manager.dataB.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN2_Manager.dataB.raw_data)/sizeof(__MOTOR_CAN2_Manager.dataB.raw_data[0]);
+//    __MOTOR_CAN2_Manager.dataB.transmitter.tx.addr = __MOTOR_CAN2_Manager.dataB.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN2_Manager.canx, &__MOTOR_CAN2_Manager.dataB.transmitter);
+//    
+//    /* Mount mortor205~mortor208 to CAN chasis control */
+//    __MOTOR_CAN2_Manager.dataB.transmitter.std_id = CAN_TRANS_STDID_3;
+//    __MOTOR_CAN2_Manager.dataB.transmitter.tx.size = 
+//        sizeof(__MOTOR_CAN2_Manager.dataB.raw_data)/sizeof(__MOTOR_CAN2_Manager.dataB.raw_data[0]);
+//    __MOTOR_CAN2_Manager.dataB.transmitter.tx.addr = __MOTOR_CAN2_Manager.dataB.raw_data;
+//    spCAN_Controllers.user.registe_transmitter(__MOTOR_CAN2_Manager.canx, &__MOTOR_CAN2_Manager.dataB.transmitter);
 }
 
 void MOTOR_ControlLooper(void) {
-    uint8_t i, size = sizeof(MOTORs)/sizeof(MOTORs[0]);
-    for(i=0; i<size; i++) {
+    /* Update output value with PID controller */
+    for(uint8_t i=0; i<sizeof(MOTORs)/sizeof(MOTORs[0]); i++) {
         if(MOTORs[i].flags.enable && MOTORs[i].flags.can_mounted) {
             /* Calc position PID MOTORs[i].control.output */
             // TODO: Make interval time more specific.
@@ -461,7 +662,93 @@ void MOTOR_ControlLooper(void) {
             }
         }
     }
+    
+    
+    /* Submit data update to CAN */
+    for(uint8_t i=0; i<sizeof(__MOTOR_CAN1_Manager.motors)/sizeof(__MOTOR_CAN1_Manager.motors[0]); i++) {
+        int16_t speed = (int16_t)__MOTOR_CAN1_Manager.motors[i]->control.output;
+        if(__MOTOR_CAN1_Manager.motors[i]->flags.rm_type == RM_3510_P19 ||
+            __MOTOR_CAN1_Manager.motors[i]->flags.rm_type == RM_3508_P19 ||
+            __MOTOR_CAN1_Manager.motors[i]->flags.rm_type == RM_3510_P27) {
+            speed = deadzone_gain(speed, 200, 600);
+        }
+        __MOTOR_CAN1_Manager.datas[i/4].raw_data[2*(i%4)] = (speed>>8)&0xff;
+        __MOTOR_CAN1_Manager.datas[i/4].raw_data[2*(i%4)+1] = speed&0xff;
+        
+    }
+
+    for(uint8_t i=0; i<sizeof(__MOTOR_CAN2_Manager.motors)/sizeof(__MOTOR_CAN2_Manager.motors[0]); i++) {
+        int16_t speed = (int16_t)__MOTOR_CAN2_Manager.motors[i]->control.output;
+        if(__MOTOR_CAN2_Manager.motors[i]->flags.rm_type == RM_3510_P19 ||
+            __MOTOR_CAN2_Manager.motors[i]->flags.rm_type == RM_3508_P19 ||
+            __MOTOR_CAN2_Manager.motors[i]->flags.rm_type == RM_3510_P27) {
+            speed = deadzone_gain(speed, 200, 600);
+        }
+        __MOTOR_CAN2_Manager.datas[i/4].raw_data[2*(i%4)] = (speed>>8)&0xff;
+        __MOTOR_CAN2_Manager.datas[i/4].raw_data[2*(i%4)+1] = speed&0xff;
+    }
+    
+    
+//    /* Submit data update to CAN */
+//    for(uint8_t i=0; i<4; i++) {
+//        speed = (int16_t)__MOTOR_CAN1_Manager.motors[i]->control.output;
+//        __MOTOR_CAN1_Manager.dataA.raw_data[2*i] = (speed>>8)&0xff;
+//        __MOTOR_CAN1_Manager.dataA.raw_data[2*i+1] = speed&0xff;
+//    }
+//    
+//    for(uint8_t i=0; i<4; i++) {
+//        speed = (int16_t)__MOTOR_CAN1_Manager.motors[i+4]->control.output;
+//        __MOTOR_CAN1_Manager.dataB.raw_data[2*i] = (speed>>8)&0xff;
+//        __MOTOR_CAN1_Manager.dataB.raw_data[2*i+1] = speed&0xff;
+//    }
+//    
+//    for(uint8_t i=0; i<4; i++) {
+//        speed = (int16_t)__MOTOR_CAN2_Manager.motors[i]->control.output;
+//        __MOTOR_CAN2_Manager.dataA.raw_data[2*i] = (speed>>8)&0xff;
+//        __MOTOR_CAN2_Manager.dataA.raw_data[2*i+1] = speed&0xff;
+//    }
+//    
+//    for(uint8_t i=0; i<4; i++) {
+//        speed = (int16_t)__MOTOR_CAN2_Manager.motors[i+4]->control.output;
+//        __MOTOR_CAN2_Manager.dataB.raw_data[2*i] = (speed>>8)&0xff;
+//        __MOTOR_CAN2_Manager.dataB.raw_data[2*i+1] = speed&0xff;
+//    }
+
+    spCAN_Controllers.user.send(&__MOTOR_CAN1_Manager.datas[0].transmitter);
+    spCAN_Controllers.user.send(&__MOTOR_CAN1_Manager.datas[1].transmitter);
+    spCAN_Controllers.user.send(&__MOTOR_CAN1_Manager.datas[2].transmitter);
+    spCAN_Controllers.user.send(&__MOTOR_CAN2_Manager.datas[0].transmitter);
+    spCAN_Controllers.user.send(&__MOTOR_CAN2_Manager.datas[1].transmitter);
+    spCAN_Controllers.user.send(&__MOTOR_CAN2_Manager.datas[2].transmitter);
 }
 
+
+
+struct __MOTOR_Manager_Type spMOTOR = {
+    ._system = {
+        .init = MOTOR_ControlInit,
+        .looper = MOTOR_ControlLooper,
+    },
+    .user = {
+        .enable = CHASIS_EnableMotor,
+        .enable_simple = CHASIS_AddMonitor,
+        .set_speed = CHASIS_SetMotorSpeed,
+        .set_position = CHASIS_SetMotorPosition,
+        .set_relative_position = CHASIS_SetMotorRelativePosition,
+        .get = CHASIS_GetMotor,
+        .stop = __CHASIS_Stop,
+    },
+    .motor = {
+        .get_instance = MOTOR_RM_GetInstance,
+        .enable = __MOTOR_Init,
+        .disable = __MOTOR_Destroy,
+        .set_target = __MOTOR_SetTarget,
+        .set_target_delta = __MOTOR_SetTargetDelta,
+        .set_output_limit = __MOTOR_SetOutputLimit,
+        .set_speed_pid = __MOTOR_SetSpeedPID,
+        .set_position_pid = __MOTOR_SetPositionPID,
+        .set_resolver = MOTOR_SetDataResolve,
+    }
+};
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

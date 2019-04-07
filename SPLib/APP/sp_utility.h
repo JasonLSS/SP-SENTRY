@@ -37,7 +37,6 @@
   * @ingroup    Utility
   * @{
   */
-extern float speeder;
 
 typedef struct {
     float           timestamp;
@@ -48,22 +47,20 @@ typedef struct {
 
 extern spKeyController spUserKey;
 
-
 #define LASER_ON()          GPIO_SetBits(GPIOG,GPIO_Pin_13)
 #define LASER_OFF()         GPIO_ResetBits(GPIOG,GPIO_Pin_13)
 
 #if defined(SP_USING_BOARD_TYPEA)
-    #define LED_R_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
-    #define LED_R_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
-    #define LED_R_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
+    #define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
+    #define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
+    #define LED_G_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
     
-    #define LED_G_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_11)
-    #define LED_G_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
-    #define LED_G_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
+    #define LED_R_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_11)
+    #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
+    #define LED_R_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
+    
+    #define BUZZER_TIMER        TIM12
 
-    #define BUZZER_ON(a)        TIM_SetDuty(TIM12, 0, 80.f)
-    #define BUZZER_OFF()        TIM_SetDuty(TIM12, 0, 0)
-    
     // A-board
     #define LED8_BIT0           GPIO_Pin_1
     #define LED8_BIT1           GPIO_Pin_2
@@ -76,7 +73,7 @@ extern spKeyController spUserKey;
     #define LED8_BIT_ON(x)      GPIO_ResetBits(GPIOG,x)
     #define LED8_BIT_OFF(x)     GPIO_SetBits(GPIOG,x)
     #define LED8_BIT_TOGGLE(x)  GPIOG->ODR ^= (x)
-    #define LED8_OUTPUT(x)      GPIOG->ODR = (GPIOG->ODR&(~0x1fe))|(~((x&0xff)<<1))
+    #define LED8_OUTPUT(x)      GPIOG->ODR = (GPIOG->ODR&(~0x1fe))|((~x&0xff)<<1)
 #else
     #define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
     #define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
@@ -86,9 +83,13 @@ extern spKeyController spUserKey;
     #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_7)
     #define LED_R_TOGGLE()      (GPIOE->ODR)^= GPIO_Pin_7
     
-    #define BUZZER_ON(a)        TIM_SetDuty(TIM3, 0, 90.f)
-    #define BUZZER_OFF()        TIM_SetDuty(TIM3, 0, 0)
+    #define BUZZER_TIMER        TIM3
 #endif
+
+extern float spBeep_MusicalScale[][8];    
+#define BUZZER_ON(a)            spTIMER.set_duty(BUZZER_TIMER, 0, 90.f)
+#define BUZZER_OFF()            spTIMER.set_duty(BUZZER_TIMER, 0, 0)
+
 
 /**
   * @}
@@ -123,6 +124,7 @@ extern void NVIC_IRQDisable(uint8_t irq);
   * @{
   */
 void Buzzer_Init(void);
+void spBeep(float f, uint32_t d);
 void Led_Configuration(void);
 void Led8_Configuration(void);
 void TIM6_Configuration(void);
@@ -144,56 +146,9 @@ void Power_Configuration(void);
   * @param  size    Total length of the data array
   */
 uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size);
-
-
-extern struct __CHASIS_Param_Reg{
-    float half_width;
-    float half_length;
-    float wheel_radius;
-    struct {
-        float x;
-        float y;
-        float yaw;
-        float output[4];
-    } state;
-    struct {
-        float spdx;
-        float spdy;
-        float spdyaw;
-    } target;
-    struct {
-        PID_Type x;
-        PID_Type y;
-        PID_Type yaw;
-    } PID;
-} CHASIS_Param_Reg;
-
-/**
-  * @brief  Distribute speed accroding to Mecanum wheel principle
-  * @param  spx     target linear speed in x-axis
-  * @param  spy     target linear speed in y-axis
-  * @param  spyaw   target angular speed in yaw-axis
-  * @param  out_speed    output speed buffer
-  */
-void CHASIS_Mecanum(float spx, float spy, float spyaw, float out_speed[4]);
-void CHASIS_Mecanum_Inv(float speed[4], float* spdx, float *spdy, float *spyaw );
-/**
-  * @brief  Chasis control looper
-  * @brief  speedX: chasis linear speed in X-axis
-  * @brief  speedY: chasis linear speed in Y-axis
-  * @brief  rad: chasis angular speed yaw
-  */
-void CHASIS_Move(float speedX, float speedY, float rad);
-
 /**
   * @}
   */
-
-
-bool TIM_Init(TIM_TypeDef *Timx, float frequency, bool isstart);
-void TIM_SetDuty(TIM_TypeDef *Timx, uint8_t channel, float duty);
-float TIM_GetDuty(TIM_TypeDef *Timx, uint8_t channel);
-void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel);
 
 
 /**

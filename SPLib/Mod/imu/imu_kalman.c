@@ -41,12 +41,12 @@ void matrix_multi(const float * mata, const float * matb, float * matc) {
 
 void AngleFromAccelMag(const float* accel, const float* mag, float* angles) {
     
-    float normFactor = invSqrt(accel[0]*accel[0]+accel[1]*accel[1]+accel[2]*accel[2]);
+    float normFactor = inv_sqrt(accel[0]*accel[0]+accel[1]*accel[1]+accel[2]*accel[2]);
     float ax = accel[0] * normFactor;
     float ay = accel[1] * normFactor;
     float az = accel[2] * normFactor;
     
-    normFactor = invSqrt(mag[0]*mag[0]+mag[1]*mag[1]+mag[2]*mag[2]);
+    normFactor = inv_sqrt(mag[0]*mag[0]+mag[1]*mag[1]+mag[2]*mag[2]);
     float mx = mag[0] * normFactor;
     float my = mag[1] * normFactor;
     float mz = mag[2] * normFactor;

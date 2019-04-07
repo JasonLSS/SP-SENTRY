@@ -17,6 +17,7 @@ extern int 	if_if_newframe;
 
 extern double  virual_ch2;
 extern double  virual_ch3;
+extern frame frame_visual;
 
 extern uint8_t auto_aim_flag;
 extern uint8_t small_power_flag;

@@ -11,3 +11,4 @@ SPLib/dev
 /SPLib/Test/
 !/SPLib/Test/sp19dev/src/*
 Discard/
+.vscode/*

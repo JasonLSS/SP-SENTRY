@@ -14,7 +14,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "sp_utility.h"
-#include "sp_chasis.h"
 #include "sp_filter.h"
 
 
@@ -28,7 +27,6 @@
 
 
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
-
 
 
 __INLINE void NVIC_IRQEnable(uint8_t irq, uint8_t pri, uint8_t subpri) {
@@ -53,10 +51,10 @@ __INLINE void NVIC_IRQDisable(uint8_t irq) {
 void Buzzer_Init(void) {
 #if defined(SP_USING_BOARD_TYPEA)
     /* TIM12CH1 + PH6 */
-    GPIO_PinAFConfig(GPIOH, GPIO_PinSource6, GPIO_AF_TIM12); 
     spGPIO_Controllers.alternal_config(GPIOH, GPIO_Pin_6, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    GPIO_PinAFConfig(GPIOH, GPIO_PinSource6, GPIO_AF_TIM12); 
     
-    TIM_Init(TIM12, 583.3f, false);
+    spTIMER.init(TIM12, 1000, false);
     TIM_OCInitTypeDef  TIM_OCInitStructure;
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
@@ -73,10 +71,10 @@ void Buzzer_Init(void) {
     BUZZER_OFF();
 #else
     /* TIM3CH1 + PB4 */
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_TIM3); 
     spGPIO_Controllers.alternal_config(GPIOB, GPIO_Pin_4, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_TIM3); 
     
-    TIM_Init(TIM3, 2000, false);
+    spTIMER.init(TIM3, 2000, false);
     TIM_OCInitTypeDef  TIM_OCInitStructure;
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
@@ -114,16 +112,13 @@ void Led8_Configuration(void) {
     GPIO_InitTypeDef  GPIO_InitStructure;
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG , ENABLE);
 
-    GPIO_InitStructure.GPIO_Pin = 0x1fe;                     //0x00~0x80
+    GPIO_InitStructure.GPIO_Pin = 0xff;                     //0x00~0x80
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;           //普通输出模式
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //推挽输出
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;      //100MHz
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //下拉（控制逻辑为正常逻辑）
     GPIO_Init(GPIOG, &GPIO_InitStructure);                  //初始化
     
-		spGPIO_Controllers.output_config(GPIOG,GPIO_Pin_13,GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-		GPIO_SetBits(GPIOG,GPIO_Pin_13);
-		
     LED8_OUTPUT(0x00);
 #endif
 }
@@ -155,20 +150,22 @@ void Power_Configuration(void) {
 //}
 
 
-void EXTI2_IRQHandler(void) {
-    if(EXTI_GetITStatus(EXTI_Line2)) {
-        float time = TASK_GetSecond();
-        if(time - spUserKey.timestamp > 0.01f) spUserKey.on_press = true;
-        spUserKey.timestamp = time;
-        EXTI_ClearITPendingBit(EXTI_Line2);
-    }
-}
-
 spKeyController spUserKey = {
     .on_press = false, .on_release = false, 
+#if defined(SP_USING_BOARD_TYPEA)
     .gpio_pin = {GPIOB, GPIO_PinSource2} };
-
+#else
+    .gpio_pin = {GPIOD, GPIO_PinSource10} };
+#endif
 #define spEXIT_LineFromPinSource(ln)        (0x0001<<(ln))
+    
+    
+void KEY_Callback(void) {
+    float time = TASK_GetSecond();
+    if(time - spUserKey.timestamp > 0.01f) spUserKey.on_press = true;
+    spUserKey.timestamp = time;
+}
+
 void KEY_Configuration(void) {
     spRCC_Set_SYSCFG();
     spGPIO_Controllers.input_config(spUserKey.gpio_pin.gpio, 
@@ -191,22 +188,22 @@ void KEY_Configuration(void) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOG, spUserKey.gpio_pin.pin_source); 
     }
     #ifdef GPIOH
-    else if(spUserKey.gpio_pin.gpio==GPIOH) {
+    if(spUserKey.gpio_pin.gpio==GPIOH) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOH, spUserKey.gpio_pin.pin_source); 
     }
     #endif
     #ifdef GPIOI
-    else if(spUserKey.gpio_pin.gpio==GPIOI) {
+    if(spUserKey.gpio_pin.gpio==GPIOI) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOI, spUserKey.gpio_pin.pin_source); 
     } 
     #endif
     #ifdef GPIOK
-    else if(spUserKey.gpio_pin.gpio==GPIOJ) {
+    if(spUserKey.gpio_pin.gpio==GPIOJ) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOJ, spUserKey.gpio_pin.pin_source); 
     } 
     #endif
     #ifdef GPIOK
-    else if(spUserKey.gpio_pin.gpio==GPIOK) {
+    if(spUserKey.gpio_pin.gpio==GPIOK) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOK, spUserKey.gpio_pin.pin_source); 
     }
     #endif
@@ -217,236 +214,51 @@ void KEY_Configuration(void) {
     exit_initer.EXTI_Mode       = EXTI_Mode_Interrupt;
     exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;  // EXTI_Trigger_Rising_Falling;
     EXTI_Init(&exit_initer);
+    
+    spIRQ_Manager.registe(EXTI15_10_IRQn, NULL, KEY_Callback);
 }
+
+
+
+float spBeep_MusicalScale[][8] = {
+//      C       D       E       F       G       A       B     
+    {0, 16.35,  18.35,  20.60,  21.83,  24.50,  27.50,  30.87 },    // 0
+    {0, 32.70,  36.71,  41.20,  43.65,  49.00,  55.00,  61.74 },    // 1
+    {0, 65.41,  73.42,  82.41,  87.31,  98.00,  110.00, 123.48},    // 2
+    {0, 130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94},    // 3
+    {0, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88},    // 4
+    {0, 523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77},    // 5
+    {0, 1046.5, 1174.7, 1318.5, 1396.9, 1568.0, 1760.0, 1975.5},    // 6
+    {0, 2093.0, 2349.3, 2637.0, 2793.8, 3136.0, 3520.0, 3951.1},    // 7
+    {0, 4186.0, 4698.6, 5274.0, 5587.6, 6271.9, 7040.0, 7902.1},    // 8
+};
+//C4          261.63  131.87
+//C#4/Db4     124.47
+//D4          293.66  117.48
+//D#4/Eb4     311.13  110.89
+//E4          329.63  104.66
+//F4          349.23  98.79
+//F#4/Gb4     369.99  93.24
+//G4          392.00  88.01
+//G#4/Ab4     415.30  83.07
+//A4          440.00  78.41
+//A#4/Bb4     466.16  74.01
+//B4          493.88
+/*!< f=frequency, d=delay units [each 1ms] */
+void spBeep(float f, uint32_t d) {
+    spTIMER.set_frequency(BUZZER_TIMER, (f), 0); \
+    spTIMER.set_duty(BUZZER_TIMER, 0, 90.f); delay_ms(d); \
+    spTIMER.set_duty(BUZZER_TIMER, 0, 0);delay_ms(10);
+}
+
+
+
 
 uint32_t CRC_CheckSum(uint32_t* buffer, uint16_t size) {
     CRC_ResetDR();
     return CRC_CalcBlockCRC(buffer, size);
 }
 
-
-
-
-/*
-Unit:
-    linear speed -> m/s
-    angular speed -> rad/s
-    length -> m
-*/
-struct __CHASIS_Param_Reg CHASIS_Param_Reg = {
-    .half_width = 0.185f,
-    .half_length = 0.19f,
-    .wheel_radius = 0.075f
-};
-void CHASIS_Mecanum(float spx, float spy, float spyaw, float out_speed[4]) {
-    
-    out_speed[0] = spMATH_RAD2RPM(
-        ( spx - spy - (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
-    out_speed[1] = spMATH_RAD2RPM(
-        ( spx + spy + (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
-    out_speed[2] = spMATH_RAD2RPM(
-        ( spx - spy + (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
-    out_speed[3] = spMATH_RAD2RPM(
-        ( spx + spy - (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)*spyaw)/CHASIS_Param_Reg.wheel_radius);
-
-    out_speed[1] = -out_speed[1];
-    out_speed[2] = -out_speed[2];
-}
-void CHASIS_Mecanum_Inv(float speed[4], float* spdx, float *spdy, float *spyaw ) {
-    
-    speed[1] = -speed[1];
-    speed[2] = -speed[2];
-    
-    if(spdx) *spdx = spMATH_RPM2RAD(
-        (speed[0] + speed[1] + speed[2] + speed[3])*CHASIS_Param_Reg.wheel_radius/4.f );
-    if(spdy) *spdy = spMATH_RPM2RAD(
-        (-speed[0] + speed[1] - speed[2] + speed[3])*CHASIS_Param_Reg.wheel_radius/4.f );
-    if(spyaw) *spyaw = spMATH_RPM2RAD(
-        (-speed[0] + speed[1] + speed[2] - speed[3])*CHASIS_Param_Reg.wheel_radius/
-        (CHASIS_Param_Reg.half_width+CHASIS_Param_Reg.half_length)/4.f );
-}
-
-#define __CHASIS_SpeedLimit                 5000
-static float fspeed[4][4] = {0};
-void CHASIS_Move(float speedX, float speedY, float rad) {
-//    float speed[4]={0};
-//    CHASIS_Mecanum(speedX, speedY, rad, speed);
-//    
-//    for(uint8_t i=0; i<4; i++) {
-//        if(fabs(speed[i]) > __CHASIS_SpeedLimit) {
-//            speed[i] = (speed[i]>0)?__CHASIS_SpeedLimit:-__CHASIS_SpeedLimit;
-//        } else if(fabs(speed[i]) < 20.f) {
-//            speed[i] = 0;
-//        }
-//    }
-//    
-//    memcpy(CHASIS_Param_Reg.state.output, speed, sizeof(speed));
-//    
-//    CHASIS_SetMotorSpeed(Motor201, speed[0]);
-//    CHASIS_SetMotorSpeed(Motor202, speed[1]);
-//    CHASIS_SetMotorSpeed(Motor203, speed[2]);
-//    CHASIS_SetMotorSpeed(Motor204, speed[3]);
-    
-    // TODO: Make interval time more specific.
-    CHASIS_Param_Reg.target.spdx = speedX;
-    CHASIS_Param_Reg.target.spdy = speedY;
-    CHASIS_Param_Reg.target.spdyaw = rad;
-    
-    MOTOR_CrtlType_CAN* motorA = CHASIS_GetMotor(Motor201);
-    MOTOR_CrtlType_CAN* motorB = CHASIS_GetMotor(Motor202);
-    MOTOR_CrtlType_CAN* motorC = CHASIS_GetMotor(Motor203);
-    MOTOR_CrtlType_CAN* motorD = CHASIS_GetMotor(Motor204);
-    
-    float speed[4];
-    // rad/s
-    speed[0] = motorA->state.speed;
-    speed[1] = motorB->state.speed;
-    speed[2] = motorC->state.speed;
-    speed[3] = motorD->state.speed;
-    CHASIS_Mecanum_Inv(speed, &CHASIS_Param_Reg.state.x, &CHASIS_Param_Reg.state.y, &CHASIS_Param_Reg.state.yaw);
-    
-    float target[3];
-    target[0] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.x, 
-        speedX, CHASIS_Param_Reg.state.x);
-    target[1] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.y, 
-        speedY, CHASIS_Param_Reg.state.y);
-    target[2] = PID_ControllerDriver(&CHASIS_Param_Reg.PID.yaw, 
-        rad, CHASIS_Param_Reg.state.yaw);
-    
-    CHASIS_Mecanum(target[0], target[1], target[2], CHASIS_Param_Reg.state.output);
-    
-    motorA->control.output = CHASIS_Param_Reg.state.output[0];
-    motorB->control.output = CHASIS_Param_Reg.state.output[1];
-    motorC->control.output = CHASIS_Param_Reg.state.output[2];
-    motorD->control.output = CHASIS_Param_Reg.state.output[3];
-}
-
-
-
-/** 
-  * @brief  Config a timer with base counter.
-  * @param  Timx: TIM[1~14]
-  * @param  frequency: PWM frequency.
-  * @param  isstart: If start right now.
-  * @rteval If succeed
-  */
-#include "stm32f4xx_rcc.h"
-bool TIM_Init(
-    TIM_TypeDef *Timx, 
-    float frequency,
-    bool isstart)
-{
-    /* If timer is not being ocupied. */
-    if(Timx->CR1 & TIM_CR1_CEN_Msk)
-        return false;
-    /* Enbale TIM clock */
-    if(Timx==TIM1) {
-        spRCC_Set_TIM1();
-    }
-    else if(Timx==TIM2) {
-        spRCC_Set_TIM2();
-    }
-    else if(Timx==TIM3) {
-        spRCC_Set_TIM3();
-    }
-    else if(Timx==TIM4) {
-        spRCC_Set_TIM4();
-    }
-    else if(Timx==TIM5) {
-        spRCC_Set_TIM5();
-    }
-    else if(Timx==TIM6) {
-        spRCC_Set_TIM6();
-    }
-    else if(Timx==TIM7) {
-        spRCC_Set_TIM7();
-    }
-    else if(Timx==TIM8) {
-        spRCC_Set_TIM8();
-    }
-    else if(Timx==TIM9) {
-        spRCC_Set_TIM9();
-    }
-    else if(Timx==TIM10) {
-        spRCC_Set_TIM10();
-    }
-    else if(Timx==TIM11) {
-        spRCC_Set_TIM11();
-    }
-    else if(Timx==TIM12) {
-        spRCC_Set_TIM12();
-    }
-    else if(Timx==TIM13) {
-        spRCC_Set_TIM13();
-    }
-    else if(Timx==TIM14) {
-        spRCC_Set_TIM14();
-    }
-    else
-        return false;
-    
-    /* Calculate arrangement value(peroid) and prescaler. */
-    uint32_t bus_freq = SystemCoreClock;
-    
-    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
-       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
-        bus_freq /= 2;
-    }
-    uint32_t peroid = bus_freq / frequency;
-    uint32_t prescaler = 1;
-    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
-    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
-        prescaler = bus_freq / 1000000;
-        peroid /= prescaler;
-    }
-    TIM_TimeBaseInitTypeDef     tim_initstruct;
-    tim_initstruct.TIM_Prescaler            =   prescaler - 1;
-    tim_initstruct.TIM_Period               =   peroid - 1;
-    tim_initstruct.TIM_CounterMode          =   TIM_CounterMode_Up;
-    tim_initstruct.TIM_ClockDivision        =   TIM_CKD_DIV1; 
-    TIM_TimeBaseInit(Timx, &tim_initstruct);
-    
-    if(isstart) TIM_Cmd(Timx, ENABLE);
-    return true;
-}
-
-void TIM_SetDuty(TIM_TypeDef *Timx, uint8_t channel, float duty) {
-    if(channel > 2) return;
-    duty = (duty>100.f)?100.f:( (duty<0.f)?0.f:duty );
-    ((uint32_t*)(&Timx->CCR1))[channel] = (uint32_t)((Timx->ARR+1)*duty/100.f);
-}
-
-float TIM_GetDuty(TIM_TypeDef *Timx, uint8_t channel) {
-    if(channel > 2) return 0.f;
-    return (((uint32_t*)(&Timx->CCR1))[channel])*1.f/((uint32_t)(Timx->ARR+1))*100.f;
-}
-
-void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel) {
-    
-    float duty = TIM_GetDuty(Timx, channel);
-    
-    /* Calculate arrangement value(peroid) and prescaler. */
-    uint32_t bus_freq = SystemCoreClock;
-    
-    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
-       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
-        bus_freq /= 2;
-    }
-    uint32_t peroid = bus_freq / frequency;
-    uint32_t prescaler = 1;
-    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
-    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
-        prescaler = bus_freq / 1000000;
-        peroid /= prescaler;
-    }
-    
-    TIM_Cmd(Timx, DISABLE);
-    Timx->PSC = prescaler - 1;
-    Timx->ARR = peroid - 1;
-    TIM_Cmd(Timx, ENABLE);
-    
-    TIM_SetDuty(Timx, channel, duty);
-}
 
 /**
   * @}

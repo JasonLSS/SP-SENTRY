@@ -17,7 +17,7 @@
         <TargetCommonOption>
           <Device>STM32F427IIHx</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.11.0</PackID>
+          <PackID>Keil.STM32F4xx_DFP.2.13.0</PackID>
           <PackURL>http://www.keil.com/pack</PackURL>
           <Cpu>IRAM(0x20000000,0x30000) IRAM2(0x10000000,0x10000) IROM(0x08000000,0x200000) CPUTYPE("Cortex-M4") FPU2 CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -325,7 +325,7 @@
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
-            <uGnu>1</uGnu>
+            <uGnu>0</uGnu>
             <useXO>0</useXO>
             <v6Lang>3</v6Lang>
             <v6LangP>3</v6LangP>
@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal;..\SPLib\Mod\chasis;..\SPLib\Mod\tof</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -408,11 +408,6 @@
               <FilePath>..\SPLib\APP\sp_utility.c</FilePath>
             </File>
             <File>
-              <FileName>sp_chasis.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\APP\sp_chasis.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_motor.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\APP\sp_motor.c</FilePath>
@@ -428,14 +423,14 @@
               <FilePath>..\SPLib\APP\RefereeInfo.c</FilePath>
             </File>
             <File>
-              <FileName>gimbal.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\APP\gimbal.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_shoot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\APP\sp_shoot.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_chasis.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\chasis\sp_chasis.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -451,6 +446,11 @@
               <FileName>sp_pid.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\AAL\sp_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>gimbal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\APP\gimbal.c</FilePath>
             </File>
             <File>
               <FileName>sp_filter.c</FileName>
@@ -491,6 +491,11 @@
               <FileName>sp_can.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_can.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\BSP\sp_timer.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -588,11 +593,6 @@
           <GroupName>DOC</GroupName>
           <Files>
             <File>
-              <FileName>config.template</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\config.template</FilePath>
-            </File>
-            <File>
               <FileName>DMA_Channels.md</FileName>
               <FileType>5</FileType>
               <FilePath>..\SPLib\DMA_Channels.md</FilePath>
@@ -606,6 +606,21 @@
               <FileName>MPU6500_Desc.md</FileName>
               <FileType>5</FileType>
               <FilePath>..\SPLib\MPU6500_Desc.md</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>TOF</GroupName>
+          <Files>
+            <File>
+              <FileName>i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\tof\i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\tof\sp_sensor.c</FilePath>
             </File>
           </Files>
         </Group>

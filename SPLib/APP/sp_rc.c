@@ -200,6 +200,11 @@ uint16_t RC_GetState(RC_DataType* recv) {
         return 0;
     }
 }
+
+bool RC_isValid(void) {
+    return RC_Manager.valid;
+}
+
 /**
   * @}
   */

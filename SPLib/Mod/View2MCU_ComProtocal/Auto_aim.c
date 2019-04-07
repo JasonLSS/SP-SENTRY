@@ -11,6 +11,7 @@
  
 frame frame_ex;//存储上一个视觉发来的结构体
 frame fram;//存储视觉数据的结构体
+frame frame_visual;
 /*
 typedef struct _frame            //视觉发来的数据框架    
 {
@@ -60,7 +61,7 @@ int     time_count=0;
 int     time_interval=40;
 int     if_newframe = 0;//CAN2收到视觉信号标志位
 int     if_rotate_ok = 0;
-int         if_if_newframe=0;
+int     if_if_newframe=0;
 
 int miss = 0;
 float last_pitch=0;
@@ -81,8 +82,13 @@ uint32_t last_time_tick_1ms,last_last_time_tick_1ms;//上一个time_tick_1ms的�
 ****************************************************************************************/
 void Auto_aim(u8 *rx_buf,int len)
 {
+		if(len==0){
+				return;
+		}
+		rx_buf[len] = '\0';
+	
 	 if(unpackFrame(rx_buf,len,&fram) == 0)  //解包成功
-    {    
+   {
         if(fram.timestamp != frame_ex.timestamp)//如果前一帧数据和当前帧时间戳一样,目标丢失,不作为
         {
             if_newframe = 1;
@@ -91,26 +97,33 @@ void Auto_aim(u8 *rx_buf,int len)
 				{
 					if_newframe = 0;
 				}
-        frame_ex.timestamp = fram.timestamp;
+				frame_ex.timestamp = fram.timestamp;
     }
 		else
 		{
 			if_newframe = 0;
 		}
+		
+		
+		
     if(auto_aim_flag == 0x00 && small_power_flag == 0xFF)
     { 
         if(if_newframe == 1) {
-            spGIMBAL_Controller.user.update_target_limit(
-                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle + fram.pitch/0.04394f,
-                spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle - fram.yaw/0.04394f);
+//            spGIMBAL_Controller.user.update_target_limit(
+//                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle + fram.pitch/0.04394f,
+//                spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle - fram.yaw/0.04394f);
+						frame_visual = fram;
+						if_if_newframe = 1;
             //yaw 10 5 0.5    pitch  2 10 0.2
             if((-last_yaw+fram.yaw)!=1)
                 miss++;
-            u8 size = sprintf(uart6_buff, "%f,%d\r\n", fram.yaw, miss);
-            spDMA_Controllers.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
             last_yaw=fram.yaw;
+						u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
+						spDMA_Controllers.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
         }
     }
+		
+
 }
 
 
@@ -145,7 +158,9 @@ void Autoaim_Init(void) {
 }
 
 void Autoaim_USART_Interface(void) {
-    view_buffer.stamp_ex = view_buffer.stamp;
+    
+		u8 bt = USART2->DR;
+	  view_buffer.stamp_ex = view_buffer.stamp;
     view_buffer.stamp = TASK_GetSecond();
     view_buffer.freq = view_buffer.stamp - view_buffer.stamp_ex;
     
@@ -153,9 +168,9 @@ void Autoaim_USART_Interface(void) {
     spDMA_Controllers.controller.reset_counter(spDMA_USART2_rx_stream, view_buffer.buffer.size);
     Auto_aim(view_buffer.buffer.buffer, size);
     
-    LED8_BIT_ON(LED8_BIT4);
-    delay_us(100);
-    LED8_BIT_OFF(LED8_BIT4);
+//    LED8_BIT_ON(LED8_BIT4);
+//    delay_us(100);
+//    LED8_BIT_OFF(LED8_BIT4);
 }
 
 

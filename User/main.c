@@ -71,20 +71,20 @@ int main(void)
     TASK_TimerInit();
     
     /* System init finish signal */
-
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,659,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,784,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,494,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,523,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
-		BUZZER_ON(0);TIM_SetFrequency(TIM12,494,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
+	
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,659,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,698,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,440,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,494,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,523,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,494,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
     BUZZER_OFF();
     LED_G_ON();LED_R_OFF();
     TASK_Start();

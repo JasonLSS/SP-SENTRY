@@ -17,29 +17,30 @@
 
 
 spDMA_SelectorType spDMA_Mem2Mem[] = {
-    {DMA2_Stream6, DMA_Channel_3},
-    {DMA2_Stream7, DMA_Channel_0},
-    
-    {DMA1_Stream0, DMA_Channel_7},      /*!< bad */
-    {DMA1_Stream1, DMA_Channel_0},      /*!< bad */
-    {DMA1_Stream1, DMA_Channel_1},
-    {DMA1_Stream1, DMA_Channel_2},
-    {DMA1_Stream3, DMA_Channel_1},
-    {DMA1_Stream5, DMA_Channel_6},
-    {DMA1_Stream6, DMA_Channel_0},
-    {DMA1_Stream7, DMA_Channel_6},
-    {DMA2_Stream0, DMA_Channel_1},
-    {DMA2_Stream0, DMA_Channel_5},
-    {DMA2_Stream0, DMA_Channel_4},
-    {DMA2_Stream1, DMA_Channel_3},
-    {DMA2_Stream2, DMA_Channel_2},
-    {DMA2_Stream4, DMA_Channel_4},
-    {DMA2_Stream4, DMA_Channel_4},
-    {DMA2_Stream5, DMA_Channel_5},
-    
-    
-    {DMA2_Stream7, DMA_Channel_3},
-    {DMA2_Stream7, DMA_Channel_6}
+	{DMA2_Stream0, DMA_Channel_1},
+//    {DMA2_Stream6, DMA_Channel_3},
+//    {DMA2_Stream7, DMA_Channel_0},
+//    
+//    {DMA1_Stream0, DMA_Channel_7},      /*!< bad */
+//    {DMA1_Stream1, DMA_Channel_0},      /*!< bad */
+//    {DMA1_Stream1, DMA_Channel_1},
+//    {DMA1_Stream1, DMA_Channel_2},
+//    {DMA1_Stream3, DMA_Channel_1},
+//    {DMA1_Stream5, DMA_Channel_6},
+//    {DMA1_Stream6, DMA_Channel_0},
+//    {DMA1_Stream7, DMA_Channel_6},
+//    
+//    {DMA2_Stream0, DMA_Channel_5},
+//    {DMA2_Stream0, DMA_Channel_4},
+//    {DMA2_Stream1, DMA_Channel_3},
+//    {DMA2_Stream2, DMA_Channel_2},
+//    {DMA2_Stream4, DMA_Channel_4},
+//    {DMA2_Stream4, DMA_Channel_4},
+//    {DMA2_Stream5, DMA_Channel_5},
+//    
+//    
+//    {DMA2_Stream7, DMA_Channel_3},
+//    {DMA2_Stream7, DMA_Channel_6}
 };
 
 

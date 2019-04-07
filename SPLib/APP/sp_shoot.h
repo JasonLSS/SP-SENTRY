@@ -24,7 +24,6 @@
 #include "sp_pid.h"
 #include "sp_conf.h"
 #include "sp_utility.h"
-#include "sp_chasis.h"
 #include "sp_motor.h"
 #include "sp_dma.h"
 #include "sp_rc.h"
@@ -47,7 +46,7 @@ typedef enum{
 }RobotMode;
 
 extern RobotMode robotMode;
-extern RobotMode robotMode_ex;	
+
 
 typedef struct {
     uint8_t             changed:1;

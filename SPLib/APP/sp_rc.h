@@ -169,6 +169,8 @@ void RC_ReceiverChecker(void);
   * @retval Length of successfully copied data.
   */ 
 uint16_t RC_GetState(RC_DataType* recv);
+bool RC_isValid(void);
+
 /**
   * @}
   */

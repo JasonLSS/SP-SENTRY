@@ -17,14 +17,6 @@
 
 #include "sp_math.h"
 
-
-float limit_bilateral(float x, float limit) {
-    if(fabs(x)>fabs(limit)) {
-        return fabs(limit)*sign(x);
-    }
-    return x;
-}
-
 float limit_bilateral_loop(float x, float limit) {
     if(limit==0) {
         return x;
@@ -33,27 +25,6 @@ float limit_bilateral_loop(float x, float limit) {
         limit = fabs(limit);
     }
     return x - (int)((fabs(x)+limit)/(2*limit))*2*limit*sign(x);
-}
-
-float limit_minmax(float x, float min, float max) {
-    if(min>max) {
-        return x;
-    }
-    return (x>max)?max:((x<min)?min:x);
-}
-
-float limit_deadzone_bilateral(float x, float deadzone) {
-    if(deadzone < 0) {
-        deadzone = fabs(deadzone);
-    }
-    return (x<deadzone && x>-deadzone)?0:x;
-}
-
-float limit_deadzone_minmax(float x, float min, float max) {
-    if(min>max) {
-        return x;
-    }
-    return (x<max && x>min)?0:x;
 }
 
 
