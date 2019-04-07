@@ -155,7 +155,7 @@ void sendtoComputer(void)
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
     packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
-    spDMA_Controllers.controller.start(spDMA_USART2_tx_stream, (uint32_t)sendbuffer, (uint32_t)&USART2->DR, sizeof(sendtoCom_frame));
+    spDMA.controller.start(spDMA_USART2_tx_stream, (uint32_t)sendbuffer, (uint32_t)&USART2->DR, sizeof(sendtoCom_frame));
 //    DMA_Cmd(DMA1_Stream6,ENABLE);
 //    USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
 }

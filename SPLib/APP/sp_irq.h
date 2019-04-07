@@ -107,7 +107,7 @@ extern struct __IRQ_Manager_Type {
         spIRQ_GetITStatus get_it_status,
         spIRQ_ClearPending clear_pending);
     
-} spIRQ_Manager;
+} spIRQ;
 /** @} */
 
 /**

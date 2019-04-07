@@ -17,32 +17,29 @@
 
 
 spDMA_SelectorType spDMA_Mem2Mem[] = {
-	{DMA2_Stream0, DMA_Channel_1},
+    /* These 2 DMA streams most likely won't be used by other peripherals in RM-TypeA board. */
+    {DMA2_Stream0, DMA_Channel_1},
+    {DMA2_Stream7, DMA_Channel_0},
+};
+/* These channels are not used in STM32, can be used for memory copy. */
 //    {DMA2_Stream6, DMA_Channel_3},
-//    {DMA2_Stream7, DMA_Channel_0},
-//    
-//    {DMA1_Stream0, DMA_Channel_7},      /*!< bad */
-//    {DMA1_Stream1, DMA_Channel_0},      /*!< bad */
+//    {DMA1_Stream0, DMA_Channel_7},
+//    {DMA1_Stream1, DMA_Channel_0},
 //    {DMA1_Stream1, DMA_Channel_1},
 //    {DMA1_Stream1, DMA_Channel_2},
 //    {DMA1_Stream3, DMA_Channel_1},
+//    {DMA2_Stream5, DMA_Channel_5},
 //    {DMA1_Stream5, DMA_Channel_6},
 //    {DMA1_Stream6, DMA_Channel_0},
 //    {DMA1_Stream7, DMA_Channel_6},
-//    
 //    {DMA2_Stream0, DMA_Channel_5},
 //    {DMA2_Stream0, DMA_Channel_4},
 //    {DMA2_Stream1, DMA_Channel_3},
 //    {DMA2_Stream2, DMA_Channel_2},
 //    {DMA2_Stream4, DMA_Channel_4},
 //    {DMA2_Stream4, DMA_Channel_4},
-//    {DMA2_Stream5, DMA_Channel_5},
-//    
-//    
 //    {DMA2_Stream7, DMA_Channel_3},
 //    {DMA2_Stream7, DMA_Channel_6}
-};
-
 
 
 
@@ -106,30 +103,34 @@ bool DMA_InitNull(uint8_t* addr_from, uint8_t* addr_to, uint16_t buffsize) {
     DMA_InitTypeDef     DMA_InitStructure;
     
     spRCC_Set_DMA2();
-    DMA_DeInit(spDMA_Mem2Mem[0].stream);
-    while(DMA_GetCmdStatus(spDMA_Mem2Mem[0].stream)!=DISABLE); 
     
-    DMA_InitStructure.DMA_Channel               = spDMA_Mem2Mem[0].channel;
-    DMA_InitStructure.DMA_DIR                   = DMA_DIR_MemoryToMemory;
-    DMA_InitStructure.DMA_PeripheralBaseAddr    = (uint32_t)addr_from;
-    DMA_InitStructure.DMA_Memory0BaseAddr       = (uint32_t)addr_to;
-    DMA_InitStructure.DMA_BufferSize            = buffsize;
-    DMA_InitStructure.DMA_PeripheralInc         = DMA_PeripheralInc_Enable;
-    DMA_InitStructure.DMA_MemoryInc             = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_PeripheralDataSize    = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryDataSize        = DMA_PeripheralDataSize_Byte;  
-    DMA_InitStructure.DMA_Mode                  = DMA_Mode_Normal;
-    DMA_InitStructure.DMA_Priority              = DMA_Priority_Medium;
-    /* Disbale FIFO mode */
-    DMA_InitStructure.DMA_FIFOMode              = DMA_FIFOMode_Disable;
-    DMA_InitStructure.DMA_FIFOThreshold         = DMA_FIFOThreshold_1QuarterFull;
-    /* Trigger DMA transfer every single memory transfer. */
-    DMA_InitStructure.DMA_MemoryBurst           = DMA_MemoryBurst_Single;
-    /* Trigger DMA transfer every single peripheral transfer. */
-    DMA_InitStructure.DMA_PeripheralBurst       = DMA_PeripheralBurst_Single;
-    DMA_Init(spDMA_Mem2Mem[0].stream, &DMA_InitStructure);
-    /* Enable DMA to start once transmission */
-    // DMA_Cmd(spDMA_NULL_stream, ENABLE);
+    for(uint8_t i=0; i<sizeof(spDMA_Mem2Mem)/sizeof(spDMA_Mem2Mem[0]); ++i) {
+
+        DMA_DeInit(spDMA_Mem2Mem[i].stream);
+        while(DMA_GetCmdStatus(spDMA_Mem2Mem[i].stream)!=DISABLE); 
+        DMA_InitStructure.DMA_Channel               = spDMA_Mem2Mem[i].channel;
+        DMA_InitStructure.DMA_DIR                   = DMA_DIR_MemoryToMemory;
+        DMA_InitStructure.DMA_PeripheralBaseAddr    = (uint32_t)addr_from;
+        DMA_InitStructure.DMA_Memory0BaseAddr       = (uint32_t)addr_to;
+        DMA_InitStructure.DMA_BufferSize            = buffsize;
+        DMA_InitStructure.DMA_PeripheralInc         = DMA_PeripheralInc_Enable;
+        DMA_InitStructure.DMA_MemoryInc             = DMA_MemoryInc_Enable;
+        DMA_InitStructure.DMA_PeripheralDataSize    = DMA_PeripheralDataSize_Byte;
+        DMA_InitStructure.DMA_MemoryDataSize        = DMA_PeripheralDataSize_Byte;  
+        DMA_InitStructure.DMA_Mode                  = DMA_Mode_Normal;
+        DMA_InitStructure.DMA_Priority              = DMA_Priority_Medium;
+        /* Disbale FIFO mode */
+        DMA_InitStructure.DMA_FIFOMode              = DMA_FIFOMode_Disable;
+        DMA_InitStructure.DMA_FIFOThreshold         = DMA_FIFOThreshold_1QuarterFull;
+        /* Trigger DMA transfer every single memory transfer. */
+        DMA_InitStructure.DMA_MemoryBurst           = DMA_MemoryBurst_Single;
+        /* Trigger DMA transfer every single peripheral transfer. */
+        DMA_InitStructure.DMA_PeripheralBurst       = DMA_PeripheralBurst_Single;
+        DMA_Init(spDMA_Mem2Mem[i].stream, &DMA_InitStructure);
+        /* Enable DMA to start once transmission */
+        // DMA_Cmd(spDMA_NULL_stream, ENABLE);
+    }
+        
     return true;
 }
 
@@ -202,7 +203,7 @@ void DMA_ResetCounter(DMA_Stream_TypeDef * stream, uint32_t size) {
 
 
 
-const struct DMA_Controllers_Type spDMA_Controllers =  {
+const struct DMA_Controllers_Type spDMA =  {
     .controller = {
         .start = DMA_Start,
         .restart = DMA_Restart,

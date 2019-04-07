@@ -75,6 +75,7 @@ typedef struct {
     struct {
         uint8_t                 enable:1;
         uint8_t                 can_mounted:1;
+        uint8_t                 stop:1;
         MOTOR_RM_Types          rm_type;
     } flags;
     /**
@@ -94,10 +95,10 @@ typedef struct {
       */
     struct {
         int16_t                 current;            /* Read from CAN. [uint=?] */
-        float                   speed;              /* Read from CAN. [uint=?] */
-        float                   angle;              /* Read from CAN. [uint=?] */
+        float                   speed;              /* Read from CAN. [uint=rad/s] */
+        float                   angle;              /* Read from CAN. [uint=rad] */
         int16_t                 temprature;         /* Read from CAN. [uint=?] */
-        uint16_t                mortor_stuckflag;
+        uint16_t                motor_block_flag;
         int16_t                 __motor_angel_curr;
         int16_t                 __motor_angel_last;
         int16_t                 __motor_angel_first;
@@ -111,7 +112,7 @@ typedef struct {
         float                   target;             /** Representing for speed or position, regarded at 
                                                         @ref speed_pid and @ref position_pid, if both are
                                                         null, then will be ignored. */
-//        float                   target_limit;       /* Limitation for the target. */
+//      float                   target_limit;       /* Limitation for the target. */
         float                   output;             /* Last output(current). */
         float                   output_limit;       /* Limitation for the last output(current). */
     } control;
@@ -191,9 +192,23 @@ extern struct __MOTOR_Manager_Type {
         void (*set_position)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float position);
         void (*set_relative_position)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float relaposition);
         
+        /**
+         * @brief  Get motor controller
+         */ 
         MOTOR_CrtlType_CAN* (*get)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
         
+        /**
+         * @brief  Start or stop motor. 
+         * @note   Stop will force output to zero. Then must using start() to restart motor.
+         */ 
         void (*stop)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
+        void (*start)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
+        
+        /**
+         * @brief  Check if motor is stopping.
+         * @retval [true]=stopping, [false]=normal.
+         */ 
+        bool (*isstop)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
     } user;
     struct {
         /**

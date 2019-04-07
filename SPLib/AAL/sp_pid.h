@@ -70,8 +70,8 @@ typedef struct {
     } ctrl_reg;
     
     struct {
-        float (*input_filter)(float* data, uint8_t size, float newval, uint16_t rela_limit);
-        float (*output_filter)(float* data, uint8_t size, float newval, uint16_t rela_limit);
+        float (*input_filter)(float* data, uint8_t size, float newval, float rela_limit);
+        float (*output_filter)(float* data, uint8_t size, float newval, float rela_limit);
     } functions;
 } PID_Type;
 

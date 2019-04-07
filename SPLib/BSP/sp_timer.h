@@ -5,6 +5,7 @@
   * @version    v0.0-alpha
   * @date       2018.Nov.25
   * @brief      General GPIO config module
+  * @usage      spTIMER.init(TIM1, 50, false);
   ******************************************************************************
   * @license
   *
@@ -56,6 +57,14 @@ extern const struct TIMER_Controllers_Type {
       * @retval If succeed
       */
     bool (*init)(TIM_TypeDef *Timx,  float frequency, bool isstart);
+    /** 
+      * @brief  Config PWM output
+      * @param  Timx: TIM[1~14]
+      * @param  channel: Select from [0~3]
+      * @param  portpin: @ref spPinSet
+      * @param  duty: PWM output start with duty.
+      */
+    bool (*pwm_init)(TIM_TypeDef* timx, uint8_t channel, const spPinSet* portpin, float freq, float duty);
     /** 
       * @brief  Set timer channel's compare value (PWM duty).
       * @param  Timx: TIM[1~14]

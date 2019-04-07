@@ -23,7 +23,8 @@ struct __USB_FLAG_REG USB_Flag;
 
 USB_OTG_CORE_HANDLE         USB_OTG_dev;
 USBH_HOST                   USB_Host;
-uint8                       USB_ReadBuffer[CDC_DATA_MAX_PACKET_SIZE];    //内部数据接收缓存
+uint8                       USB_ReadBuffer[CDC_DATA_MAX_PACKET_SIZE];    // 内部数据接收缓存
+USB_Callback_Type           USB_Callback_Pool[USING_USB_POOLSIZE];       // 回调函数池
 
 void USB_OLED(void);
 
@@ -45,6 +46,9 @@ void USB_TaskInit(void)
     &USR_desc,&USBD_CDC_cb,&USR_cb);
     CDC_State.dataReadRef = USB_ReadBuffer;
     CDC_State.dataSendRef = NULL;
+    
+    memset(USB_ReadBuffer, 0x00, sizeof(USB_ReadBuffer));
+    memset(USB_Callback_Pool, 0x00, sizeof(USB_Callback_Pool));
 }
 
 /** Function
@@ -75,43 +79,12 @@ void USB_TaskLoop(void)
         CDC_State.dataReadRef[CDC_State.dataReadLength] = 0x00;    //数据结尾，尤其是字符串数据
         CDC_State.dataReadReadyFlag = 0;
         CDC_State.dataReadFlag = 1;            //已经读取标志
-        //文本
-        if((char)USB_ReadBuffer[0]!='>'){
-            USB_OLED();                        //显示接收数据
-            /* 反馈信息 */
-            sprintf(usbRetMsg, "getLen:%d\r\n", CDC_State.dataReadLength);
-        }else{
-        //指令,起始字符>
-            //angle,veloc,stuck,clear,loop
-//            if(strcmp((char*)&USB_ReadBuffer[1],"loop")==0){
-//                GLOBAL_REG.loopSend = !GLOBAL_REG.loopSend;
-//                if(GLOBAL_REG.loopSend){
-//                    strcpy(usbRetMsg,"Loop start.\r\n");
-//                }else{
-//                    strcpy(usbRetMsg,"Loop stop.\r\n");
-//                }
-//            }else if(strcmp((char*)&USB_ReadBuffer[1],"angle")==0){
-//                *((uint8*)&GLOBAL_REG) = 0x00;
-//                GLOBAL_REG.sendAngle = 1;
-//                strcpy(usbRetMsg,"Send angle.\r\n");
-//            }else if(strcmp((char*)&USB_ReadBuffer[1],"veloc")==0){
-//                *((uint8*)&GLOBAL_REG) = 0x00;
-//                GLOBAL_REG.sendSpeed = 1;
-//                strcpy(usbRetMsg,"Send speed.\r\n");
-//            }else if(strcmp((char*)&USB_ReadBuffer[1],"block")==0){
-//                *((uint8*)&GLOBAL_REG) = 0x00;
-//                GLOBAL_REG.sendStuck = 1;
-//                strcpy(usbRetMsg,"Send stuck.\r\n");
-//            }else if(strcmp((char*)&USB_ReadBuffer[1],"clear")==0){
-//                *((uint8*)&GLOBAL_REG) = 0x00;
-//                strcpy(usbRetMsg,"Clear All.\r\n");
-//            }else {
-//                strcpy(usbRetMsg,"Bad command.\r\n");
-//            }
+        
+        for(uint16_t i=0; i<sizeof(USB_Callback_Pool)/sizeof(*USB_Callback_Pool); i++) {
+            if(USB_Callback_Pool[i]) {
+                USB_Callback_Pool[i](CDC_State.dataReadRef, CDC_State.dataReadLength);
+            }
         }
-        // DMA_SendOnce(spDMA_NULL_chnl, , CDC_State.dataReadRef, CDC_State.dataReadLength);
-        //Send Message
-        USB_SendData((uint8_t*)usbRetMsg,strlen(usbRetMsg));
     }
 }
 
@@ -123,6 +96,22 @@ void USB_TaskLoop(void)
 uint16_t USB_SendData(uint8_t* buf, uint32_t len)
 {
     return CDC_DataTx(buf, len);
+}
+
+/** Function
+  * @brief    注册USB回调函数
+  * @param
+  * @note    
+  */
+void USB_RegisteCallback(USB_Callback_Type cb) {
+    for(uint16_t i=0; i<sizeof(USB_Callback_Pool)/sizeof(*USB_Callback_Pool); i++) {
+        if(USB_Callback_Pool[i] == NULL) {
+            USB_Callback_Pool[i] = cb;
+            return;
+        } else if(USB_Callback_Pool[i] == cb) {
+            return;
+        }
+    }
 }
 
 

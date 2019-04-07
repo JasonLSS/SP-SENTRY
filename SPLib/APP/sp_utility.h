@@ -37,27 +37,12 @@
   * @ingroup    Utility
   * @{
   */
-
-typedef struct {
-    float           timestamp;
-    uint8_t         on_press:1;
-    uint8_t         on_release:1;
-    spPinSet        gpio_pin;
-} spKeyController;
-
-extern spKeyController spUserKey;
-
-#define LASER_ON()          GPIO_SetBits(GPIOG,GPIO_Pin_13)
-#define LASER_OFF()         GPIO_ResetBits(GPIOG,GPIO_Pin_13)
+#define LASER_ON()              GPIO_SetBits(GPIOG,GPIO_Pin_13)
+#define LASER_OFF()             GPIO_ResetBits(GPIOG,GPIO_Pin_13)
 
 #if defined(SP_USING_BOARD_TYPEA)
-    #define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
-    #define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
-    #define LED_G_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
-    
-    #define LED_R_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_11)
-    #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_11)
-    #define LED_R_TOGGLE()      (GPIOE->ODR) ^= GPIO_Pin_11
+    #define LED_G               spPFOutB.bit14
+    #define LED_R               spPEOutB.bit11
     
     #define BUZZER_TIMER        TIM12
 
@@ -75,21 +60,25 @@ extern spKeyController spUserKey;
     #define LED8_BIT_TOGGLE(x)  GPIOG->ODR ^= (x)
     #define LED8_OUTPUT(x)      GPIOG->ODR = (GPIOG->ODR&(~0x1fe))|((~x&0xff)<<1)
 #else
-    #define LED_G_OFF()         GPIO_SetBits(GPIOF,GPIO_Pin_14)
-    #define LED_G_ON()          GPIO_ResetBits(GPIOF,GPIO_Pin_14)
-    #define LED_G_TOGGLE()      (GPIOF->ODR) ^= GPIO_Pin_14
-    
-    #define LED_R_OFF()         GPIO_SetBits(GPIOE,GPIO_Pin_7)
-    #define LED_R_ON()          GPIO_ResetBits(GPIOE,GPIO_Pin_7)
-    #define LED_R_TOGGLE()      (GPIOE->ODR)^= GPIO_Pin_7
+    #define LED_G               spPFOutB.bit14
+    #define LED_R               spPEOutB.bit7
     
     #define BUZZER_TIMER        TIM3
 #endif
+
+#define LED_G_OFF()             LED_G = true
+#define LED_G_ON()              LED_G = false
+#define LED_G_TOGGLE()          LED_G = !LED_G
+
+#define LED_R_OFF()             LED_R = true
+#define LED_R_ON()              LED_R = false
+#define LED_R_TOGGLE()          LED_R = !LED_R
 
 extern float spBeep_MusicalScale[][8];    
 #define BUZZER_ON(a)            spTIMER.set_duty(BUZZER_TIMER, 0, 90.f)
 #define BUZZER_OFF()            spTIMER.set_duty(BUZZER_TIMER, 0, 0)
 
+#define spEXIT_LineFromPinSource(ln)        (0x0001<<(ln))
 
 /**
   * @}
@@ -124,12 +113,46 @@ extern void NVIC_IRQDisable(uint8_t irq);
   * @{
   */
 void Buzzer_Init(void);
-void spBeep(float f, uint32_t d);
+void spBeep(float frequency, uint32_t delay);
+
 void Led_Configuration(void);
 void Led8_Configuration(void);
-void TIM6_Configuration(void);
-void KEY_Configuration(void);
 void Power_Configuration(void);
+
+
+
+/**
+  * @brief  Keys(RC) and Button(on-board-button)
+  * @param  buffer  Data array for CRC checking
+  * @param  size    Total length of the data array
+  */
+typedef struct {
+    uint8_t         down:1;
+    uint8_t         up:1;
+    uint8_t         on:1;
+    /* Get current key state. */
+    bool (*is_pushing)(void);
+} spKeyState_t;
+extern spKeyState_t* spKEY_POOL[USING_KEY_POOLSIZE];
+/**
+  * @brief  Generay Key manager
+  * @note   This looper will auto-detect key state by user-provided function and change key state
+  */
+void Key_Add(spKeyState_t* key);
+void Key_Looper(uint32_t tick);
+
+/**
+  * @brief  Generay Key manager
+  * @note   This part activate when push button on-board
+  */
+typedef struct {
+    spKeyState_t        state;
+    float               timestamp;
+    spPinSet            gpio_pin;
+} spButton_t;
+extern spButton_t spUserButton;
+void Button_Configuration(void);
+
 /**
   * @}
   */

@@ -150,7 +150,7 @@ bool RC_ReceiverInit(void);
   * @brief  RC state check looper
   * @note   Used in MAIN_LOOPER
   */ 
-void RC_ReceiverChecker(void);
+void RC_ReceiverChecker(uint32_t tick);
 
 /**
   * @}

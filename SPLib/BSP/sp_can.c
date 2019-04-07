@@ -312,7 +312,7 @@ void CAN_SendMsg(CAN_Transmitter* transmitter) {
 
 
 
-const struct CAN_Controllers_Type spCAN_Controllers =  {
+const struct CAN_Controllers_Type spCAN =  {
     ._system = {
         .init = spCAN_Init,
         .transmit_looper = spCAN_MsgSendLoop

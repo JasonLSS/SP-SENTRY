@@ -130,13 +130,35 @@ void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
 
+void GPIO_ChangeOutput(GPIO_TypeDef* GPIOx, uint16_t Pinx, bool high) {
+    if(high) {
+        GPIO_SetBits(GPIOx, Pinx);
+    } else {
+        GPIO_ResetBits(GPIOx, Pinx);
+    }
+}
 
-const struct GPIO_Controllers_Type spGPIO_Controllers = {
+void GPIO_SetMode(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef mode) {
+    GPIOx->MODER  &= ~(GPIO_MODER_MODER0 << (Pinx * 2));
+    GPIOx->MODER |= (((uint32_t)mode) << (Pinx * 2));
+}
+
+
+
+
+const struct GPIO_Controllers_Type spGPIO = {
     .general_config = GPIO_Config,
     .output_config = GPIO_OUT_Config,
     .input_config = GPIO_IN_Config,
     .alternal_config = GPIO_AF_Config,
-    .analog_config = GPIO_AN_Config
+    .analog_config = GPIO_AN_Config,
+    
+    .set = GPIO_ChangeOutput,
+    .mode = GPIO_SetMode,
+    
+    .toggle = GPIO_ToggleBits,
+    .get_output = GPIO_ReadOutputDataBit,
+    .get_input = GPIO_ReadInputDataBit
 };
 
 

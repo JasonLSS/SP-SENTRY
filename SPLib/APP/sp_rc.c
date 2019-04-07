@@ -133,13 +133,16 @@ void RC_OnRecovery(void) {
 }
 
 void RC_OnBusIdle(void) {
-    RC_Manager.stamp = TASK_GetSecond();
     /* Start RC DMA and stop USART_DELE IRQ */
-    spDMA_Controllers.controller.reset_counter(spDMA_USART1_rx_stream, sizeof(RC_Manager.raw_rc_data));
+    spDMA.controller.reset_counter(spDMA_USART1_rx_stream, sizeof(RC_Manager.raw_rc_data));
+    /* Clear IDEL flag bit */
+    uint8_t tmp = USART1->DR;
+    
+    RC_Manager.stamp = TASK_GetSecond();
     __RC_DataConvert();
 }
 
-void RC_ReceiverChecker(void) {
+void RC_ReceiverChecker(uint32_t tick) {
     /* Converted data has the same timestamp with manage means data valid */
     float time = TASK_GetSecond();
     if(time - RC_Manager.stamp > 0.1f) {
@@ -162,7 +165,7 @@ bool RC_ReceiverInit(void) {
         return false;
     }
     /* Clear all flags before enable */
-    spDMA_Controllers.controller.clear_stream_bit(spDMA_USART1_rx_stream, DMA_CRx);
+    spDMA.controller.clear_stream_bit(spDMA_USART1_rx_stream, DMA_CRx);
     /* Enable stream interrupt and start DMA */
     DMA_ITConfig(spDMA_USART1_rx_stream, DMA_IT_TC, ENABLE);
     DMA_Cmd(spDMA_USART1_rx_stream, ENABLE);
@@ -175,8 +178,8 @@ bool RC_ReceiverInit(void) {
     USART_Cmd(USART1, ENABLE);
     
     /* Registe IRQ callbacks */
-    spIRQ_Manager.registe(USART1_IRQn, USART_IT_IDLE, RC_OnBusIdle);
-    spIRQ_Manager.registe(DMA2_Stream5_IRQn, DMA_IT_TCIF5, NULL);
+    spIRQ.registe(USART1_IRQn, USART_IT_IDLE, RC_OnBusIdle);
+    spIRQ.registe(DMA2_Stream5_IRQn, DMA_IT_TCIF5, NULL);
     
     return true;
 }
@@ -191,9 +194,9 @@ bool RC_ReceiverInit(void) {
   */
 uint16_t RC_GetState(RC_DataType* recv) {
     if(RC_Manager.valid) {
-        DMA_Stream_TypeDef* dmas = spDMA_Controllers.mem2mem.copy((uint32_t)recv, 
+        DMA_Stream_TypeDef* dmas = spDMA.mem2mem.copy((uint32_t)recv, 
             (uint32_t)&RC_Manager.cvt_rc_data, sizeof(RC_Manager.cvt_rc_data));
-        while(spDMA_Controllers.controller.get_stream_bit(dmas, DMA_CR_CTCIFx)==false);
+        while(spDMA.controller.get_stream_bit(dmas, DMA_CR_CTCIFx)==false);
         return sizeof(RC_Manager.raw_rc_data) - dmas->NDTR;
     } else {
         __RC_DataClear();

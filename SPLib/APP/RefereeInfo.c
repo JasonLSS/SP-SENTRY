@@ -60,7 +60,7 @@ void init_referee_info(void) {
     USART_TX_Config(USART6, 115200);
     DMA_USART_TX_Config(USART6);
     DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
-    spIRQ_Manager.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
     USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
     USART_Cmd(USART6, ENABLE);
 }
@@ -439,7 +439,7 @@ void update_from_dma(void) {
         	referee_info_update(referee_buffer[i]);
 //		printf("%f",ext_power_heat_data.chassis_power);
 //		printf("\r\n");
-		spDMA_Controllers.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+		spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
     return;
 }
 

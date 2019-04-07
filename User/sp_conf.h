@@ -123,16 +123,28 @@
 #define spCLOCKTIMER_IRQn                       spSYSTIMER_IRQn
 
 
-/** @brief <h> IRQ callback pool size */
-//  <h> IRQ callback pool size
-//    <o> USING_IRQ_POOL_SIZE       <32-256>
-#define USING_IRQ_POOL_SIZE         128         
-//  </h>
+/**
+  * @brief  Choose bullet test case 42mm/17mm
+  * @note   42mm using motor 203 and 204, 17mm using PWM and motor 201
+  */
+//  <h> Memory distribute
 
-/** @brief <h> Servo controller pool size */
-//  <h> Servo controller pool size
-//    <o> USING_SERVO_POOL_SIZE     <2-32>
-#define USING_SERVO_POOL_SIZE       12 
+/** @brief IRQ callback pool size */
+// <o> IRQ callback pool size           <32-256>
+#define USING_IRQ_POOL_SIZE             128
+
+/** @brief Servo controller pool size */
+// <o> Servo controller pool size       <2-32>
+#define USING_SERVO_POOL_SIZE           12 
+
+/** @brief Servo controller pool size */
+// <o> Key pool size                 <0-32>
+#define USING_KEY_POOLSIZE              12
+
+/** @brief USB callback pool size */
+// <o> USB pool size                 <0-32>
+#define USING_USB_POOLSIZE              16
+
 //  </h>
 
 /**

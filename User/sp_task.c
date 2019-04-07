@@ -198,17 +198,17 @@ void TASK_GlobalInit() {
       * @brief  Low layer initialize
       */
     {
-        spIRQ_Manager.init();
+        spIRQ.init();
 
         Led_Configuration();
         Led8_Configuration();
-        KEY_Configuration();
+//        Button_Configuration();
         Buzzer_Init();
         // Enable CAN1/CAN2, baudrate=1Mbps
-        spCAN_Controllers._system.init(CAN1,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
-        spCAN_Controllers._system.init(CAN2,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
+        spCAN._system.init(CAN1,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
+        spCAN._system.init(CAN2,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
         // DMA memory-to-memory tranfer config
-        spDMA_Controllers.mem2mem.init(NULL, NULL, 0);
+        spDMA.mem2mem.init(NULL, NULL, 0);
 
         // Start general USART8 for general communication
         USART_TX_Config(UART8, 115200);
@@ -354,7 +354,9 @@ void TASK_ControlLooper() {
 
 
 void TASK_Backend(void) {
-    RC_ReceiverChecker();
+    uint32_t ctime = TASK_GetMilliSecond();
+    
+    RC_ReceiverChecker(ctime);
 
     if(!task_inited) {
         static uint16_t tick_init = 0;
@@ -375,17 +377,14 @@ void TASK_Backend(void) {
         TASK_ControlLooper();
     }
 
-    /* System background */
-    uint32_t ctime = TASK_GetMilliSecond();
-
     if(ctime%10 == 0) {
 #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
         spGIMBAL_Controller._system.looper();
 #endif
         spMOTOR._system.looper();
     }
-    spCAN_Controllers._system.transmit_looper(CAN1);
-    spCAN_Controllers._system.transmit_looper(CAN2);
+    spCAN._system.transmit_looper(CAN1);
+    spCAN._system.transmit_looper(CAN2);
 }
 
 void TASK_SerPendSV(void) {
@@ -408,8 +407,8 @@ void TASK_TimerInit(void) {
     TIM_ITConfig(spSYSTIMER, TIM_IT_Update, ENABLE);
     NVIC_IRQEnable(spSYSTIMER_IRQn, 0, 0);
     TIM_Cmd(spSYSTIMER, ENABLE);
-    spIRQ_Manager.registe(spSYSTIMER_IRQn, TIM_IT_Update, spClockHandler);
-    spIRQ_Manager.registe(spSYSTIMER_IRQn, TIM_IT_Update, PendSV_Handler);
+    spIRQ.registe(spSYSTIMER_IRQn, TIM_IT_Update, spClockHandler);
+    spIRQ.registe(spSYSTIMER_IRQn, TIM_IT_Update, PendSV_Handler);
     
     NVIC_IRQEnable(spSYSTIMER_IRQn, 0, 0);
     NVIC_IRQEnable(spCLOCKTIMER_IRQn, 0, 0);

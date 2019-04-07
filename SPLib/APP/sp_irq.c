@@ -16,60 +16,60 @@
 #include "sp_irq.h"
 
 void EXTI0_IRQHandler(void) {
-    spIRQ_Manager.invoke(EXTI0_IRQn, (void*)EXTI_Line0,
+    spIRQ.invoke(EXTI0_IRQn, (void*)EXTI_Line0,
         (spIRQ_GetITStatus)EXTI_GetITStatus, 
         (spIRQ_ClearPending)EXTI_ClearITPendingBit);
 }
 
 void EXTI9_5_IRQHandler(void) {
-    spIRQ_Manager.invoke(EXTI9_5_IRQn, (void*)EXTI_Line8, 
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line8, 
         (spIRQ_GetITStatus)EXTI_GetITStatus, 
         (spIRQ_ClearPending)EXTI_ClearITPendingBit);
 }
 
 void DMA2_Stream5_IRQHandler(void) {
-    spIRQ_Manager.invoke(DMA2_Stream5_IRQn, DMA2_Stream5, 
+    spIRQ.invoke(DMA2_Stream5_IRQn, DMA2_Stream5, 
         (spIRQ_GetITStatus)DMA_GetITStatus, 
         (spIRQ_ClearPending)DMA_ClearITPendingBit);
 }
 
 void USART1_IRQHandler (void) {
-    spIRQ_Manager.invoke(USART1_IRQn, USART1, 
+    spIRQ.invoke(USART1_IRQn, USART1, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART2_IRQHandler (void) {
-    spIRQ_Manager.invoke(USART2_IRQn, USART2, 
+    spIRQ.invoke(USART2_IRQn, USART2, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART3_IRQHandler (void) {
-    spIRQ_Manager.invoke(USART3_IRQn, USART3, 
+    spIRQ.invoke(USART3_IRQn, USART3, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART4_IRQHandler (void) {
-    spIRQ_Manager.invoke(UART4_IRQn, UART4, 
+    spIRQ.invoke(UART4_IRQn, UART4, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART5_IRQHandler (void) {
-    spIRQ_Manager.invoke(UART5_IRQn, UART5, 
+    spIRQ.invoke(UART5_IRQn, UART5, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void USART6_IRQHandler (void) {
-    spIRQ_Manager.invoke(USART6_IRQn, USART6, 
+    spIRQ.invoke(USART6_IRQn, USART6, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART7_IRQHandler (void) {
-    spIRQ_Manager.invoke(UART7_IRQn, UART7, 
+    spIRQ.invoke(UART7_IRQn, UART7, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
 void UART8_IRQHandler (void) {
-    spIRQ_Manager.invoke(UART8_IRQn, UART8, 
+    spIRQ.invoke(UART8_IRQn, UART8, 
         (spIRQ_GetITStatus)USART_GetITStatus, 
         (spIRQ_ClearPending)USART_ClearITPendingBit);
 }
@@ -78,26 +78,30 @@ void UART8_IRQHandler (void) {
 
 
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
-    spIRQ_Manager.invoke(TIM1_TRG_COM_TIM11_IRQn, TIM11, 
+    spIRQ.invoke(TIM1_TRG_COM_TIM11_IRQn, TIM11, 
         (spIRQ_GetITStatus)TIM_GetITStatus, 
         (spIRQ_ClearPending)TIM_ClearITPendingBit);
 }
 
 
 void TIM8_BRK_TIM12_IRQHandler(void) {
-    spIRQ_Manager.invoke(TIM8_BRK_TIM12_IRQn, TIM12, 
+    spIRQ.invoke(TIM8_BRK_TIM12_IRQn, TIM12, 
         (spIRQ_GetITStatus)TIM_GetITStatus, 
         (spIRQ_ClearPending)TIM_ClearITPendingBit);
 }
 
 void TIM8_UP_TIM13_IRQHandler(void) {
-    spIRQ_Manager.invoke(TIM8_UP_TIM13_IRQn, TIM13, 
+    spIRQ.invoke(TIM8_UP_TIM13_IRQn, TIM13, 
         (spIRQ_GetITStatus)TIM_GetITStatus, 
         (spIRQ_ClearPending)TIM_ClearITPendingBit);
+//    if(TIM_GetITStatus(TIM14,TIM_IT_Update) == SET) {
+//        TASK_Backend();
+//        TIM_ClearITPendingBit(TIM14, TIM_IT_Update);
+//    }
 }
 
 void TIM8_TRG_COM_TIM14_IRQHandler(void) {
-    spIRQ_Manager.invoke(TIM8_TRG_COM_TIM14_IRQn, TIM14, 
+    spIRQ.invoke(TIM8_TRG_COM_TIM14_IRQn, TIM14, 
         (spIRQ_GetITStatus)TIM_GetITStatus, 
         (spIRQ_ClearPending)TIM_ClearITPendingBit);
 }
@@ -166,7 +170,7 @@ void IRQ_Invoke(IRQn_Type irq, void* peripheral,
 }
 
 
-struct __IRQ_Manager_Type spIRQ_Manager = {
+struct __IRQ_Manager_Type spIRQ = {
     .init = IRQ_ManagerInit,
     .registe = IRQ_Regeiste,
     .invoke = IRQ_Invoke,

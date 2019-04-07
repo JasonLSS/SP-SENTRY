@@ -188,37 +188,37 @@ void ist8310_get_data(float* mag ) {
 /* MPU device operations vis SPI5 */
 uint8_t MPU_ReadByte(uint8_t reg){
     uint8_t res;
-    spSPI_Manager.select(&SPI5_Pins);
-    spSPI_Manager.read_write_b(SPI5_Pins.this, reg|0x80);
-    res = spSPI_Manager.read_write_b(SPI5_Pins.this, 0xff);
-    spSPI_Manager.release(&SPI5_Pins);
+    spSPI.select(&SPI5_Pins);
+    spSPI.read_write_b(SPI5_Pins.this, reg|0x80);
+    res = spSPI.read_write_b(SPI5_Pins.this, 0xff);
+    spSPI.release(&SPI5_Pins);
     return res;
 }
 uint8_t MPU_Read(uint8_t reg,uint8_t *buf,uint8_t len){
     uint8_t i;
-    spSPI_Manager.select(&SPI5_Pins);
-    spSPI_Manager.read_write_b(SPI5_Pins.this, reg|0x80);
+    spSPI.select(&SPI5_Pins);
+    spSPI.read_write_b(SPI5_Pins.this, reg|0x80);
     for(i=0;i<len;i++){
-        *buf = spSPI_Manager.read_write_b(SPI5_Pins.this, 0xff);
+        *buf = spSPI.read_write_b(SPI5_Pins.this, 0xff);
         buf++;
     }
-    spSPI_Manager.release(&SPI5_Pins);
+    spSPI.release(&SPI5_Pins);
     return 0;
 }
 uint8_t MPU_WriteByte(uint8_t reg,uint8_t data){
-    spSPI_Manager.select(&SPI5_Pins);
-    spSPI_Manager.read_write_b(SPI5_Pins.this, reg);
-    spSPI_Manager.read_write_b(SPI5_Pins.this, data);
-    spSPI_Manager.release(&SPI5_Pins);
+    spSPI.select(&SPI5_Pins);
+    spSPI.read_write_b(SPI5_Pins.this, reg);
+    spSPI.read_write_b(SPI5_Pins.this, data);
+    spSPI.release(&SPI5_Pins);
     return 0;
 }
 uint8_t MPU_Write(uint8_t reg,uint8_t *buf,uint8_t len){
-    spSPI_Manager.select(&SPI5_Pins);
-    spSPI_Manager.read_write_b(SPI5_Pins.this, reg);
+    spSPI.select(&SPI5_Pins);
+    spSPI.read_write_b(SPI5_Pins.this, reg);
     while(len--){
-        spSPI_Manager.read_write_b(SPI5_Pins.this, *buf++);
+        spSPI.read_write_b(SPI5_Pins.this, *buf++);
     }
-    spSPI_Manager.release(&SPI5_Pins);
+    spSPI.release(&SPI5_Pins);
     delay_ms(1);
     return 0;
 }
@@ -287,7 +287,7 @@ int MPU6500_Init(void) {
     
     /* Condif EXIT for MPU interrupt */
     spRCC_Set_SYSCFG();
-    spGPIO_Controllers.input_config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.input_config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
     SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
     EXTI_InitTypeDef            exit_initer;
     exit_initer.EXTI_Line       = EXTI_Line8;

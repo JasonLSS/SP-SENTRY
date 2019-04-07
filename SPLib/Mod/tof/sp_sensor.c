@@ -111,7 +111,7 @@ uint16_t TOF10120_1distance(void)
 uint16_t TOF10120_2distance(void)
 {
     uint16_t current_distance=0, requestedata[2] = {0, 0}, last_distance=0;
-    SensorRead(0x53,0x04,2,requestedata);
+    SensorRead(0x51,0x04,2,requestedata);
     current_distance=(requestedata[0] << 8) | requestedata[1];
 		if(current_distance > 2000) current_distance=last_distance;
 		else last_distance=current_distance;

@@ -105,7 +105,7 @@ extern struct __SPI_Manager_Type {
     uint16_t (*write_b)(SPI_TypeDef* spi, uint16_t data);
     void     (*select)(SPI_PinsType* spi_pins);
     void     (*release)(SPI_PinsType* spi_pins);
-} spSPI_Manager;
+} spSPI;
 /** @} */
 
 

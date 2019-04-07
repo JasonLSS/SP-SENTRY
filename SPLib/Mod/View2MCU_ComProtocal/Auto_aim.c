@@ -119,7 +119,7 @@ void Auto_aim(u8 *rx_buf,int len)
                 miss++;
             last_yaw=fram.yaw;
 						u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
-						spDMA_Controllers.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
+						spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
         }
     }
 		
@@ -151,7 +151,7 @@ void Autoaim_Init(void) {
     DMA_USART_TX_Config(USART2);
 //        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
     DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
-    spIRQ_Manager.registe(USART2_IRQn, USART_IT_IDLE, Autoaim_USART_Interface);
+    spIRQ.registe(USART2_IRQn, USART_IT_IDLE, Autoaim_USART_Interface);
     USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
     USART_Cmd(USART2, ENABLE);
     sendtoComputerInit();
@@ -165,7 +165,7 @@ void Autoaim_USART_Interface(void) {
     view_buffer.freq = view_buffer.stamp - view_buffer.stamp_ex;
     
     uint16_t size = view_buffer.buffer.size - spDMA_USART2_rx_stream->NDTR;
-    spDMA_Controllers.controller.reset_counter(spDMA_USART2_rx_stream, view_buffer.buffer.size);
+    spDMA.controller.reset_counter(spDMA_USART2_rx_stream, view_buffer.buffer.size);
     Auto_aim(view_buffer.buffer.buffer, size);
     
 //    LED8_BIT_ON(LED8_BIT4);

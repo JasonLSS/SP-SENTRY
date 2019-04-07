@@ -11,8 +11,8 @@
   *         delay_us/delay_ms
   *         
   *         spSPI_Manager
-  *         spGPIO_Controllers
-  *         spDMA_Controllers
+  *         spGPIO
+  *         spDMA
   *         spCAN_Controllers
   ******************************************************************************
   */

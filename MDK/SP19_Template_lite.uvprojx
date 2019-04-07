@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal;..\SPLib\Mod\chasis;..\SPLib\Mod\tof</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\USB;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal;..\SPLib\Mod\chasis;..\SPLib\Mod\tof;..\SPLib\Core</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -388,11 +388,6 @@
               <FilePath>..\User\main.c</FilePath>
             </File>
             <File>
-              <FileName>sp_irq.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\User\sp_irq.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_task.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\User\sp_task.c</FilePath>
@@ -431,6 +426,11 @@
               <FileName>sp_chasis.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\Mod\chasis\sp_chasis.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\APP\sp_irq.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -578,14 +578,14 @@
               <FilePath>..\STMLib\STM32F427_StdPeriph_Driver.lib</FilePath>
             </File>
             <File>
-              <FileName>startup_stm32f427II.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\User\startup_stm32f427II.s</FilePath>
-            </File>
-            <File>
               <FileName>system_stm32f427II.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\User\system_stm32f427II.c</FilePath>
+              <FilePath>..\SPLib\Core\system_stm32f427II.c</FilePath>
+            </File>
+            <File>
+              <FileName>startup_stm32f427II.S</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\SPLib\Core\startup_stm32f427II.S</FilePath>
             </File>
           </Files>
         </Group>

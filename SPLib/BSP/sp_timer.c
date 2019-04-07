@@ -95,13 +95,13 @@ bool TIM_Init(
 }
 
 void TIM_SetDuty(TIM_TypeDef *Timx, uint8_t channel, float duty) {
-    if(channel > 2) return;
+    if(channel > 4) return;
     duty = (duty>100.f)?100.f:( (duty<0.f)?0.f:duty );
     ((uint32_t*)(&Timx->CCR1))[channel] = (uint32_t)((Timx->ARR+1)*duty/100.f);
 }
 
 float TIM_GetDuty(TIM_TypeDef *Timx, uint8_t channel) {
-    if(channel > 2) return 0.f;
+    if(channel > 4) return 0.f;
     return (((uint32_t*)(&Timx->CCR1))[channel])*1.f/((uint32_t)(Timx->ARR+1))*100.f;
 }
 
@@ -132,11 +132,83 @@ void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel) {
     TIM_SetDuty(Timx, channel, duty);
 }
 
+bool TIM_PWM_OutputInit(
+    TIM_TypeDef* timx, uint8_t channel, const spPinSet* portpin, float freq, float duty)
+{
+    /* Enbale TIM clock */
+    /* NOTE: TIM6 and TIM7 donnot have PWM. */
+    uint8_t gpio_af;
+    if(timx==TIM1) { gpio_af = GPIO_AF_TIM1; }
+    else if(timx==TIM2) { gpio_af = GPIO_AF_TIM2; }
+    else if(timx==TIM3) { gpio_af = GPIO_AF_TIM3; }
+    else if(timx==TIM4) { gpio_af = GPIO_AF_TIM4; }
+    else if(timx==TIM5) { gpio_af = GPIO_AF_TIM5; }
+//    else if(timx==TIM6) { gpio_af = GPIO_AF_TIM6; }
+//    else if(timx==TIM7) { gpio_af = GPIO_AF_TIM7; }
+    else if(timx==TIM8) { gpio_af = GPIO_AF_TIM8; }
+    else if(timx==TIM9) { gpio_af = GPIO_AF_TIM9; }
+    else if(timx==TIM10) { gpio_af = GPIO_AF_TIM10; }
+    else if(timx==TIM11) { gpio_af = GPIO_AF_TIM11; }
+    else if(timx==TIM12) { gpio_af = GPIO_AF_TIM12; }
+    else if(timx==TIM13) { gpio_af = GPIO_AF_TIM13; }
+    else if(timx==TIM14) { gpio_af = GPIO_AF_TIM14; }
+    else return false;
+    
+    /* Config GPIO */
+    spGPIO.alternal_config(
+        portpin->gpio,
+        spGPIO_PinFromPinSource(portpin->pin_source),
+        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    
+    /* Config pins */
+    GPIO_PinAFConfig(
+        portpin->gpio, 
+        portpin->pin_source,
+        gpio_af );
+    
+    /* Frequency must near 50Hz */
+    if( !(timx->CR1 & TIM_CR1_CEN_Msk) ) {
+        spTIMER.init(timx, freq, false);
+    } 
+
+    TIM_OCInitTypeDef           TIM_OCInitStructure;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    
+    switch(channel) {
+    case 0:
+        TIM_OC1Init(timx, &TIM_OCInitStructure);
+        TIM_OC1PreloadConfig(timx, TIM_OCPreload_Enable);
+        break;
+    case 1:
+        TIM_OC2Init(timx, &TIM_OCInitStructure);
+        TIM_OC2PreloadConfig(timx, TIM_OCPreload_Enable);
+        break;
+    case 2:
+        TIM_OC3Init(timx, &TIM_OCInitStructure);
+        TIM_OC3PreloadConfig(timx, TIM_OCPreload_Enable);
+        break;
+    case 3:
+        TIM_OC4Init(timx, &TIM_OCInitStructure);
+        TIM_OC4PreloadConfig(timx, TIM_OCPreload_Enable);
+        break;
+    }
+    
+    TIM_ARRPreloadConfig(timx,ENABLE);
+    TIM_CtrlPWMOutputs(timx,ENABLE);
+    
+    TIM_SetDuty(timx, channel, duty);
+    
+    TIM_Cmd(timx, ENABLE);
+    return true;
+}
 
 
 
 const struct TIMER_Controllers_Type spTIMER = {
     .init = TIM_Init,
+    .pwm_init = TIM_PWM_OutputInit,
     .set_duty = TIM_SetDuty,
     .get_duty = TIM_GetDuty,
     .set_frequency = TIM_SetFrequency,

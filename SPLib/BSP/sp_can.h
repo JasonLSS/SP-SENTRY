@@ -91,8 +91,8 @@ typedef struct {
     } tx;
 } CAN_Transmitter;
 
-#define CAN1_POOLSIZE            8      /*!< How many message receiver can mount on CAN12 */
-#define CAN2_POOLSIZE            8      /*!< How many message receiver can mount on CAN12 */
+#define CAN1_POOLSIZE            16      /*!< How many message receiver can mount on CAN12 */
+#define CAN2_POOLSIZE            16      /*!< How many message receiver can mount on CAN12 */
 /** @} */
 
 
@@ -140,7 +140,7 @@ extern const struct CAN_Controllers_Type {
           */ 
         void (*send)(CAN_Transmitter* exchanger);
     } user;
-} spCAN_Controllers;
+} spCAN;
 /** @} */
 
 

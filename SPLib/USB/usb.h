@@ -6,14 +6,15 @@
   * \info    :
   * \version :
   * \date    :
-  * \brief   :TIM4 for pwm
-	******************************************************************************
-	* @title
-	*   @@subtitle
-	* 	  @@@subsubitle
-	******************************************************************************
+  * \brief   :
+  * \usage   :  USB_RegisteCallback(callback);
+  ******************************************************************************
+  * @title
+  *   @@subtitle
+  * 	  @@@subsubitle
+  ******************************************************************************
   */
-	
+  
 #ifndef _USB_H_
 #define _USB_H_
 
@@ -43,6 +44,7 @@ typedef uint8_t                 uint8;
 #define USB_MAX_DATE            256
 extern char usbRetMsg[USB_MAX_DATE];
 
+typedef void(*USB_Callback_Type)(uint8_t* , uint32_t);
 
 /** Variables
   * @brief
@@ -65,6 +67,7 @@ extern CDC_IF_Status_Type		CDC_State;
 void 		USB_TaskInit(void);
 void 		USB_TaskLoop(void);
 uint16_t 	USB_SendData(uint8_t* buf, uint32_t len);
+void USB_RegisteCallback(USB_Callback_Type cb);
 
 #endif
 /**********************************END OF FILE**********************************/
