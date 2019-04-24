@@ -71,21 +71,6 @@ extern struct __CHASIS_Manager_Type {
         void (*looper)(uint32_t tick, const RC_DataType *recv);
     } _system;
     struct {
-        /**
-          * @brief  Distribute speed accroding to Mecanum wheel principle
-          * @param  spx     target linear speed in x-axis
-          * @param  spy     target linear speed in y-axis
-          * @param  spyaw   target angular speed in yaw-axis
-          * @param  out_speed    output speed buffer
-          */
-        void (*mecanum)(float spx, float spy, float spyaw, float out_speed[4]);
-        void (*mecanum_inv)(float speed[4], float* spdx, float *spdy, float *spyaw );
-        /**
-          * @brief  Chasis control looper
-          * @brief  speedX: chasis linear speed in X-axis
-          * @brief  speedY: chasis linear speed in Y-axis
-          * @brief  rad: chasis angular speed yaw
-          */
         void (*move)(float speed);
     } user;
 } spCHASIS;
@@ -97,7 +82,7 @@ void CMWatt_Cal(void);
 int IfUsingPowerBuffer(void);
 int Enemy_Location(void);
 int Empty_Location(void);
-float Speed_D_Limit(float speed);
+float Speed_Change_Limit(float speed);
 
 /** @} */
 

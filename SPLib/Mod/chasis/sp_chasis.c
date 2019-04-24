@@ -22,6 +22,8 @@
 #include "Auto_aim.h"
 #include "infrared.h"
 
+#define __CHASIS_OuputLimit                 7000 
+
 #ifdef USING_SPEED_BALANCE
 				PID_Type speedbalance;
 				int16_t speed1;
@@ -30,7 +32,8 @@
 
 static RobotMode robotMode_ex;
 RC_DataType recv_ex;
-
+float target_motor201 = 0;
+float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
 float cruise_speed = 20.0f;
@@ -40,51 +43,56 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 150;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
+float SPEED_CHANGE_LIMIT =200.f;
 
 void CHASIS_Move(float speed) {
     // TODO: Make interval time more specific.
 		#ifdef CHASIS_POWER_LIMIT
 				CMWatt_Cal();
 		#endif
+	
+		MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
+		MOTOR_CrtlType_CAN* motor202 = spMOTOR.user.get(CAN1, Motor202);
+		spCHASIS._system.params.state.x = motor201->state.speed;
+		spCHASIS._system.params.state.y = motor202->state.speed;
+	
 		#ifdef USING_SPEED_BALANCE
-				MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
-				MOTOR_CrtlType_CAN* motor202 = spMOTOR.user.get(CAN1, Motor202);
 				float SpeedDifference = motor201->state.speed - motor202->state.speed;
 				float speedchange = PID_ControllerDriver(&speedbalance,0,SpeedDifference);
 				speedA = CHASIS_Legalize((speed + speedchange),chasis_speed_limit);
-				speedB = CHASIS_Legalize(speed,chasis_speed_limit);
-				spMOTOR.user.set_speed(CAN1, Motor201, speedA);
-				spMOTOR.user.set_speed(CAN1, Motor202, speedB);
+				speedB = CHASIS_Legalize(speed,chasis_speed_limit);			
 		#else
 				speedA = CHASIS_Legalize(speed,chasis_speed_limit);
 				speedB = CHASIS_Legalize(speed,chasis_speed_limit);
-				spMOTOR.user.set_speed(CAN1, Motor201, speedA);
-				spMOTOR.user.set_speed(CAN1, Motor202, speedB);
 		#endif
+		target_motor201 = PID_ControllerDriver(&spCHASIS._system.params.PID.x, 
+		speedA, spCHASIS._system.params.state.x);
+		target_motor202 = PID_ControllerDriver(&spCHASIS._system.params.PID.y, 
+		speedB, spCHASIS._system.params.state.y);
+		
+		motor201->control.output = target_motor201;
+		motor202->control.output = target_motor202;
 }
 
 
 
 
 void CHASIS_Init(void) {
-		MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.enable(CAN1, Motor201, RM_3508_P19, false);
-		MOTOR_CrtlType_CAN* motor202 = spMOTOR.user.enable(CAN1, Motor202, RM_3508_P19, false);
-		if(motor201) {
-				motor201->control.speed_pid->Kp = 1000.0f;
-				motor201->control.speed_pid->Ki = 0.0f;
-				motor201->control.speed_pid->Kd = 10.0f;
-				motor201->control.speed_pid->intergration_limit = 5*PI;
-				motor201->control.speed_pid->intergration_separation = PI;
-				motor201->control.output_limit = 10000;
-		}
-		if(motor202) {
-				motor202->control.speed_pid->Kp = 1000.0f;
-				motor202->control.speed_pid->Ki = 0.0f;
-				motor202->control.speed_pid->Kd = 10.0f;
-				motor202->control.speed_pid->intergration_limit = 5*PI;
-				motor202->control.speed_pid->intergration_separation = PI;
-				motor202->control.output_limit = 10000;
-		}
+		MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.enable_simple(CAN1, Motor201, RM_3508_P19);
+		MOTOR_CrtlType_CAN* motor202 = spMOTOR.user.enable_simple(CAN1, Motor202, RM_3508_P19);
+	
+		assert_param(motor201 || motor202);
+		
+		PID_ControllerInit(&spCHASIS._system.params.PID.x, 5*PI, -1, __CHASIS_OuputLimit);
+    spCHASIS._system.params.PID.x.intergration_separation = PI;
+    spCHASIS._system.params.PID.x.output_limit = __CHASIS_OuputLimit;
+    
+    PID_ControllerInit(&spCHASIS._system.params.PID.y, 5*PI, -1, __CHASIS_OuputLimit);
+    spCHASIS._system.params.PID.y.intergration_separation = PI;
+    spCHASIS._system.params.PID.y.output_limit = __CHASIS_OuputLimit;
+    
+    PID_SetGains(&spCHASIS._system.params.PID.x, 1000.0f, 0.f, 10.f);
+    PID_SetGains(&spCHASIS._system.params.PID.y, 1000.0f, 0.f, 10.f);
 		
 		#ifdef USING_SPEED_BALANCE
         PID_ControllerInit(&speedbalance, 5, 0xFFFF, 2);
@@ -185,9 +193,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				if((R_distance>0&&R_distance<distance_Threshold))
 						chasis_direction = -1;
 				
-			//speed = Speed_D_Limit(fabs(speed));                           //new program
-				
-				chasis_speed = speed * chasis_direction;
+				chasis_speed = Speed_Change_Limit(speed * chasis_direction);                           //new program
         recv_ex = *recv;
 				robotMode_ex = robotMode;
 				
@@ -195,68 +201,6 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
     }
 }
 
-
-/***************************************************************************************
- *Name     : CM_YawAuto
- *Function : Parallel_yaw轴角度控制
- *Input    : NowPosition, TargetPosition
- *Output   : PID out
- *Description : 陀螺仪做位置环，ToF发来的数据做误差控制目标值
-****************************************************************************************/
-void CM_ParallelYawAuto(float NowPosition, float TargetPosition)
-{
-    spCHASIS._system.params.target.spdyaw = PID_ControllerDriver(
-        &spCHASIS._system.params.ParallelPID.yaw, TargetPosition, NowPosition); //位置环输出，速度
-}
-
-/***************************************************************************************
- *Name     : CM_YawAuto
- *Function : Parallel_yaw轴角度控制
- *Input    : NowPosition, TargetPosition
- *Output   : PID out
- *Description : 陀螺仪做位置环，ToF发来的数据做误差控制目标值
-****************************************************************************************/
-void CM_ParallelXAuto(float NowPosition, float TargetPosition)
-{
-    spCHASIS._system.params.target.spdx = PID_ControllerDriver(
-        &spCHASIS._system.params.ParallelPID.x, TargetPosition, NowPosition);   //位置环输出，速度
-}
-
-
-
-/*
-Unit:
-    linear speed -> m/s
-    angular speed -> rad/s
-    length -> m
-*/
-void CHASIS_Mecanum(float spx, float spy, float spyaw, float out_speed[4]) {
-    
-    out_speed[0] = (
-        ( spx - spy - (spCHASIS._system.params.half_width+spCHASIS._system.params.half_length)*spyaw)/spCHASIS._system.params.wheel_radius);
-    out_speed[1] = (
-        ( spx + spy + (spCHASIS._system.params.half_width+spCHASIS._system.params.half_length)*spyaw)/spCHASIS._system.params.wheel_radius);
-    out_speed[2] = (
-        ( spx - spy + (spCHASIS._system.params.half_width+spCHASIS._system.params.half_length)*spyaw)/spCHASIS._system.params.wheel_radius);
-    out_speed[3] = (
-        ( spx + spy - (spCHASIS._system.params.half_width+spCHASIS._system.params.half_length)*spyaw)/spCHASIS._system.params.wheel_radius);
-
-    out_speed[1] = -out_speed[1];
-    out_speed[2] = -out_speed[2];
-}
-void CHASIS_Mecanum_Inv(float speed[4], float* spdx, float *spdy, float *spyaw ) {
-    
-    speed[1] = -speed[1];
-    speed[2] = -speed[2];
-    
-    if(spdx) *spdx = (
-        (speed[0] + speed[1] + speed[2] + speed[3])*spCHASIS._system.params.wheel_radius/4.f );
-    if(spdy) *spdy = (
-        (-speed[0] + speed[1] - speed[2] + speed[3])*spCHASIS._system.params.wheel_radius/4.f );
-    if(spyaw) *spyaw = (
-        (-speed[0] + speed[1] + speed[2] - speed[3])*spCHASIS._system.params.wheel_radius/
-        (spCHASIS._system.params.half_width+spCHASIS._system.params.half_length)/4.f );
-}
 
 float CHASIS_Legalize(float MotorCurrent , float limit)
 {
@@ -272,7 +216,6 @@ void CMWatt_Cal(void)//task_lss
 			chasis_speed_limit=30.0f;
 }
 
-/*-------------  ????程序  -------------*/
 int IfUsingPowerBuffer(void){
 	float PowerBufferLimit = 200;
 	float PowerBufferMin = 50;
@@ -282,7 +225,6 @@ int IfUsingPowerBuffer(void){
 	else return 0;
 }
 
-/*-------------  ????程序  -------------*/
 int Enemy_Location(void){
 	int Left = 25, Right = -25;
   if(enemy_area == 1 || enemy_area == 2 || enemy_area == 6){
@@ -303,6 +245,12 @@ int Empty_Location(void){
 	else return Right;
 }
 
+float Speed_Change_Limit(float speed){                        
+	static float speed_last = 0 ;
+	if(fabs(speed_last - speed) > SPEED_CHANGE_LIMIT )
+		speed = speed_last + sign(speed - speed_last)*SPEED_CHANGE_LIMIT;
+	return speed;
+}
 
 struct __CHASIS_Manager_Type spCHASIS = {
     ._system = {
@@ -316,26 +264,9 @@ struct __CHASIS_Manager_Type spCHASIS = {
         .looper = CHASIS_Looper,
     },
     .user = {
-        .mecanum = CHASIS_Mecanum,
-        .mecanum_inv = CHASIS_Mecanum_Inv,
         .move = CHASIS_Move,
     }
 };
 
-/*-------------  ????程序  -------------*/
-float Speed_D_Limit(float speed){                        //new program
-	if(chasis_direction == 1 && R_distance < Distance_Limit && R_distance > distance_Threshold){ // (150~450)
-			if(speed > (R_distance - 50.f) * 0.1f){		
-				speed = (R_distance - 50.f) * 0.1f;
-			}
-			else ;
-		}
-	else if(chasis_direction == -1 && L_distance < Distance_Limit && L_distance > distance_Threshold){ // (150~450)
-			if(speed > (L_distance - 50.f) * 0.1f){		
-				speed = (L_distance - 50.f) * 0.1f;   //(10~40)
-			}
-			else ;
-		}
-	return speed;
-}
+
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

@@ -239,7 +239,6 @@ void GIMBAL_ControlInit(void) {
 void GIMBAL_ControlLooper(void) {
 		spMOTOR.user.set_position(CAN1, Motor208, GimbalController.yaw_set);
 		spMOTOR.user.set_position(CAN1, Motor205, GimbalController.pitch_set);
-
 }
 
 void GIMBAL_State(void){
