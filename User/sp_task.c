@@ -32,6 +32,7 @@
 #include "sp_sensor.h"
 #include "sp_chasis.h"
 #include "RefereeInfo.h"
+#include "infrared.h"
 
 /** @addtogroup SP
   * @brief      SuperPower
@@ -226,6 +227,7 @@ void TASK_GlobalInit() {
         Autoaim_Init();
 				
 				IIC_Init();
+				Infrared_Init();
     }
 
     /**
@@ -233,8 +235,10 @@ void TASK_GlobalInit() {
       */
     {
         spMOTOR._system.init();
-			
-        spGIMBAL_Controller._system.init();
+#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+				spGIMBAL_Controller._system.init();
+#endif
+       
         /* Enable Remote Controller Receiver */
         RC_ReceiverInit();
 
@@ -294,13 +298,42 @@ void TASK_ControlLooper() {
 						spCHASIS._system.looper(task_counter, &recv);
 				#endif
 				static RC_DataType recv_ex;
+				static uint16_t remain_HP_ex;
         if(task_counter%10 == 1) {
 						if(recv.rc.s2==RC_SW_UP) {
 								if(recv.rc.s1==RC_SW_MID) {
 										robotMode = CRUISE_MODE;
-								} else if(recv.rc.s1==RC_SW_UP)
-										robotMode = STATIC_ATTACK_MODE;
-						} else if(recv.rc.s2==RC_SW_DOWN) {  // hand operation mode
+								} else if(recv.rc.s1==RC_SW_DOWN){
+										robotMode = ESCAPE_MODE;
+								}else if(recv.rc.s1==RC_SW_UP){
+										//all auto mode
+										static bool attacked = 0;
+										float attacked_time = 0;
+										if(remain_HP_ex - ext_game_robot_state.remain_HP < 0){//task_lss
+												attacked_time = 100;
+												attacked = 1;
+										}
+										if(attacked_time == 0 )
+												attacked = 0;
+										else
+												attacked_time--;
+										//task_lss
+										if(enemy_area == 0 && !attacked)
+											robotMode = CRUISE_MODE;
+										if(ext_game_robot_state.remain_HP > 300 && enemy_area != 0)
+											robotMode = DYNAMIC_ATTACK_MODE;
+				 						if(ext_game_robot_state.remain_HP > 500 && enemy_area != 0 && !attacked)
+											robotMode = STATIC_ATTACK_MODE;
+										if(ext_game_robot_state.remain_HP < 300 && 
+											 ext_game_robot_state.remain_HP > 100 && enemy_area != 0)
+											robotMode = ESCAPE_ATTACK_MODE;
+										if((enemy_area == 0 ||ext_game_robot_state.remain_HP < 100)&& attacked)
+											robotMode = ESCAPE_MODE;
+										
+										remain_HP_ex = ext_game_robot_state.remain_HP;
+								}
+						} else if(recv.rc.s2==RC_SW_DOWN) {  
+								// hand operation mode
 								robotMode = REMOTE_MODE;
 						} else {
 								robotMode = STANDBY_MODE;
@@ -308,22 +341,11 @@ void TASK_ControlLooper() {
         } else if(task_counter%10 == 3) {
 						Shooting_Control_Looper();
         } else if(task_counter%10 == 5) {
-								if(recv.rc.s2 ^ recv_ex.rc.s2) {
-										if(recv.rc.s2==RC_SW_UP) {
-												auto_aim_flag = 0;
-												small_power_flag = 0xff;
-										} else if(recv.rc.s2==RC_SW_DOWN) {
-												auto_aim_flag = 0xff;
-												small_power_flag = 0;
-										} else {
-												auto_aim_flag = 0;
-												small_power_flag = 0;
-										}
-								} 
+						#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
 								spGIMBAL_Controller._system.statelooper();
-            recv_ex = recv;
+						#endif
         } else if(task_counter%10 == 7) {
-						
+						Infrared_Update();//task_lss
         }
 //				if(task_counter%5 == 0)
 //				{

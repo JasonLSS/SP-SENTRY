@@ -18,6 +18,9 @@
 #include "sp_conf.h"
 #include "sp_shoot.h"
 #include "RefereeInfo.h"
+#include "sp_rng.h"
+#include "Auto_aim.h"
+#include "infrared.h"
 
 #ifdef USING_SPEED_BALANCE
 				PID_Type speedbalance;
@@ -29,12 +32,14 @@ static RobotMode robotMode_ex;
 RC_DataType recv_ex;
 
 float speed = 0;
-float cruise_speed = 12.0f;
-float chasis_speed_limit = 20.0f;
+float chasis_speed = 0;
+float cruise_speed = 20.0f;
+float chasis_speed_limit = 30.0f;
 float speedA,speedB;
 uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 150;
 float chasis_direction = 1;
+float Distance_Limit = 450.f;
 
 void CHASIS_Move(float speed) {
     // TODO: Make interval time more specific.
@@ -108,16 +113,68 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 
 				if(robotMode == REMOTE_MODE){
-						speed = (abs(recv->rc.ch2)<20?0:recv->rc.ch2)/40.f;
+						speed = (abs(recv->rc.ch2)<20?0:recv->rc.ch2)/20.f;
 				}
 				else if(robotMode == STANDBY_MODE){
 						speed = 0;
 				}
 				else if(robotMode == CRUISE_MODE){
-					
+						speed = cruise_speed;
 				}
 				else if(robotMode == STATIC_ATTACK_MODE){
 						speed = 0;
+				}
+				else if(robotMode == DYNAMIC_ATTACK_MODE){
+						static float timeticket = 0;
+						static float EnemyCoefficient = 1.0f;
+						if(timeticket < 100){
+							timeticket++;
+						}
+						else{
+							timeticket = 0 ;
+							EnemyCoefficient = RNG_Get_RandomRange(Enemy_Location() - 50.f,Enemy_Location() + 50.f)/50.f;//task_lss
+							if(EnemyCoefficient < 0 && EnemyCoefficient > -0.8f)
+								EnemyCoefficient = EnemyCoefficient - 0.8f;
+							else if(EnemyCoefficient > 0 && EnemyCoefficient < 0.8f)
+								EnemyCoefficient = EnemyCoefficient + 0.8f;
+							speed = cruise_speed * fabs(EnemyCoefficient);
+							chasis_direction = sign(EnemyCoefficient);
+						}
+				}
+				else if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){//task_lss
+						float EscapeCoefficient = 2.0f;    //(1.5/2.0/2.5)
+						static float timeticket = 0;
+						static float EnemyCoefficient = 1.0f;   //  (0.8 ~ 2)+(0.8 ~ 1.6)
+						if(timeticket < 100){
+							timeticket++;
+						}
+						else{
+							timeticket = 0 ;
+							EnemyCoefficient = RNG_Get_RandomRange(Empty_Location() - 50.f,Empty_Location() + 50.f)/50.f;//task_lss
+							if(EnemyCoefficient < 0 && EnemyCoefficient > -0.8f)
+								EnemyCoefficient = EnemyCoefficient - 0.8f;         
+							else if(EnemyCoefficient > 0 && EnemyCoefficient < 0.8f)
+								EnemyCoefficient = EnemyCoefficient + 0.8f;
+						}
+						if(IfUsingPowerBuffer()){
+							EscapeCoefficient += 0.5f;
+						}
+						else
+							EscapeCoefficient = 1.5f; 
+						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient);   // (1.2~5)cruise_speed = (14.4 ~ 60)
+						chasis_direction = sign(EnemyCoefficient);
+				}
+				else if(robotMode == CURVE_ATTACK_MODE){//task_lss
+						static float time = 0;
+						speed = cruise_speed + RNG_Get_RandomRange(-5,+15);
+						if(Infrared_Flag)
+							time ++;
+						if(time > 1)
+							time ++;
+						if(time > 100){
+							chasis_direction = - chasis_direction;
+							time = 0;
+						}
 				}
 				else{
 						speed = 0;
@@ -128,9 +185,13 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				if((R_distance>0&&R_distance<distance_Threshold))
 						chasis_direction = -1;
 				
+			//speed = Speed_D_Limit(fabs(speed));                           //new program
+				
+				chasis_speed = speed * chasis_direction;
         recv_ex = *recv;
 				robotMode_ex = robotMode;
-				CHASIS_Move(speed*chasis_direction);
+				
+				CHASIS_Move(chasis_speed);
     }
 }
 
@@ -203,14 +264,44 @@ float CHASIS_Legalize(float MotorCurrent , float limit)
 }
 
 /*-------------  功率监视程序  -------------*/
-void CMWatt_Cal(void)
+void CMWatt_Cal(void)//task_lss
 {
 		if(ext_power_heat_data.chassis_power_buffer<30&&ext_power_heat_data.chassis_power_buffer > 0)
 			chasis_speed_limit=chasis_speed_limit-0.001f*(1.3f-ext_power_heat_data.chassis_power_buffer/60.0f)*chasis_speed_limit;
 		else 
-			chasis_speed_limit=20.0f;
+			chasis_speed_limit=30.0f;
 }
 
+/*-------------  ????程序  -------------*/
+int IfUsingPowerBuffer(void){
+	float PowerBufferLimit = 200;
+	float PowerBufferMin = 50;
+	if(ext_power_heat_data.chassis_power_buffer < PowerBufferLimit && ext_power_heat_data.chassis_power_buffer > PowerBufferMin){
+		return 1;
+	}
+	else return 0;
+}
+
+/*-------------  ????程序  -------------*/
+int Enemy_Location(void){
+	int Left = 25, Right = -25;
+  if(enemy_area == 1 || enemy_area == 2 || enemy_area == 6){
+		return Left;
+	}
+	else if(enemy_area == 0)
+		return 0;
+	else return Right;
+}
+
+int Empty_Location(void){
+	int Left = -50, Right = 50;
+  if(enemy_empty_area == 1 || enemy_empty_area == 2 || enemy_empty_area == 6){
+		return Left;
+	}
+	else if(enemy_area == 0)
+		return 0;
+	else return Right;
+}
 
 
 struct __CHASIS_Manager_Type spCHASIS = {
@@ -231,5 +322,20 @@ struct __CHASIS_Manager_Type spCHASIS = {
     }
 };
 
-
+/*-------------  ????程序  -------------*/
+float Speed_D_Limit(float speed){                        //new program
+	if(chasis_direction == 1 && R_distance < Distance_Limit && R_distance > distance_Threshold){ // (150~450)
+			if(speed > (R_distance - 50.f) * 0.1f){		
+				speed = (R_distance - 50.f) * 0.1f;
+			}
+			else ;
+		}
+	else if(chasis_direction == -1 && L_distance < Distance_Limit && L_distance > distance_Threshold){ // (150~450)
+			if(speed > (L_distance - 50.f) * 0.1f){		
+				speed = (L_distance - 50.f) * 0.1f;   //(10~40)
+			}
+			else ;
+		}
+	return speed;
+}
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

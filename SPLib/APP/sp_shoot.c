@@ -14,6 +14,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "sp_shoot.h"
+#include "Auto_aim.h"
+#include "RefereeInfo.h"
 
 /** @addtogroup SP
   * @{
@@ -32,9 +34,11 @@
 #define DELTA_TIME                     0.01f
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
 
-static const float Feed_SPEED = 10.f;
+static const float Feed_SPEED = 10.f;//task_lss
 
-static uint16_t max_shoot_speed = 40;
+static uint16_t max_shoot_speed = 40;//task_lss
+static int Shoot_Cooling_Time = 10;//task_lss
+static int Cooling_tickets = 10;
 
 PWMFriction_Type    Friction_CH1;
 PWMFriction_Type    Friction_CH2;
@@ -385,7 +389,7 @@ void Shooting_Control_Init (void){
 					motor203->control.speed_pid->Kd = 1.f;
 					motor203->control.speed_pid->intergration_limit = 5*PI;
 					motor203->control.speed_pid->intergration_separation = PI;
-					motor203->control.output_limit = 5000;
+					motor203->control.output_limit = 9000;
 					Feed_motor = motor203;
         #endif
 }
@@ -473,11 +477,28 @@ void Shooting_Control_Looper (void){
 			}
 			else if(recv.rc.s2==RC_SW_UP){
 				if(recv.rc.s1==RC_SW_DOWN)
-					shootState = Shoot_ON;
-				else
 					shootState = Shoot_OFF;
-			}
+				else if(recv.rc.s1==RC_SW_MID)
+					shootState = Shoot_OFF;
+				else if(recv.rc.s1==RC_SW_UP){
+					if(auto_aim_flag == 1)
+						shootState = Shoot_ON;
+					else
+						shootState = Shoot_OFF;
+					//task_lss
+					if(ext_power_heat_data.shooter_heat0 > 1){
+						shootState = Shoot_OFF;
+						Cooling_tickets = 0;
+					}
+					if(Cooling_tickets < Shoot_Cooling_Time){
+						shootState = Shoot_OFF;
+						Cooling_tickets++;
+					}
+					else if(Cooling_tickets > 10000)
+						Cooling_tickets = Shoot_Cooling_Time;
 
+				}
+			}
 			Feed_Motor_Looper();
 		#endif
 		recv_ex = recv;

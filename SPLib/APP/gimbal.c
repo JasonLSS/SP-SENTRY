@@ -17,6 +17,8 @@
 #include "gimbal.h"
 #include "sp_shoot.h"
 #include "Auto_aim.h"
+#include "sp_chasis.h"
+
 #define MOTOR_ENCODER_CONVERT               (0.0439453125f)     /* Convert encoder value 0~8192 to 0~360deg */
 
 #if defined(SP_FANTRY)
@@ -176,10 +178,10 @@ static const float pitch_kp_0 = 6000.0f;
 static const float pitch_ki_0 = 2000.f;
 static const float pitch_kd_0 = 1000.f;
 
-static const float yaw_limit_max = 3000.f/8192.f*2.f*PI;
-static const float yaw_limit_min = -5000.f/8192.f*2.f*PI;
-static const float pitch_limit_max = 1000.f/8192.f*2.f*PI;
-static const float pitch_limit_min = 100.f/8192.f*2.f*PI;
+static float yaw_limit_max = 6000.f/8192.f*2.f*PI;
+static float yaw_limit_min = -4000.f/8192.f*2.f*PI;
+static float pitch_limit_max = 1000.f/8192.f*2.f*PI;
+static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
 static const float visual_yaw_kp = 10000.0f;
 static const float visual_yaw_ki = 4000.0f;
@@ -197,10 +199,14 @@ static const float cruise_pitch_kp = 8000.0f;
 static const float cruise_pitch_ki = 2000.0f;
 static const float cruise_pitch_kd = 1000.0f;
 
-static const float yaw_cruise_speed = 20.f/8192.f*2.f*PI;
+static const float yaw_cruise_speed = 20.f/8192.f*2.f*PI;//task_lss
 static const float pitch_cruise_speed = 6.f/8192.f*2.f*PI;
 
-#define MIDDLE_YAW          1330
+float yaw_limit[7]= { 0 , 1500.f/8192.f*2.f*PI, 3000.f/8192.f*2.f*PI , -1250.f/8192.f*2.f*PI , 
+											-2500.f/8192.f*2.f*PI , -3750.f/8192.f*2.f*PI , -5000.f/8192.f*2.f*PI };//!!!!!!
+
+
+#define MIDDLE_YAW          1400
 #define MIDDLE_PITCH        4000  //7620
 
 void GIMBAL_ControlInit(void) {
@@ -241,20 +247,35 @@ void GIMBAL_State(void){
 		static float pitch_set = 0;
 		static int yaw_direction = 1;
 		static int pitch_direction = 1;
-		
+		int id; 
 		if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
 			yaw_set = 0;
 			pitch_set = 0;
-			spGIMBAL_Controller.user.pid_init(); 
+			spGIMBAL_Controller.user.pid_init();
+			id = 0;
 		}
 		if(robotMode == CRUISE_MODE && robotMode^robotMode_ex){
 			yaw_direction = 1;
 			pitch_direction = 1;
 			spGIMBAL_Controller.user.cruise_pid_init(); 
+			id = 0;
+		}
+		if(robotMode == ESCAPE_MODE && robotMode^robotMode_ex){
+			yaw_set = 0;
+			pitch_set = 0;
+			spGIMBAL_Controller.user.cruise_pid_init(); 
+			id = 0;
 		}
 		if(robotMode == STATIC_ATTACK_MODE && robotMode^robotMode_ex){
 			spGIMBAL_Controller.user.visual_pid_init(); 
 		}
+		if(robotMode == DYNAMIC_ATTACK_MODE && robotMode^robotMode_ex){
+			spGIMBAL_Controller.user.visual_pid_init(); 
+		}
+		if(robotMode == ESCAPE_ATTACK_MODE && robotMode^robotMode_ex){
+			spGIMBAL_Controller.user.visual_pid_init(); 
+		}
+		
 		
 		if(robotMode == REMOTE_MODE){
 			yaw_set +=  (abs(recv.rc.ch0)<20?0:recv.rc.ch0)/15.f/1320.0f;
@@ -267,30 +288,49 @@ void GIMBAL_State(void){
 		else if(robotMode == CRUISE_MODE){
 			yaw_set += yaw_cruise_speed*yaw_direction;
 			pitch_set = 0.7f;
-			
-			if(yaw_set >= yaw_limit_max)
-				yaw_direction = -1;
-			else if (yaw_set <= yaw_limit_min)
-				yaw_direction = 1;
-			
-			if(pitch_set >= pitch_limit_max)
-				pitch_direction = -1;
-			else if (pitch_set <= pitch_limit_min)
-				pitch_direction = 1;
 		}
-		else if(robotMode == STATIC_ATTACK_MODE)
-		{		
-				if(if_if_newframe){
-						yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f;
-						pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
-						if_if_newframe = 0;
-				}
+		else if(robotMode == ESCAPE_MODE){
+			
 		}
+		else if(robotMode == STATIC_ATTACK_MODE){	
+			id = enemy_area;
+			if(if_if_newframe){
+					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f;
+					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
+					id = 0;
+			}
+			else{
+					yaw_set += yaw_cruise_speed*yaw_direction;
+			}
+		}
+		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE){
+			id = enemy_area;
+			if(if_if_newframe){
+					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f + chasis_speed * -0.0066666f;//task_lss
+					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
+					id = 0;
+			}
+			else{
+					yaw_set += yaw_cruise_speed*yaw_direction;
+			}
+		}
+
+		spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
+
+		if(yaw_set >= yaw_limit_max)
+			yaw_direction = -1;
+		else if (yaw_set <= yaw_limit_min)
+			yaw_direction = 1;
+		
+		if(pitch_set >= pitch_limit_max)
+			pitch_direction = -1;
+		else if (pitch_set <= pitch_limit_min)
+			pitch_direction = 1;
 		
 		pitch_set = (pitch_set > pitch_limit_max ? pitch_limit_max : 
-															pitch_set < pitch_limit_min ? pitch_limit_min : pitch_set);
+								 pitch_set < pitch_limit_min ? pitch_limit_min : pitch_set);
 		yaw_set   = (yaw_set > yaw_limit_max ? yaw_limit_max : 
-															yaw_set < yaw_limit_min ? yaw_limit_min : yaw_set);
+								 yaw_set < yaw_limit_min ? yaw_limit_min : yaw_set);
 		
 		robotMode_ex = robotMode;
 		spGIMBAL_Controller.user.update_target_limit(pitch_set,yaw_set);
@@ -317,6 +357,17 @@ void GIMBAL_Update_Limit(float target_pitch, float target_yaw)  {
 																	target_yaw < yaw_limit_min ? yaw_limit_min : target_yaw);
 }
 
+void GIMBAL_Update_enemy_Location(int id){
+		switch(id){
+			case 0:yaw_limit_min = -4000.f/8192.f*2.f*PI;yaw_limit_max = 6000.f/8192.f*2.f*PI;break;
+			case 1:yaw_limit_min = yaw_limit[1];yaw_limit_max = yaw_limit[2];break;
+			case 2:yaw_limit_min = yaw_limit[0];yaw_limit_max = yaw_limit[1];break;
+			case 3:yaw_limit_min = yaw_limit[3];yaw_limit_max = yaw_limit[0];break;
+			case 4:yaw_limit_min = yaw_limit[4];yaw_limit_max = yaw_limit[3];break;
+			case 5:yaw_limit_min = yaw_limit[5];yaw_limit_max = yaw_limit[4];break;
+			case 6:yaw_limit_min = yaw_limit[6];yaw_limit_max = yaw_limit[5];break;
+		}
+}
 
 bool GIMBAL_MiddleLooper(uint32_t tick) {
     static uint16_t pass_flag = 0;
@@ -344,10 +395,7 @@ bool GIMBAL_MiddleLooper(uint32_t tick) {
                 GIMBAL_UpdateYaw(spMATH_DEG2RAD(MOTOR_ENCODER_CONVERT*(
 									MIDDLE_YAW - gimbal_yaw_motor->state.__motor_angel_first)));
             }
-            if(gimbal_pitch_motor->state.__motor_angel_last!=-1) {
-                GIMBAL_UpdatePitch(spMATH_DEG2RAD(MOTOR_ENCODER_CONVERT*(
-									MIDDLE_PITCH - gimbal_pitch_motor->state.__motor_angel_first)));
-            }
+            
         }
     }
     return false;
@@ -387,6 +435,7 @@ struct __GIMBAL_Controller_Type spGIMBAL_Controller = {
         .update_target_yaw = GIMBAL_UpdateYaw,
         .update_target = GIMBAL_Update,
 				.update_target_limit = GIMBAL_Update_Limit,
+				.update_enemy_location = GIMBAL_Update_enemy_Location,
 				.pid_init = GIMBAL_PID_Init,
 				.visual_pid_init = GIMBAL_VISUAL_PID_Init,
 				.cruise_pid_init = GIMBAL_CRUISE_PID_Init,

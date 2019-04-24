@@ -60,8 +60,12 @@ void init_referee_info(void) {
     USART_TX_Config(USART6, 115200);
     DMA_USART_TX_Config(USART6);
     DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
-    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+    
     USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+		USART_ITConfig(USART6, USART_IT_RXNE, ENABLE);
+		spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+		spIRQ.registe(USART6_IRQn, USART_IT_RXNE, update_from_dma2);
+	
     USART_Cmd(USART6, ENABLE);
 }
 
@@ -442,6 +446,17 @@ void update_from_dma(void) {
 		spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
     return;
 }
+
+void update_from_dma2(void) {
+		uint8_t bt = USART6->DR;
+//		for(int i=0;i<sizeof(referee_buffer);i++)
+//        	referee_info_update(referee_buffer[i]);
+////		printf("%f",ext_power_heat_data.chassis_power);
+////		printf("\r\n");
+		spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+    return;
+}
+
 
 uint8_t blood_seq=0;
 // 使用完整数据帧更新全部裁判信息相关结构体。(带校验)

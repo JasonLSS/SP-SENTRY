@@ -36,13 +36,15 @@
   */
 	
 typedef enum{
-	CRUISE_MODE=0,			  //机器人巡航模式
-	ESCAPE_MODE=1,				//机器人逃逸模式
-	STATIC_ATTACK_MODE=2, //机器人静止攻击模式，用于不掉血的攻击状态
-	DYNAMIC_ATTACK_MODE=3,//机器人静止攻击模式，用于掉血的攻击状态
-  ESCAPE_ATTACK_MODE=4,//机器人逃逸攻击模式
-	REMOTE_MODE = 5,
-	STANDBY_MODE = 6
+	CRUISE_MODE = 0,			  //机器人巡航模式
+	ESCAPE_MODE = 1,				//机器人逃逸模式
+	STATIC_ATTACK_MODE  = 2, //机器人静止攻击模式，用于不掉血的攻击状态
+	DYNAMIC_ATTACK_MODE = 3,//机器人静止攻击模式，用于掉血的攻击状态
+  ESCAPE_ATTACK_MODE  = 4,//机器人逃逸攻击模式
+	CURVE_ATTACK_MODE   = 5,
+	REMOTE_MODE = 6,
+	STANDBY_MODE = 7,
+	
 }RobotMode;
 
 extern RobotMode robotMode;

@@ -228,6 +228,7 @@ extern uint8_t blood_counter;  // (debug)被打计数
 //uint8_t Verify_frame(uint8_t * frame);
 
 extern void update_from_dma(void);
+extern void update_from_dma2(void);
 extern uint8_t seq_real;
 extern uint8_t usart6_dma_flag;
 extern int shoot_counter_referee;

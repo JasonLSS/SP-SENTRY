@@ -1,10 +1,16 @@
-/************************************************************
- *File        :    Auto_aim.c
- *Author    : @TangJiaxin ,tjx1024@126.com
- *Version    : 
- *Update    : 
- *Description:     
- ************************************************************/
+/**
+  ******************************************************************************
+  * @file       Auto_aim.c
+  * @author     LSS
+  * @version    v0.5-alpha
+  * @date       2019.Mar.29
+  * @brief      auto aim control
+  * @usage      
+  ******************************************************************************
+  * @license
+  *
+  ******************************************************************************
+  */
 #include "Auto_aim.h"
 #include "gimbal.h"
 #include "sp_utility.h"
@@ -12,74 +18,23 @@
 frame frame_ex;//存储上一个视觉发来的结构体
 frame fram;//存储视觉数据的结构体
 frame frame_visual;
-/*
-typedef struct _frame            //视觉发来的数据框架    
-{
-    u8 head[2];        //帧头，为0xffff
-    u32 timestamp;//包序号
-    float yaw;      //yaw误差值
-    float pitch;  //pitch误差值
-    u32 extra[2]; //additional imformation    
-    u8 crc8check;    //crc8校验位                
-}frame;
-*/
 
-double  parameter_yaw=0.008;
-double  parameter_pitch=0.005;
-double  view_ch2;
-double  view_ch3;
-double  virual_ch2;
-double  virual_ch3;
+int     if_newframe = 0;
+int     if_if_newframe = 0;
 
-double  last_view_ch2;
-double  last_view_ch3;
-double  view_ch2_interval;
-double  view_ch3_interval;
-
-double  step_ch2=0.0;
-double  step_ch3=0.0;
-double  last_step_ch2=0.0;
-double  last_step_ch3=0.0;
-
-double  visual_yaw_kp=1.0;  //1.0
-double  visual_yaw_ki=0.3;
-double  visual_yaw_kd=1.5; //0.45
-double    integral_yaw=0.0;
-
-double  visual_pitch_kp=1.0;
-double  visual_pitch_ki=0.02;
-double  visual_pitch_kd=0.8;
-double    integral_pitch=0.0;
-double  now_yaw_angle=0.0;
-double  last_yaw_angle=0.0;
-
-double  visual_yaw_pid_out;
-double  visual_pitch_pid_out;
-
-int     FirstFlag=0;
-int     time_count=0;
-int     time_interval=40;
-int     if_newframe = 0;//CAN2收到视觉信号标志位
-int     if_rotate_ok = 0;
-int     if_if_newframe=0;
+uint8_t enemy_area = 0;
+uint8_t enemy_empty_area = 0;
 
 int miss = 0;
-float last_pitch=0;
-float last_yaw=0;
+float last_pitch = 0;
+float last_yaw = 0;
+float yaw_aim_limit = 2;
+float pitch_aim_limit = 10;
 char uart6_buff[256];
 
 uint8_t auto_aim_flag = 0;
 uint8_t small_power_flag = 0;
 
-uint32_t last_time_tick_1ms,last_last_time_tick_1ms;//上一个time_tick_1ms的数，上上个time_tick_1ms的数
-/***************************************************************************************
- *Name     : Auto_aim
- *Function ：自动
- *Input    ：rx_buf(视觉从串口2传来的数组),len
- *Output   ：无 
- *Description :以视觉发送的数据（pitch、yaw）作为误差值，以误差为0为目标，
-               做PID运算，来控制云台电机目标值的变化
-****************************************************************************************/
 void Auto_aim(u8 *rx_buf,int len)
 {
 		if(len==0){
@@ -103,27 +58,37 @@ void Auto_aim(u8 *rx_buf,int len)
 		{
 			if_newframe = 0;
 		}
-		
-		
-		
-    if(auto_aim_flag == 0x00 && small_power_flag == 0xFF)
-    { 
-        if(if_newframe == 1) {
-//            spGIMBAL_Controller.user.update_target_limit(
-//                spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle + fram.pitch/0.04394f,
-//                spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle - fram.yaw/0.04394f);
-						frame_visual = fram;
+		//task
+		if(if_newframe == 1) {
+				frame_visual = fram;
+				for(int i = 0;i<8;i++){
+					int a = 0;
+					memcpy((uint8_t*)&a,&fram.extra[0] + i, 1);
+					if(a > 0 && i < 6)
+						enemy_area = i + 1;
+					else if(a > 0 && i == 6)
+						enemy_area = 0;
+					else if(a > 0 && i == 7)
 						if_if_newframe = 1;
-            //yaw 10 5 0.5    pitch  2 10 0.2
-            if((-last_yaw+fram.yaw)!=1)
-                miss++;
-            last_yaw=fram.yaw;
-						u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
-						spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
-        }
-    }
-		
-
+					else if(a == 0 && i == 7)
+						if_if_newframe = 0;
+					memcpy((uint8_t*)&a,&fram.extra[1] + i, 1);
+					if(a > 0 && i < 6)
+						enemy_empty_area = i + 1;
+				}
+				
+				if(fabs(fram.yaw) < yaw_aim_limit && fabs(fram.pitch) < pitch_aim_limit)
+					auto_aim_flag = 1;
+				else
+					auto_aim_flag = 0;
+			//task
+			
+				if((-last_yaw+fram.yaw)!=1)
+						miss++;
+				last_yaw=fram.yaw;
+				u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
+				spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
+		}
 }
 
 
@@ -149,7 +114,6 @@ void Autoaim_Init(void) {
     DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer.buffer, view_buffer.buffer.size, false);
     USART_TX_Config(USART2, 115200);
     DMA_USART_TX_Config(USART2);
-//        DMA_ITConfig(spDMA_USART2_rx_stream, DMA_IT_TC, ENABLE);
     DMA_Cmd(spDMA_USART2_rx_stream, ENABLE);
     spIRQ.registe(USART2_IRQn, USART_IT_IDLE, Autoaim_USART_Interface);
     USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
@@ -168,9 +132,6 @@ void Autoaim_USART_Interface(void) {
     spDMA.controller.reset_counter(spDMA_USART2_rx_stream, view_buffer.buffer.size);
     Auto_aim(view_buffer.buffer.buffer, size);
     
-//    LED8_BIT_ON(LED8_BIT4);
-//    delay_us(100);
-//    LED8_BIT_OFF(LED8_BIT4);
 }
 
 

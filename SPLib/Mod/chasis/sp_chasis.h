@@ -91,8 +91,14 @@ extern struct __CHASIS_Manager_Type {
 } spCHASIS;
 
 extern float chasis_speed_limit;
+extern float chasis_speed;
 float CHASIS_Legalize(float MotorCurrent , float limit);
 void CMWatt_Cal(void);
+int IfUsingPowerBuffer(void);
+int Enemy_Location(void);
+int Empty_Location(void);
+float Speed_D_Limit(float speed);
+
 /** @} */
 
 /**
