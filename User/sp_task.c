@@ -131,19 +131,16 @@ void spFORCE_INLINE spPortExitCritical( void )
 /** @} */
 
 
-/** @defgroup System_Task_Control
-  * @brief    System task configurations and loopers.
-  * @ingroup  TASK
-  * @{
-  */
 
+
+/**
+  * @brief  Counter used in @func TASK_ControlLooper() with period 1ms
+  */
+volatile uint32_t           task_counter = 0;
 /**
   * @brief  Flag for system initialization
   */
 bool                        task_inited = false;
-/**
-  * @brief  General data buffer struct.
-  */
 struct {
     uint8_t     buffer[256];
     uint16_t    capacity;
@@ -153,18 +150,8 @@ struct {
     {0x00}, 256,
     0, 0, 0, 0
 };
-/**
-  * @brief  General RC buffer.
-  */
-RC_DataType recv;
-float targets[4] = {0.f};
-MOTOR_CrtlType_CAN* motors;
 
-//struct {
-//    float targets;
-//} spENGI_Loader = {
-//    0.f
-//};
+
 
 
 /**
@@ -172,23 +159,24 @@ MOTOR_CrtlType_CAN* motors;
   */
 inline void TASK_Start(void) {
     //#warning "Place your IRQ staring on system entering here."
-    
+//    spCLOCK_Configuration();
+
     NVIC_IRQEnable(CAN1_RX0_IRQn, 0, 2);
     NVIC_IRQEnable(CAN2_RX1_IRQn, 0, 2);
-    
+
     NVIC_IRQEnable(USART1_IRQn, 0, 0);          // RC
     NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
-    
+
     NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
-    
-    NVIC_IRQEnable(USART3_IRQn, 0, 3);
-    NVIC_IRQEnable(USART6_IRQn, 0, 3);
-    NVIC_IRQEnable(UART7_IRQn, 0, 3);
-    NVIC_IRQEnable(UART8_IRQn, 0, 3);
-    
+
     NVIC_IRQEnable(EXTI9_5_IRQn, 0, 3);         // MPU int
     NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
     NVIC_IRQEnable(EXTI0_IRQn, 0, 5);           // IMU_ADI
+	
+		NVIC_IRQEnable(USART3_IRQn, 0, 3);
+    NVIC_IRQEnable(USART6_IRQn, 0, 3);
+    NVIC_IRQEnable(UART7_IRQn, 0, 3);
+    NVIC_IRQEnable(UART8_IRQn, 0, 3);
 }
 
 /**
@@ -198,7 +186,7 @@ void TASK_Enable() {
     //#warning "Place your IRQ staring on system inited here."
     task_inited = true;
     
-    
+
     NVIC_IRQEnable(TIM1_TRG_COM_TIM11_IRQn, 0, 1);
     NVIC_IRQEnable(TIM8_BRK_TIM12_IRQn, 0, 1);
 }
@@ -208,12 +196,6 @@ void TASK_Enable() {
   * @note   User CANNOT involve this functions
   *         This function is called in the .s link file
   */
-void asdsa(void) {
-    /* Start RC DMA and stop USART_DELE IRQ */
-    spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(USART_Transfer.buffer));
-    /* Clear IDEL flag bit */
-    uint8_t tmp = USART6->DR;
-}
 void TASK_GlobalInit() {
     /**
       * @brief  Low layer initialize
@@ -225,13 +207,8 @@ void TASK_GlobalInit() {
         Led8_Configuration();
 //        Button_Configuration();
         Buzzer_Init();
-        Power_Configuration();
-        // Enable hardware random value generator.
-        spRCC_Set_RNG();
-        RNG_Cmd(ENABLE);
-        // Enable CAN1, baudrate=1Mbps
+        // Enable CAN1/CAN2, baudrate=1Mbps
         spCAN._system.init(CAN1,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
-        // Enable CAN2, baudrate=1Mbps
         spCAN._system.init(CAN2,CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
         // DMA memory-to-memory tranfer config
         spDMA.mem2mem.init(NULL, NULL, 0);
@@ -242,35 +219,42 @@ void TASK_GlobalInit() {
         USART_Cmd(UART8, ENABLE);
 
         // Start USART and DMA for send data
-        USART_TX_Config(UART7, 115200);
-        USART_RX_Config(UART7, 115200);
-        DMA_USART_TX_Config(UART7);
-        DMA_USART_RX_Config(UART7, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
-        USART_ITConfig(UART7, USART_IT_IDLE, ENABLE);
-        USART_Cmd(UART7, ENABLE);
-        
-        // Start USART and DMA for send data
-        USART_TX_Config(USART6, 115200);
-        USART_RX_Config(USART6, 115200);
-        DMA_USART_TX_Config(USART6);
-        DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
-        USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
-        spIRQ.registe(USART6_IRQn, USART_IT_IDLE, asdsa);
-        USART_Cmd(USART6, ENABLE);
+        USART_TX_Config(USART3, 115200);
+        USART_RX_Config(USART3, 115200);
+        DMA_USART_TX_Config(USART3);
+        DMA_USART_RX_Config(USART3, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
+        USART_ITConfig(USART3, USART_IT_IDLE, ENABLE);
+        USART_Cmd(USART3, ENABLE);
 
+        Autoaim_Init();
+				
+				IIC_Init();
+				Infrared_Init();
+				
     }
 
     /**
       * @brief  System layer initialize
       */
     {
-        /* Enable Remote Controller Receiver */
-        RC_ReceiverInit();
-        
-        spMOTOR._system.init();
-        
+				spMOTOR._system.init();
+			
+#ifdef CHASIS_POWER_LIMIT
+				init_referee_info();
+#endif
+			
+				/* Enable Remote Controller Receiver */
+				RC_ReceiverInit();
+			
+#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+				spGIMBAL_Controller._system.init();
+#endif
+
+				/* IMU module init */
+//				IMU_Controllers.operations.init();
+
 #ifdef USING_USB
-        USB_TaskInit();
+				USB_TaskInit();
 #endif
     }
 
@@ -278,30 +262,17 @@ void TASK_GlobalInit() {
       * @brief  Peripheral layer initialize
       */
     {
-//        /* IMU module init */
-//        IMU_Controllers.operations.init();
-        Autoaim_Init();
-        IIC_Init();
-        Infrared_Init();
-
-#ifdef CHASIS_POWER_LIMIT
-//        init_referee_info();
+#ifdef USING_SENTRY_CHASIS
+				spCHASIS._system.init();
 #endif
+				Shooting_Control_Init();
 
     }
     /**
       * @brief  Sundries and initialize
       */
     {
-#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-        spGIMBAL_Controller._system.init();
-#endif
 
-#ifdef USING_SENTRY_CHASIS
-        spCHASIS._system.init();
-#endif
-
-        Shooting_Control_Init();
     }
 }
 
@@ -312,106 +283,103 @@ RC_DataType recv;
 /**
   * @brief  System layer control loop in background
   */
-void TASK_ControlLooper(uint32_t tick) {
-    /*------------------------------------------------------------------------*/
-    /* Sundries and uiltilies looper [PROTECTED] */
-    /*------------------------------------------------------------------------*/
+void TASK_ControlLooper() {
+/*------------------------------------------------------------------------*/
+/* Sundries and uiltilies looper [PROTECTED] */
+/*------------------------------------------------------------------------*/
+    task_counter++;
     RC_GetState(&recv);
 #ifdef USING_USB
-    USB_TaskLoop();
+		USB_TaskLoop();
 #endif
-    /*------------------------------------------------------------------------*/
-    /* Peripheral layer looper [PRIVATE] */
-    /*------------------------------------------------------------------------*/
-//    {
-//#ifdef USING_SENTRY_CHASIS
-//        spCHASIS._system.looper(tick, &recv);
-//#endif
-//        static RC_DataType recv_ex;
-//        static uint16_t remain_HP_ex;
-//        if(tick%10 == 1) {
-//            if(recv.rc.s2==RC_SW_UP) {
-//                if(recv.rc.s1==RC_SW_MID) {
-//                    robotMode = CRUISE_MODE;
-//                } else if(recv.rc.s1==RC_SW_DOWN) {
-//                    robotMode = ESCAPE_MODE;
-//                } else if(recv.rc.s1==RC_SW_UP) {
-//                    //all auto mode
-//                    static bool attacked = 0;
-//                    float attacked_time = 0;
-//                    if(remain_HP_ex - ext_game_robot_state.remain_HP < 0) { //task_lss
-//                        attacked_time = 100;
-//                        attacked = 1;
-//                    }
-//                    if(attacked_time == 0 )
-//                        attacked = 0;
-//                    else
-//                        attacked_time--;
-//                    //task_lss
-//                    if(enemy_area == 0 && !attacked)
-//                        robotMode = CRUISE_MODE;
-//                    if(ext_game_robot_state.remain_HP > 300 && enemy_area != 0)
-//                        robotMode = DYNAMIC_ATTACK_MODE;
-//                    if(ext_game_robot_state.remain_HP > 500 && enemy_area != 0 && !attacked)
-//                        robotMode = STATIC_ATTACK_MODE;
-//                    if(ext_game_robot_state.remain_HP < 300 &&
-//                            ext_game_robot_state.remain_HP > 100 && enemy_area != 0)
-//                        robotMode = ESCAPE_ATTACK_MODE;
-//                    if((enemy_area == 0 ||ext_game_robot_state.remain_HP < 100)&& attacked)
-//                        robotMode = ESCAPE_MODE;
-
-//                    remain_HP_ex = ext_game_robot_state.remain_HP;
-//                }
-//            } else if(recv.rc.s2==RC_SW_DOWN) {
-//                // hand operation mode
-//                robotMode = REMOTE_MODE;
-//            } else {
-//                robotMode = STANDBY_MODE;
-//            }
-//        } else if(tick%10 == 3) {
-//            Shooting_Control_Looper();
-//        } else if(tick%10 == 5) {
-//#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-//            spGIMBAL_Controller._system.statelooper();
-//#endif
-//        } else if(tick%10 == 7) {
-//            Infrared_Update();//task_lss
-//        }
-////				if(tick%5 == 0)
-////				{
-////					sendtoComputer();
-////				}
-//    }
-    /*------------------------------------------------------------------------*/
-    /* System layer looper [PRIVATE] */
-    /*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+/* Peripheral layer looper [PRIVATE] */
+/*------------------------------------------------------------------------*/
     {
-
+				#ifdef USING_SENTRY_CHASIS
+						spCHASIS._system.looper(task_counter, &recv);
+				#endif
+				static RC_DataType recv_ex;
+				static uint16_t remain_HP_ex;
+        if(task_counter%10 == 1) {
+						if(recv.rc.s2==RC_SW_UP) {
+								if(recv.rc.s1==RC_SW_MID) {
+										robotMode = CRUISE_MODE;
+								} else if(recv.rc.s1==RC_SW_DOWN){
+										robotMode = ESCAPE_MODE;
+								}else if(recv.rc.s1==RC_SW_UP){
+										//all auto mode
+										static bool attacked = 0;
+										float attacked_time = 0;
+										if(remain_HP_ex - ext_game_robot_state.remain_HP < 0){//task_lss
+												attacked_time = 100;
+												attacked = 1;
+										}
+										if(attacked_time == 0 )
+												attacked = 0;
+										else
+												attacked_time--;
+										//task_lss
+										if(enemy_area == 0 && !attacked)
+											robotMode = CRUISE_MODE;
+										if(ext_game_robot_state.remain_HP > 300 && enemy_area != 0)
+											robotMode = DYNAMIC_ATTACK_MODE;
+				 						if(ext_game_robot_state.remain_HP > 500 && enemy_area != 0 && !attacked)
+											robotMode = STATIC_ATTACK_MODE;
+										if(ext_game_robot_state.remain_HP < 300 && 
+											 ext_game_robot_state.remain_HP > 100 && enemy_area != 0)
+											robotMode = ESCAPE_ATTACK_MODE;
+										if((enemy_area == 0 ||ext_game_robot_state.remain_HP < 100)&& attacked)
+											robotMode = ESCAPE_MODE;
+										
+										remain_HP_ex = ext_game_robot_state.remain_HP;
+								}
+						} else if(recv.rc.s2==RC_SW_DOWN) {  
+								// hand operation mode
+								robotMode = REMOTE_MODE;
+						} else {
+								robotMode = STANDBY_MODE;
+						}
+        } else if(task_counter%10 == 3) {
+						Shooting_Control_Looper();
+        } else if(task_counter%10 == 5) {
+						#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+								spGIMBAL_Controller._system.statelooper();
+						#endif
+        } else if(task_counter%10 == 7) {
+						Infrared_Update();//task_lss
+        }
+//				if(task_counter%5 == 0)
+//				{
+//					sendtoComputer();
+//				}
+		}
+/*------------------------------------------------------------------------*/
+/* System layer looper [PRIVATE] */
+/*------------------------------------------------------------------------*/
+    {
+        
     }
-    /*------------------------------------------------------------------------*/
-    /* Low layer looper [PUBLIC] */
-    /*------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
+/* Low layer looper [PUBLIC] */
+/*------------------------------------------------------------------------*/
     {
         /* Singal light */
         if(RC_isValid()) {
-            if(tick%499 == 0) {
-                LED_G_TOGGLE();
-                LED_R_TOGGLE();
+            if(task_counter%499 == 0) {
+                LED_G_TOGGLE(); LED_R_TOGGLE();
             }
         } else {
-            LED_G_OFF();
-            LED_R_ON();
+            LED_G_OFF(); LED_R_ON();
         }
-
+        
     }
 }
 
-/**
-  * @brief  System background control looper.
-  */
+
 void TASK_Backend(void) {
     uint32_t ctime = TASK_GetMilliSecond();
-
+    
     RC_ReceiverChecker(ctime);
 
     if(!task_inited) {
@@ -429,9 +397,8 @@ void TASK_Backend(void) {
             TASK_Enable();
         }
 #endif
-        
     } else {
-        TASK_ControlLooper(ctime);
+        TASK_ControlLooper();
     }
 
     if(ctime%10 == 0) {
@@ -444,9 +411,7 @@ void TASK_Backend(void) {
     spCAN._system.transmit_looper(CAN2);
 }
 
-
-
-void TASK_SetPendSV(void) {
+void TASK_SerPendSV(void) {
     SCB->ICSR |= ((uint32_t)1<<28);
 }
 void PendSV_Handler(void) {
@@ -472,16 +437,14 @@ void TASK_TimerInit(void) {
     NVIC_IRQEnable(spSYSTIMER_IRQn, 0, 0);
     NVIC_IRQEnable(spCLOCKTIMER_IRQn, 0, 0);
 }
-
 /** @} */
 
 /**
   * @}
   */
-  
+
 /**
   * @}
   */
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/
-

@@ -360,14 +360,14 @@ void Friction_Looper(void) {
     looperUpdateFriction(&Friction_CH1);
     looperUpdateFriction(&Friction_CH2);
     if(frictionState == Friction_ON){
-			TIM_SetCompare1(TIM8, 200 + Friction_CH1.output[0] );
-			TIM_SetCompare2(TIM8, 200 + Friction_CH2.output[0] );
+			TIM_SetCompare1(TIM8, 800 - Friction_CH1.output[0] );
+			TIM_SetCompare2(TIM8, 800 - Friction_CH2.output[0] );
 			TIM_SetCompare3(TIM8, check);
 			TIM_SetCompare4(TIM8, check);
     }
 		else{
-			TIM_SetCompare1(TIM8, 200);
-			TIM_SetCompare2(TIM8, 200);
+			TIM_SetCompare1(TIM8, 800);
+			TIM_SetCompare2(TIM8, 800);
 			TIM_SetCompare3(TIM8, check);
 			TIM_SetCompare4(TIM8, check);
 		}

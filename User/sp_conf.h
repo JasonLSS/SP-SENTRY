@@ -39,7 +39,7 @@
 #endif
 
 //  <c> If using board typeA
-//#define SP_USING_BOARD_TYPEA
+#define SP_USING_BOARD_TYPEA
 //  </c>
 
 //  <e1> Choose your robot type

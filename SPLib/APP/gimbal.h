@@ -43,6 +43,10 @@ extern struct __GIMBAL_Controller_Type {
     struct {
         MOTOR_CrtlType_CAN*         gimbal_yaw_motor;
         MOTOR_CrtlType_CAN*         gimbal_pitch_motor;
+				struct {
+        PID_Type pitch;
+        PID_Type yaw;
+				} PID;
         float                       yaw_set;
         float                       pitch_set;
     } _target;

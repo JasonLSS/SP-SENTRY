@@ -29,7 +29,7 @@
 				int16_t speed1;
 				int16_t speed2;
 #endif
-
+static float speed_last = 0 ;
 static RobotMode robotMode_ex;
 RC_DataType recv_ex;
 float target_motor201 = 0;
@@ -91,8 +91,8 @@ void CHASIS_Init(void) {
     spCHASIS._system.params.PID.y.intergration_separation = PI;
     spCHASIS._system.params.PID.y.output_limit = __CHASIS_OuputLimit;
     
-    PID_SetGains(&spCHASIS._system.params.PID.x, 1000.0f, 0.f, 10.f);
-    PID_SetGains(&spCHASIS._system.params.PID.y, 1000.0f, 0.f, 10.f);
+    PID_SetGains(&spCHASIS._system.params.PID.x, 500.0f, 0.f, 10.f);
+    PID_SetGains(&spCHASIS._system.params.PID.y, 500.0f, 0.f, 10.f);
 		
 		#ifdef USING_SPEED_BALANCE
         PID_ControllerInit(&speedbalance, 5, 0xFFFF, 2);
@@ -246,9 +246,9 @@ int Empty_Location(void){
 }
 
 float Speed_Change_Limit(float speed){                        
-	static float speed_last = 0 ;
 	if(fabs(speed_last - speed) > SPEED_CHANGE_LIMIT )
 		speed = speed_last + sign(speed - speed_last)*SPEED_CHANGE_LIMIT;
+		speed_last = speed;
 	return speed;
 }
 
