@@ -75,7 +75,7 @@
 	#define APP_RX_DATA_SIZE				2048
 #else
 	#define CDC_DATA_MAX_PACKET_SIZE		64
-	#define CDC_IN_FRAME_INTERVAL			5
+	#define CDC_IN_FRAME_INTERVAL			16
 	#define APP_RX_DATA_SIZE				2048
 #endif
 #define CDC_CMD_PACKET_SZE					8
@@ -85,6 +85,9 @@
 
 #define USBD_ITF_MAX_NUM					1
 #define APP_FOPS							CDC_fops
+
+
+
 
 /** @defgroup USB_CONF_Exported_Variables
   * @{

@@ -55,18 +55,27 @@ void init_referee_info(void) {
 		ext_power_heat_data.shooter_heat0 = 0;
 		ext_power_heat_data.shooter_heat1= 0;
 	
-		USART_RX_Config(USART6, 115200);
-    DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), false);
-    USART_TX_Config(USART6, 115200);
-    DMA_USART_TX_Config(USART6);
-    DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
+//        // Start USART and DMA for send data
+//        USART_TX_Config(USART6, 115200);
+//        USART_RX_Config(USART6, 115200);
+//        DMA_USART_TX_Config(USART6);
+//        DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
+//        USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+//        spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+//        USART_Cmd(USART6, ENABLE);
     
-    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
-		USART_ITConfig(USART6, USART_IT_RXNE, ENABLE);
-		spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
-		spIRQ.registe(USART6_IRQn, USART_IT_RXNE, update_from_dma2);
-	
-    USART_Cmd(USART6, ENABLE);
+//		USART_RX_Config(USART6, 115200);
+//    DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), false);
+//    USART_TX_Config(USART6, 115200);
+//    DMA_USART_TX_Config(USART6);
+//    DMA_Cmd(spDMA_USART6_rx_stream, ENABLE);
+//    
+//    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+//		USART_ITConfig(USART6, USART_IT_RXNE, ENABLE);
+//		spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+//		spIRQ.registe(USART6_IRQn, USART_IT_RXNE, update_from_dma2);
+//	
+//    USART_Cmd(USART6, ENABLE);
 }
 
 //crc8 生成多项式:G(x)=x8+x5+x4+1
@@ -438,22 +447,22 @@ uint8_t Verify_frame(uint8_t * frame) {
 }
 
 void update_from_dma(void) {
-		uint8_t bt = USART6->DR;
-		for(int i=0;i<sizeof(referee_buffer);i++)
-        	referee_info_update(referee_buffer[i]);
+    uint8_t bt = USART6->DR;
+    for(int i=0;i<sizeof(referee_buffer);i++)
+        referee_info_update(referee_buffer[i]);
 //		printf("%f",ext_power_heat_data.chassis_power);
 //		printf("\r\n");
-		spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+    spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
     return;
 }
 
 void update_from_dma2(void) {
-		uint8_t bt = USART6->DR;
+    uint8_t bt = USART6->DR;
 //		for(int i=0;i<sizeof(referee_buffer);i++)
 //        	referee_info_update(referee_buffer[i]);
 ////		printf("%f",ext_power_heat_data.chassis_power);
 ////		printf("\r\n");
-		spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+    spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
     return;
 }
 

@@ -318,6 +318,13 @@ void PID_SetGains(PID_Type* pid, float kp, float ki, float kd) {
     pid->Kd = kd;
 }
 
+void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd) {
+    pid->Kp = kp;
+    pid->Ki = ki;
+    pid->Kd = kd;
+    pid->sum_error = 0.f;
+}
+
 void PID_UpdateLimits(PID_Type* pid, float lim_i, float lim_d, float lim_out) {
     pid->intergration_limit = fabs(lim_i);
     pid->differential_limit = fabs(lim_d);

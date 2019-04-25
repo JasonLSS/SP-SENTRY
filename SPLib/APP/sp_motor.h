@@ -118,11 +118,6 @@ typedef struct {
     } control;
 } MOTOR_CrtlType_CAN;
 
-/**
-  * @brief  CAN feedback data resolver type.
-  */
-typedef void(*ResolverCallback_t)(CanRxMsg* , void*);
-
 /** 
   * @brief   Pool size of motors, means how many motors will be used.
   */ 

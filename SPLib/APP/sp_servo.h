@@ -1,11 +1,15 @@
 /**
   ******************************************************************************
-  * @file       template.h
+  * @file       sp_servo.h
   * @author     YTom
   * @version    v0.0-alpha
-  * @date       2018.Oct.21
-  * @brief      Romete controller module driver with USART1_RX
+  * @date       2018.Nov.27
+  * @brief      Servo control
   * @usage      
+  *         ServoType* servo = spSERVO.user.get_servo(TIM5, 1, GPIOH, GPIO_PinSource10, 2, -80.f, 80.f);
+  *         spSERVO.user.set_speed(servo, 200);
+  *         spSERVO.user.spin(servo);
+  *         spSERVO.user.set_target(servo, target);
   ******************************************************************************
   * @license
   *
@@ -47,7 +51,7 @@ typedef struct {
         float               offset;                 /*!< Offser for target by PWM signal center(as defaukt 0 deg). */
         float               target;                 /*!< Target of angle. */
         float               current;                /*!< Current angle calculated from timer register.  */
-        uint8_t             speed;                  /*!< Max manual rotating speed (real speed depend on
+        uint16_t            speed;                  /*!< Max manual rotating speed (real speed depend on
                                                          motor and MCU PWM fresh frequency), unit of **deg/sec**.  */
     } param;
     struct {
@@ -72,17 +76,20 @@ extern ServoType            ServoPool[USING_SERVO_POOL_SIZE];
 extern struct __SERVO_Manager_Type {
     struct {
         void (*init)(void);
-        void (*looper)(void);
     } _system;
     struct {
+        /**
+          * @param channel [0~3]
+          */
         ServoType* (*get_servo)(
             TIM_TypeDef* timx, uint8_t channel, GPIO_TypeDef* gpio, uint32_t pin_source,
             float offset, float low, float high );
         void (*set_target)(ServoType* servo, float target);
-        void (*set_speed)(ServoType* servo, uint8_t speed);
-        void (*set_target_with_speed)(ServoType* servo, float target, uint8_t speed);
+        void (*set_speed)(ServoType* servo, uint16_t speed);
+        void (*set_target_with_speed)(ServoType* servo, float target, uint16_t speed);
         float (*get_current_angle)(ServoType* servo);
         void (*spin)(ServoType* servo);
+        void (*spin_simple)(ServoType* servo);
     } user;
 } spSERVO;
 /** @} */

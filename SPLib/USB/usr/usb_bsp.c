@@ -159,88 +159,6 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_OTG_HS, ENABLE); 
 #endif
 }
-///**
-//* @brief  USB_OTG_BSP_Init
-//*         Initilizes BSP configurations
-//* @param  None
-//* @retval None
-//*/
-//void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev) {
-//  GPIO_InitTypeDef GPIO_InitStructure;   
-//#ifdef USE_USB_OTG_FS
-//	RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA , ENABLE);  
-//	GPIO_InitStructure.GPIO_Pin = 	GPIO_Pin_11 | 	// OTG FS Data -
-//									GPIO_Pin_12;	// OTG FS Data +
-//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
-//	GPIO_Init(GPIOA, &GPIO_InitStructure);  
-
-//	GPIO_PinAFConfig(GPIOA, GPIO_PinSource11, GPIO_AF_OTG1_FS); 
-//	GPIO_PinAFConfig(GPIOA, GPIO_PinSource12, GPIO_AF_OTG1_FS);
-//	
-//	#ifndef USB_VCP_DISABLE_VBUS
-//		// Configure  VBUS Pin
-//		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-//		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-//		GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-//		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
-//		GPIO_Init(GPIOA, &GPIO_InitStructure);    
-//	#endif
-//	
-//	#ifndef USB_VCP_DISABLE_ID
-//		// Configure ID pin
-//		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-//		GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-//		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;  
-//		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//		GPIO_Init(GPIOA, &GPIO_InitStructure);  
-//		GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_OTG1_FS); 
-//	#endif
-//	
-//	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-//	RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_OTG_FS, ENABLE); 
-//#else
-//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-//	GPIO_InitStructure.GPIO_Pin = 	GPIO_Pin_14 | // Data -
-//									GPIO_Pin_15;  // Data +
-//	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-//	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-//	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-//	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-//	GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_OTG2_FS);
-//	GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_OTG2_FS);
-//	
-//	#ifndef USB_VCP_DISABLE_VBUS
-//		//Configure VBUS Pin
-//		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
-//		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-//		GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-//		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-//		GPIO_Init(GPIOB, &GPIO_InitStructure);
-//		GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_OTG2_FS);
-//	#endif
-
-//	#ifndef USB_VCP_DISABLE_ID
-//		//Configure ID pin
-//		GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_12;
-//		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-//		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-//		GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-//		GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-//		GPIO_Init(GPIOB, &GPIO_InitStructure);
-//		GPIO_PinAFConfig(GPIOB, GPIO_PinSource12, GPIO_AF_OTG2_FS);
-//	#endif
-
-//	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_OTG_HS, ENABLE);
-//#endif
-//}
 
 /**
 * @brief  USB_OTG_BSP_EnableInterrupt
@@ -367,6 +285,57 @@ void USB_OTG_BSP_TimerIRQ (void)
 /**
 * @}
 */ 
+
+
+/******************************************************************************/
+/** Functions
+  * @brief  USBÖÐ¶Ïº¯Êý
+  */
+extern uint32_t USBD_OTG_ISR_Handler (USB_OTG_CORE_HANDLE *pdev);
+
+#ifdef USE_USB_OTG_HS
+    void OTG_HS_IRQHandler(void)
+    {
+        USBD_OTG_ISR_Handler(&USB_OTG_dev);
+    }
+    void OTG_HS_WKUP_IRQHandler(void)
+    {
+        if(USB_OTG_dev.cfg.low_power)
+        {
+            *(uint32_t *)(0xE000ED10) &= 0xFFFFFFF9 ;
+            SystemInit();
+            USB_OTG_UngateClock(&USB_OTG_dev);
+        }
+    }
+#endif
+#ifdef USE_USB_OTG_FS
+    void OTG_FS_IRQHandler(void)
+    {
+        USBD_OTG_ISR_Handler(&USB_OTG_dev);
+    }
+    void OTG_FS_WKUP_IRQHandler(void)
+    {
+        if(USB_OTG_dev.cfg.low_power)
+        {
+            *(uint32_t *)(0xE000ED10) &= 0xFFFFFFF9 ;
+            SystemInit();
+            USB_OTG_UngateClock(&USB_OTG_dev);
+        }
+    }
+#endif
+#ifdef USB_OTG_HS_DEDICATED_EP1_ENABLED
+    extern uint32_t USBD_OTG_EP1IN_ISR_Handler (USB_OTG_CORE_HANDLE *pdev);
+    extern uint32_t USBD_OTG_EP1OUT_ISR_Handler (USB_OTG_CORE_HANDLE *pdev);
+    void OTG_HS_EP1_IN_IRQHandler(void)
+    {
+        USBD_OTG_EP1IN_ISR_Handler(&USB_OTG_dev);
+    }
+    void OTG_HS_EP1_OUT_IRQHandler(void)
+    {
+        USBD_OTG_EP1OUT_ISR_Handler(&USB_OTG_dev);
+    }
+#endif
+/******************************************************************************/
 
 /**
 * @}

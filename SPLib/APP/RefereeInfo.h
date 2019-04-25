@@ -11,6 +11,9 @@ update: 2017.5.7
 #include "stdbool.h" 
 #include "sp_conf.h"
 
+
+extern uint8_t referee_buffer[128];
+
 void float2bytes(float chosen_value, uint8_t * res_message);
 float _bytes2float(uint8_t * chosen_Message);
 void float2bytes(float chosen_value, uint8_t * res_message);

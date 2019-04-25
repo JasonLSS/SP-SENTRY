@@ -17,15 +17,6 @@
 
 #include "sp_math.h"
 
-float limit_bilateral_loop(float x, float limit) {
-    if(limit==0) {
-        return x;
-    }
-    if(limit < 0) {
-        limit = fabs(limit);
-    }
-    return x - (int)((fabs(x)+limit)/(2*limit))*2*limit*sign(x);
-}
 
 
 void LPF_FirstOrder_Init(LPF_FirstOrder_type* lpf, float cutFreq, float sampleFreq ) {

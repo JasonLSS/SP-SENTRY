@@ -39,7 +39,7 @@
 #endif
 
 //  <c> If using board typeA
-#define SP_USING_BOARD_TYPEA
+//#define SP_USING_BOARD_TYPEA
 //  </c>
 
 //  <e1> Choose your robot type
@@ -186,7 +186,7 @@
 #define USING_GIMBAL_MODE       1
 //  <c1> USING_USB
 //    <i> Enable USB
-#define USING_USB
+//#define USING_USB
 //  </c>
 //  <c1> USING_OS
 //    <i> Enable FreeRTOS

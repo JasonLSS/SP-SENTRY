@@ -150,8 +150,16 @@ static __inline float limit_bilateral(float x, float limit) {
   * @note   x will output between [-limit, limit] in a loop way
   *         eg. limit_bilateral_loop(10, 3) = -2
   *         eg. limit_bilateral_loop(11.2, 1.0) = -0.8
-  */ 
-extern __inline float limit_bilateral_loop(float x, float limit);
+  */
+static __inline float limit_bilateral_loop(float x, float limit) {
+    if(limit==0) {
+        return x;
+    }
+    if(limit < 0) {
+        limit = fabs(limit);
+    }
+    return x - (int)((fabs(x)+limit)/(2*limit))*2*limit*sign(x);
+}
 
 /**
   * @brief  Limit value in a range

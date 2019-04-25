@@ -64,10 +64,10 @@ USBD_DEVICE USR_CDC_desc;
 #define usbd_cdc_LANGID_STRING            0x409
 #define usbd_cdc_MANUFACTURER_STRING      "STMicroelectronics"
 
-#define usbd_cdc_PRODUCT_HS_STRING        "Communication in HS mode"
+#define usbd_cdc_PRODUCT_HS_STRING        "CDC in HS mode"
 #define usbd_cdc_SERIALNUMBER_HS_STRING   "00000000011B"
 
-#define usbd_cdc_PRODUCT_FS_STRING        "Communication in FS Mode"
+#define usbd_cdc_PRODUCT_FS_STRING        "CDC in FS Mode"
 #define usbd_cdc_SERIALNUMBER_FS_STRING   "00000000011C"
 
 #define usbd_cdc_CONFIGURATION_HS_STRING  "CDC Config"

@@ -118,6 +118,12 @@ void PID_SetTarget(PID_Type* pid, float target);
   * @param  kp,ki,kd: indexed of P,I,D
   */ 
 void PID_SetGains(PID_Type* pid, float kp, float ki, float kd);
+/**
+  * @brief  Set PID controller's indexes and clear some parameters for further operations.
+  * @param  pid: PID controller @ref PID_Type
+  * @param  kp,ki,kd: indexed of P,I,D
+  */
+void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd);
 
 /**
   * @brief  Update PID controller's limitations

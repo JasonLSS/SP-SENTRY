@@ -63,6 +63,12 @@
   * @ingroup  CAN
   * @{
 */
+
+/**
+  * @brief  CAN feedback data resolver type.
+  */
+typedef void(*ResolverCallback_t)(CanRxMsg* , void*);
+
 /**
   * @brief  CAN data transmit/receive manager
   */

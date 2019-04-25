@@ -61,12 +61,10 @@ float frame[6];
 
 int main(void)
 {
-    __disable_irq();
+    spPortEnterCritical();                              /* Disable all IRQs while initializing. */
     
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);     /* 4 bits for pre-emption priority
                                                            0 bits for subpriority */
-    Power_Configuration();
-    spRCC_Set_RNG();    RNG_Cmd(ENABLE);
     TASK_GlobalInit();
     TASK_TimerInit();
     
@@ -89,7 +87,7 @@ int main(void)
     LED_G_ON();LED_R_OFF();
     TASK_Start();
     
-    __enable_irq();
+    spPortExitCritical();                               /* Enable all IRQs. */
     
     while(1) {
         extern char uart_tx_buff[256];

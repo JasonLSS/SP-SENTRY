@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file       sp_rc.c
+  * @file       sp_servo.c
   * @author     YTom
   * @version    v0.0-alpha
   * @date       2018.Nov.27
-  * @brief      Romete controller module driver with USART1_RX
+  * @brief      Servo control
   * @usage      
   ******************************************************************************
   * @license
@@ -49,7 +49,7 @@ void PWM_OutputInit(ServoType* servo)
     else return;
     
     /* Config GPIO */
-    spGPIO_Controllers.alternal_config(
+    spGPIO.alternal_config(
         servo->control.portpin.gpio,
         spGPIO_PinFromPinSource(servo->control.portpin.pin_source),
         GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
@@ -61,7 +61,7 @@ void PWM_OutputInit(ServoType* servo)
         gpio_af );
     
     /* Frequency must near 50Hz */
-    if(!(servo->control.timx->CR1 & TIM_CR1_CEN_Msk)) {
+    if( !(servo->control.timx->CR1 & TIM_CR1_CEN_Msk) ) {
         spTIMER.init(servo->control.timx, 50, false);
     } 
 
@@ -72,19 +72,19 @@ void PWM_OutputInit(ServoType* servo)
     TIM_OCInitStructure.TIM_Pulse = SERVO_RESOLVE_ANGLE(servo->param.offset)*(servo->control.timx->ARR+1);
     
     switch(servo->control.channel) {
-    case 1:
+    case 0:
         TIM_OC1Init(servo->control.timx, &TIM_OCInitStructure);
         TIM_OC1PreloadConfig(servo->control.timx, TIM_OCPreload_Enable);
         break;
-    case 2:
+    case 1:
         TIM_OC2Init(servo->control.timx, &TIM_OCInitStructure);
         TIM_OC2PreloadConfig(servo->control.timx, TIM_OCPreload_Enable);
         break;
-    case 3:
+    case 2:
         TIM_OC3Init(servo->control.timx, &TIM_OCInitStructure);
         TIM_OC3PreloadConfig(servo->control.timx, TIM_OCPreload_Enable);
         break;
-    case 4:
+    case 3:
         TIM_OC4Init(servo->control.timx, &TIM_OCInitStructure);
         TIM_OC4PreloadConfig(servo->control.timx, TIM_OCPreload_Enable);
         break;
@@ -93,10 +93,24 @@ void PWM_OutputInit(ServoType* servo)
     TIM_ARRPreloadConfig(servo->control.timx,ENABLE);
     TIM_CtrlPWMOutputs(servo->control.timx,ENABLE);
     TIM_Cmd(servo->control.timx, ENABLE);
+    return;
 }
 
 
 /* User operations */
+void SERVO_SetTarget(ServoType* servo, float target) {
+    servo->param.target = limit_minmax( target, servo->param.lower_bound, servo->param.higher_bound) + servo->param.offset;
+}
+
+void SERVO_SetSpeed(ServoType* servo, uint16_t speed) {
+    servo->param.speed = speed;
+}
+
+void SERVO_SetTargetWithSpeed(ServoType* servo, float target, uint16_t speed) {
+    SERVO_SetTarget(servo, target);
+    servo->param.speed = speed;
+}
+
 /**
  *  \param[low] lower bound of real angle
  *  \param[high] higher bound of real angle
@@ -125,33 +139,23 @@ ServoType* SERVO_GetServo(
         
         PWM_OutputInit(servo);
     }
+    
+    SERVO_SetTarget(servo, 0);
+    
     return servo;
-}
-
-void SERVO_SetTarget(ServoType* servo, float target) {
-    servo->param.target = limit_minmax( target, servo->param.lower_bound, servo->param.higher_bound) + servo->param.offset;
-}
-
-void SERVO_SetSpeed(ServoType* servo, uint8_t speed) {
-    servo->param.speed = speed;
-}
-
-void SERVO_SetTargetWithSpeed(ServoType* servo, float target, uint8_t speed) {
-    SERVO_SetTarget(servo, target);
-    servo->param.speed = speed;
 }
 
 /* This angle stands for dealing data inner servo controller */
 float __SERVO_GetInnerAngle(ServoType* servo) {
     servo->param.current = SERVO_RESOLVE_DUTY(
-        ((uint32_t*)(&servo->control.timx->CCR1))[servo->control.channel-1]*1.f/(servo->control.timx->ARR+1) );// 
+        ((uint32_t*)(&servo->control.timx->CCR1))[servo->control.channel]*1.f/(servo->control.timx->ARR+1) );// 
     return servo->param.current;
 }
 
 void SERVO_Spinner(ServoType* servo) {
     float time = TASK_GetSecond();
     
-    if(servo->control.channel<=4 && servo->control.channel>0) {
+    if(servo->control.channel<4) {
         
         /* Calculate output */
         float output = __SERVO_GetInnerAngle(servo);
@@ -170,10 +174,23 @@ void SERVO_Spinner(ServoType* servo) {
     
         //TODO:
         /* Restore timer register */
-        ((uint32_t*)(&servo->control.timx->CCR1))[servo->control.channel-1] = 
+        ((uint32_t*)(&servo->control.timx->CCR1))[servo->control.channel] = 
             SERVO_RESOLVE_ANGLE(output)*(servo->control.timx->ARR+1);
     }
     
+    servo->control.time_stamp = time;
+}
+
+void SERVO_SimpleSpinner(ServoType* servo) {
+    float time = TASK_GetSecond();
+    if(servo->control.channel<4) {
+        /* Calculate output */
+        float output = servo->param.target;
+        //TODO:
+        /* Restore timer register */
+        ((uint32_t*)(&servo->control.timx->CCR1))[servo->control.channel] = 
+            SERVO_RESOLVE_ANGLE(output)*(servo->control.timx->ARR+1);
+    }
     servo->control.time_stamp = time;
 }
 
@@ -190,17 +207,12 @@ void SERVO_Init(void) {
     }
 }
 
-void SERVO_Looper(void) {
-    
-}
-
 
 ServoType ServoPool[USING_SERVO_POOL_SIZE];
 
 struct __SERVO_Manager_Type spSERVO = {
     ._system = {
         .init = SERVO_Init,
-        .looper = SERVO_Looper
     }, 
     .user = {
         .get_servo = SERVO_GetServo,
@@ -208,7 +220,8 @@ struct __SERVO_Manager_Type spSERVO = {
         .set_speed = SERVO_SetSpeed,
         .set_target_with_speed = SERVO_SetTargetWithSpeed,
         .get_current_angle = SERVO_GetReadAngle,
-        .spin = SERVO_Spinner
+        .spin = SERVO_Spinner,
+        .spin_simple = SERVO_SimpleSpinner
     }
 };
 
