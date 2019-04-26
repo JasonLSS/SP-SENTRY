@@ -20,9 +20,10 @@
 #include "sp_chasis.h"
 
 #define MOTOR_ENCODER_CONVERT               (0.0439453125f)     /* Convert encoder value 0~8192 to 0~360deg */
-bool                        gimbal_inited = false;
-char  usart3_buff[256];
+
 #if defined(SP_FANTRY)
+
+
 
 #elif defined(SP_SENTRY)
 #define GM_ID               4
@@ -37,35 +38,37 @@ MOTOR_CrtlType_CAN*         gimbal_pitch_motor;
 
 extern RC_DataType recv;
 static RobotMode robotMode_ex;
+bool gimbal_inited = false;
+char usart3_buff[256];
 
-static const float yaw_kp_0 = 5000.0f;
-static const float yaw_ki_0 = 1000.0f;
-static const float yaw_kd_0 = 100.f;
+static const float yaw_kp_0 = 14000.0f;
+static const float yaw_ki_0 = 4000.0f;
+static const float yaw_kd_0 = 300.f;
 
-static const float pitch_kp_0 = 0.0f;
-static const float pitch_ki_0 = 0.f;
-static const float pitch_kd_0 = 0.f;
+static const float pitch_kp_0 = 6000.0f;
+static const float pitch_ki_0 = 2000.f;
+static const float pitch_kd_0 = 1000.f;
 
 static float yaw_limit_max = 6000.f/8192.f*2.f*PI;
 static float yaw_limit_min = -4000.f/8192.f*2.f*PI;
-static float pitch_limit_max = 1500.f/8192.f*2.f*PI;
-static float pitch_limit_min = 200.f/8192.f*2.f*PI;
+static float pitch_limit_max = 1000.f/8192.f*2.f*PI;
+static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
-static const float visual_yaw_kp = 6000.0f;
-static const float visual_yaw_ki = 1000.0f;
+static const float visual_yaw_kp = 10000.0f;
+static const float visual_yaw_ki = 4000.0f;
 static const float visual_yaw_kd = 300.f;
 
-static const float visual_pitch_kp = 0.0f;
-static const float visual_pitch_ki = 0.0f;
-static const float visual_pitch_kd = 0.0f;
+static const float visual_pitch_kp = 8000.0f;
+static const float visual_pitch_ki = 2000.0f;
+static const float visual_pitch_kd = 1000.0f;
 
-static const float cruise_yaw_kp = 6000.0f;
-static const float cruise_yaw_ki = 1000.0f;
+static const float cruise_yaw_kp = 10000.0f;
+static const float cruise_yaw_ki = 4000.0f;
 static const float cruise_yaw_kd = 300.f;
 
-static const float cruise_pitch_kp = 0.0f;
-static const float cruise_pitch_ki = 0.0f;
-static const float cruise_pitch_kd = 0.0f;
+static const float cruise_pitch_kp = 8000.0f;
+static const float cruise_pitch_ki = 2000.0f;
+static const float cruise_pitch_kd = 1000.0f;
 
 static const float yaw_cruise_speed = 20.f/8192.f*2.f*PI;//task_lss
 static const float pitch_cruise_speed = 6.f/8192.f*2.f*PI;
@@ -75,24 +78,28 @@ float yaw_limit[7]= { 0 , 1500.f/8192.f*2.f*PI, 3000.f/8192.f*2.f*PI , -1250.f/8
 
 
 #define MIDDLE_YAW          1400
-#define MIDDLE_PITCH        4000  //7620
+#define MIDDLE_PITCH        4000 
 
 void GIMBAL_ControlInit(void) {
     /* Init new motor */
-		gimbal_yaw_motor  = spMOTOR.user.enable_simple(CAN1, Motor208, RM_6623_YAW);
-    gimbal_pitch_motor = spMOTOR.user.enable_simple(CAN1, Motor205, RM_2006_P36);
-	
-		PID_ControllerInit(&spGIMBAL_Controller._target.PID.yaw, 5*PI, -1, 5000);
-		PID_ControllerInit(&spGIMBAL_Controller._target.PID.pitch, 5*PI, -1, 8000);
-	
-    spGIMBAL_Controller._target.PID.yaw.intergration_separation = PI;
-    spGIMBAL_Controller._target.PID.yaw.output_limit = 5000;
-	
-		spGIMBAL_Controller._target.PID.pitch.intergration_separation = PI;
-    spGIMBAL_Controller._target.PID.pitch.output_limit = 8000;
-	
-    PID_SetGains(&spGIMBAL_Controller._target.PID.yaw, yaw_kp_0 * 2, yaw_ki_0 * 2, yaw_kd_0);     // For init
-    PID_SetGains(&spGIMBAL_Controller._target.PID.pitch, pitch_kp_0, pitch_ki_0*2.f, pitch_kd_0);
+		gimbal_yaw_motor  = spMOTOR.user.enable(CAN1, Motor208, RM_6623_YAW, true);  
+		spMOTOR.motor.set_speed_pid(gimbal_yaw_motor, NULL);
+    
+    gimbal_yaw_motor->control.position_pid->intergration_separation = 0.5f;
+    gimbal_yaw_motor->control.position_pid->intergration_limit = 5*PI;
+    gimbal_yaw_motor->control.position_pid->output_limit = 5000;
+    PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0, yaw_ki_0, yaw_kd_0);
+    
+    gimbal_yaw_motor->control.output_limit = 5000;
+
+    gimbal_pitch_motor = spMOTOR.user.enable(CAN1, Motor205, RM_2006_P36, true);
+		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
+    gimbal_pitch_motor->control.position_pid->intergration_separation = 0.2f;
+    gimbal_pitch_motor->control.position_pid->intergration_limit = 3.f;
+    gimbal_pitch_motor->control.position_pid->output_limit = 8000;
+    PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0*2.f, pitch_kd_0);
+    
+    gimbal_pitch_motor->control.output_limit = 8000;
     
     spGIMBAL_Controller._target.gimbal_yaw_motor = gimbal_yaw_motor;
     spGIMBAL_Controller._target.gimbal_pitch_motor = gimbal_pitch_motor;
@@ -101,15 +108,9 @@ void GIMBAL_ControlInit(void) {
 
 
 void GIMBAL_ControlLooper(void) {
-		float target_yaw,target_pitch;
-		target_yaw = PID_ControllerDriver(&spGIMBAL_Controller._target.PID.yaw,GimbalController.yaw_set,gimbal_yaw_motor->state.angle);
-		target_pitch = PID_ControllerDriver(&spGIMBAL_Controller._target.PID.pitch,GimbalController.pitch_set,gimbal_pitch_motor->state.angle);
-		gimbal_yaw_motor->control.output = target_yaw;
-		gimbal_pitch_motor->control.output = target_pitch;
-		if(robotMode == STANDBY_MODE&& gimbal_inited){
-			gimbal_yaw_motor->control.output = 0;
-			gimbal_pitch_motor->control.output = 0;
-		}
+		spMOTOR.user.set_position(CAN1, Motor208, GimbalController.yaw_set);
+		spMOTOR.user.set_position(CAN1, Motor205, GimbalController.pitch_set);
+	
 		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, gimbal_pitch_motor->state.angle,
 													gimbal_yaw_motor->control.output,gimbal_pitch_motor->control.output);
 		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
@@ -145,13 +146,17 @@ void GIMBAL_State(void){
 			spGIMBAL_Controller.user.visual_pid_init(); 
 		}
 		
+		if(robotMode == STANDBY_MODE && gimbal_inited){
+			gimbal_yaw_motor->flags.stop = true;
+			gimbal_pitch_motor->flags.stop = true;
+		}else{
+			gimbal_yaw_motor->flags.stop = false;
+			gimbal_pitch_motor->flags.stop = false;
+		}
 		
 		if(robotMode == REMOTE_MODE){
 			yaw_set +=  (abs(recv.rc.ch0)<20?0:recv.rc.ch0)/15.f/1320.0f;
 			pitch_set += (abs(recv.rc.ch1)<20?0:recv.rc.ch1)/15.f/1320.0f;
-		}
-		else if(robotMode == STANDBY_MODE){
-			
 		}
 		else if(robotMode == CRUISE_MODE){
 			yaw_set += yaw_cruise_speed*yaw_direction;
@@ -241,18 +246,17 @@ bool GIMBAL_MiddleLooper(uint32_t tick) {
     static uint16_t pass_flag = 0;
     if(pass_flag >= 800) {
         gimbal_pitch_motor->state.angle = 0;
-        GimbalController.pitch_set = 0;
-        spGIMBAL_Controller._target.PID.pitch.Kp = pitch_kp_0;
-        spGIMBAL_Controller._target.PID.pitch.Ki = pitch_ki_0;
+        gimbal_pitch_motor->control.target = 0;
+        gimbal_pitch_motor->control.position_pid->Kp = pitch_kp_0;
+        gimbal_pitch_motor->control.position_pid->Ki = pitch_ki_0;
         
         gimbal_yaw_motor->state.angle = 0;
-				GimbalController.yaw_set = 0;
-        spGIMBAL_Controller._target.PID.yaw.Kp = yaw_kp_0;
-        spGIMBAL_Controller._target.PID.yaw.Ki = yaw_ki_0;
+        gimbal_yaw_motor->control.target = 0;
+        gimbal_yaw_motor->control.position_pid->Kp = yaw_kp_0;
+        gimbal_yaw_motor->control.position_pid->Ki = yaw_ki_0;
 				gimbal_inited = true;
         return true;
     } else {
-        //if(abs(gimbal_pitch_motor->state.__motor_angel_curr - MIDDLE_PITCH)<5.f/0.0439f &&
         if(abs(gimbal_yaw_motor->state.__motor_angel_curr - MIDDLE_YAW)<1.f/0.0439f ) {
             pass_flag ++;
         } else {
@@ -273,20 +277,20 @@ bool GIMBAL_MiddleLooper(uint32_t tick) {
 
 void GIMBAL_PID_Init(void)
 {
-	PID_SetGains(&spGIMBAL_Controller._target.PID.yaw, yaw_kp_0, yaw_ki_0, yaw_kd_0); 
-	PID_SetGains(&spGIMBAL_Controller._target.PID.pitch, pitch_kp_0, pitch_ki_0, pitch_kd_0);
+	PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0, yaw_ki_0, yaw_kd_0); 
+	PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0, pitch_kd_0);
 }
 
 void GIMBAL_VISUAL_PID_Init(void)
 {
-	PID_SetGains(&spGIMBAL_Controller._target.PID.yaw, visual_yaw_kp, visual_yaw_ki, visual_yaw_kd);
-	PID_SetGains(&spGIMBAL_Controller._target.PID.pitch, visual_pitch_kp, visual_pitch_ki, visual_pitch_kd);
+	PID_SetGains(gimbal_yaw_motor->control.position_pid, visual_yaw_kp, visual_yaw_ki, visual_yaw_kd);
+	PID_SetGains(gimbal_pitch_motor->control.position_pid, visual_pitch_kp, visual_pitch_ki, visual_pitch_kd);
 }
 
 void GIMBAL_CRUISE_PID_Init(void)
 {
-	PID_SetGains(&spGIMBAL_Controller._target.PID.yaw, cruise_yaw_kp, cruise_yaw_ki, cruise_yaw_kd);
-	PID_SetGains(&spGIMBAL_Controller._target.PID.pitch, cruise_pitch_kp, cruise_pitch_ki, cruise_pitch_kd);
+	PID_SetGains(gimbal_yaw_motor->control.position_pid, visual_yaw_kp, visual_yaw_ki, visual_yaw_kd);
+	PID_SetGains(gimbal_pitch_motor->control.position_pid, visual_pitch_kp, visual_pitch_ki, visual_pitch_kd);
 }
 
 #endif
