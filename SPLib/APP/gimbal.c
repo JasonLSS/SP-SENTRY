@@ -41,9 +41,9 @@ static RobotMode robotMode_ex;
 bool gimbal_inited = false;
 char usart3_buff[256];
 
-static const float yaw_kp_0 = 14000.0f;
-static const float yaw_ki_0 = 4000.0f;
-static const float yaw_kd_0 = 300.f;
+static const float yaw_kp_0 = 17000.0f;
+static const float yaw_ki_0 = 1000.0f;
+static const float yaw_kd_0 = 800.f;
 
 static const float pitch_kp_0 = 6000.0f;
 static const float pitch_ki_0 = 2000.f;
@@ -54,17 +54,17 @@ static float yaw_limit_min = -4000.f/8192.f*2.f*PI;
 static float pitch_limit_max = 1000.f/8192.f*2.f*PI;
 static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
-static const float visual_yaw_kp = 10000.0f;
-static const float visual_yaw_ki = 4000.0f;
-static const float visual_yaw_kd = 300.f;
+static const float visual_yaw_kp = 15000.0f;
+static const float visual_yaw_ki = 2000.0f;
+static const float visual_yaw_kd = 800.f;
 
 static const float visual_pitch_kp = 8000.0f;
 static const float visual_pitch_ki = 2000.0f;
 static const float visual_pitch_kd = 1000.0f;
 
 static const float cruise_yaw_kp = 10000.0f;
-static const float cruise_yaw_ki = 4000.0f;
-static const float cruise_yaw_kd = 300.f;
+static const float cruise_yaw_ki = 2000.0f;
+static const float cruise_yaw_kd = 100.f;
 
 static const float cruise_pitch_kp = 8000.0f;
 static const float cruise_pitch_ki = 2000.0f;
@@ -289,8 +289,8 @@ void GIMBAL_VISUAL_PID_Init(void)
 
 void GIMBAL_CRUISE_PID_Init(void)
 {
-	PID_SetGains(gimbal_yaw_motor->control.position_pid, visual_yaw_kp, visual_yaw_ki, visual_yaw_kd);
-	PID_SetGains(gimbal_pitch_motor->control.position_pid, visual_pitch_kp, visual_pitch_ki, visual_pitch_kd);
+	PID_SetGains(gimbal_yaw_motor->control.position_pid, cruise_yaw_kp, cruise_yaw_ki, cruise_yaw_kd);
+	PID_SetGains(gimbal_pitch_motor->control.position_pid, cruise_pitch_kp, cruise_pitch_ki, cruise_pitch_kd);
 }
 
 #endif
