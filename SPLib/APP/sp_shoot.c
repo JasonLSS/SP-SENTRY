@@ -34,7 +34,7 @@
 #define DELTA_TIME                     0.01f
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
 
-static const float Feed_SPEED = 10.f;//task_lss
+float Feed_SPEED = 20.f;//task_lss
 
 static uint16_t max_shoot_speed = 40;//task_lss
 static int Shoot_Cooling_Time = 10;//task_lss
