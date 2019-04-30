@@ -51,19 +51,19 @@ static const float pitch_kd_0 = 1000.f;
 
 static float yaw_limit_max = 6000.f/8192.f*2.f*PI;
 static float yaw_limit_min = -4000.f/8192.f*2.f*PI;
-static float pitch_limit_max = 1000.f/8192.f*2.f*PI;
+static float pitch_limit_max = 2000.f/8192.f*2.f*PI;
 static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
-static const float visual_yaw_kp = 15000.0f;
-static const float visual_yaw_ki = 2000.0f;
-static const float visual_yaw_kd = 800.f;
+static const float visual_yaw_kp = 7000.0f;
+static const float visual_yaw_ki = 500.0f;
+static const float visual_yaw_kd = 100.f;
 
 static const float visual_pitch_kp = 8000.0f;
 static const float visual_pitch_ki = 2000.0f;
 static const float visual_pitch_kd = 1000.0f;
 
-static const float cruise_yaw_kp = 10000.0f;
-static const float cruise_yaw_ki = 2000.0f;
+static const float cruise_yaw_kp = 7000.0f;
+static const float cruise_yaw_ki = 500.0f;
 static const float cruise_yaw_kd = 100.f;
 
 static const float cruise_pitch_kp = 8000.0f;
@@ -73,8 +73,8 @@ static const float cruise_pitch_kd = 1000.0f;
 static const float yaw_cruise_speed = 20.f/8192.f*2.f*PI;//task_lss
 static const float pitch_cruise_speed = 6.f/8192.f*2.f*PI;
 
-float yaw_limit[7]= { 0 , 1500.f/8192.f*2.f*PI, 3000.f/8192.f*2.f*PI , -1250.f/8192.f*2.f*PI , 
-											-2500.f/8192.f*2.f*PI , -3750.f/8192.f*2.f*PI , -5000.f/8192.f*2.f*PI };//!!!!!!
+float yaw_limit[7]= { -1365.3f*2/8192.f*2.f*PI , -1365.3f/8192.f*2.f*PI, 0.f/8192.f*2.f*PI , 1365.3f/8192.f*2.f*PI , 
+											1365.3f*2/8192.f*2.f*PI , 1365.3f*3/8192.f*2.f*PI ,1365.3f*4/8192.f*2.f*PI };//!!!!!!
 
 
 #define MIDDLE_YAW          1400
@@ -121,29 +121,29 @@ void GIMBAL_State(void){
 		static float pitch_set = 0;
 		static int yaw_direction = 1;
 		static int pitch_direction = 1;
-		int id; 
+		int id = 6;
 		if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
+			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
 			spGIMBAL_Controller.user.pid_init();
-			id = 0;
 		}
 		if(robotMode == CRUISE_MODE && robotMode^robotMode_ex){
 			yaw_direction = 1;
 			pitch_direction = 1;
+			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
 			spGIMBAL_Controller.user.cruise_pid_init(); 
-			id = 0;
 		}
 		if(robotMode == ESCAPE_MODE && robotMode^robotMode_ex){
+			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
 			spGIMBAL_Controller.user.cruise_pid_init(); 
-			id = 0;
 		}
 		if(robotMode == STATIC_ATTACK_MODE && robotMode^robotMode_ex){
-			spGIMBAL_Controller.user.visual_pid_init(); 
+			spGIMBAL_Controller.user.cruise_pid_init(); 
 		}
 		if(robotMode == DYNAMIC_ATTACK_MODE && robotMode^robotMode_ex){
-			spGIMBAL_Controller.user.visual_pid_init(); 
+			spGIMBAL_Controller.user.cruise_pid_init(); 
 		}
 		if(robotMode == ESCAPE_ATTACK_MODE && robotMode^robotMode_ex){
-			spGIMBAL_Controller.user.visual_pid_init(); 
+			spGIMBAL_Controller.user.cruise_pid_init(); 
 		}
 		
 		if(robotMode == STANDBY_MODE && gimbal_inited){
@@ -154,6 +154,7 @@ void GIMBAL_State(void){
 			gimbal_pitch_motor->flags.stop = false;
 		}
 		
+		id = enemy_area;
 		if(robotMode == REMOTE_MODE){
 			yaw_set +=  (abs(recv.rc.ch0)<20?0:recv.rc.ch0)/15.f/1320.0f;
 			pitch_set += (abs(recv.rc.ch1)<20?0:recv.rc.ch1)/15.f/1320.0f;
@@ -166,29 +167,33 @@ void GIMBAL_State(void){
 			
 		}
 		else if(robotMode == STATIC_ATTACK_MODE){	
-			id = enemy_area;
 			if(if_if_newframe){
+					spGIMBAL_Controller.user.visual_pid_init(); 
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f;
 					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
-					id = 0;
+					id = 6;
 			}
 			else{
+					spGIMBAL_Controller.user.cruise_pid_init(); 
+					spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
 					yaw_set += yaw_cruise_speed*yaw_direction;
 			}
 		}
 		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE){
-			id = enemy_area;
 			if(if_if_newframe){
+					spGIMBAL_Controller.user.visual_pid_init(); 
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f + chasis_speed * -0.0066666f;//task_lss
 					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
-					id = 0;
+					id = 6;
 			}
 			else{
+					spGIMBAL_Controller.user.cruise_pid_init(); 
+					spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
 					yaw_set += yaw_cruise_speed*yaw_direction;
 			}
 		}
 
-		spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
+		
 
 		if(yaw_set >= yaw_limit_max)
 			yaw_direction = -1;
@@ -232,13 +237,13 @@ void GIMBAL_Update_Limit(float target_pitch, float target_yaw)  {
 
 void GIMBAL_Update_enemy_Location(int id){
 		switch(id){
-			case 0:yaw_limit_min = -4000.f/8192.f*2.f*PI;yaw_limit_max = 6000.f/8192.f*2.f*PI;break;
+			case 6:yaw_limit_min = -4000.f/8192.f*2.f*PI;yaw_limit_max = 6000.f/8192.f*2.f*PI;break;
+			case 0:yaw_limit_min = yaw_limit[0];yaw_limit_max = yaw_limit[1];break;
 			case 1:yaw_limit_min = yaw_limit[1];yaw_limit_max = yaw_limit[2];break;
-			case 2:yaw_limit_min = yaw_limit[0];yaw_limit_max = yaw_limit[1];break;
-			case 3:yaw_limit_min = yaw_limit[3];yaw_limit_max = yaw_limit[0];break;
-			case 4:yaw_limit_min = yaw_limit[4];yaw_limit_max = yaw_limit[3];break;
-			case 5:yaw_limit_min = yaw_limit[5];yaw_limit_max = yaw_limit[4];break;
-			case 6:yaw_limit_min = yaw_limit[6];yaw_limit_max = yaw_limit[5];break;
+			case 2:yaw_limit_min = yaw_limit[2];yaw_limit_max = yaw_limit[3];break;
+			case 3:yaw_limit_min = yaw_limit[3];yaw_limit_max = yaw_limit[4];break;
+			case 4:yaw_limit_min = yaw_limit[4];yaw_limit_max = yaw_limit[5];break;
+			case 5:yaw_limit_min = yaw_limit[5];yaw_limit_max = yaw_limit[6];break;
 		}
 }
 

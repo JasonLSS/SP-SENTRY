@@ -300,19 +300,21 @@ void TASK_ControlLooper() {
 						spCHASIS._system.looper(task_counter, &recv);
 				#endif
 				static RC_DataType recv_ex;
+				static uint16_t remain_HP;
 				static uint16_t remain_HP_ex;
         if(task_counter%10 == 1) {
 						if(recv.rc.s2==RC_SW_UP) {
 								if(recv.rc.s1==RC_SW_MID) {
 										robotMode = CRUISE_MODE;
 								} else if(recv.rc.s1==RC_SW_DOWN){
-										robotMode = ESCAPE_MODE;
+										robotMode = DYNAMIC_ATTACK_MODE;
 								}else if(recv.rc.s1==RC_SW_UP){
 										//all auto mode
 										static bool attacked = 0;
-										float attacked_time = 0;
-										if(remain_HP_ex - ext_game_robot_state.remain_HP < 0){//task_lss
-												attacked_time = 100;
+										static float attacked_time = 0;
+										remain_HP = ext_game_robot_state.remain_HP;
+										if(remain_HP_ex > remain_HP){
+												attacked_time = 200;
 												attacked = 1;
 										}
 										if(attacked_time == 0 )
@@ -320,19 +322,19 @@ void TASK_ControlLooper() {
 										else
 												attacked_time--;
 										//task_lss
-										if(enemy_area == 0 && !attacked)
+										if(enemy_area == 6 && !attacked)
 											robotMode = CRUISE_MODE;
-										if(ext_game_robot_state.remain_HP > 300 && enemy_area != 0)
+										if(ext_game_robot_state.remain_HP > 300 && enemy_area != 6)
 											robotMode = DYNAMIC_ATTACK_MODE;
-				 						if(ext_game_robot_state.remain_HP > 500 && enemy_area != 0 && !attacked)
+				 						if(ext_game_robot_state.remain_HP > 500 && enemy_area != 6 && !attacked)
 											robotMode = STATIC_ATTACK_MODE;
 										if(ext_game_robot_state.remain_HP < 300 && 
-											 ext_game_robot_state.remain_HP > 100 && enemy_area != 0)
+											 ext_game_robot_state.remain_HP > 100 && enemy_area != 6)
 											robotMode = ESCAPE_ATTACK_MODE;
-										if((enemy_area == 0 ||ext_game_robot_state.remain_HP < 100)&& attacked)
+										if((enemy_area == 6 ||ext_game_robot_state.remain_HP < 100)&& attacked)
 											robotMode = ESCAPE_MODE;
 										
-										remain_HP_ex = ext_game_robot_state.remain_HP;
+										remain_HP_ex = remain_HP;
 								}
 						} else if(recv.rc.s2==RC_SW_DOWN) {  
 								// hand operation mode

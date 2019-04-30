@@ -22,7 +22,7 @@ frame frame_visual;
 int     if_newframe = 0;
 int     if_if_newframe = 0;
 
-uint8_t enemy_area = 0;
+uint8_t enemy_area = 6;
 uint8_t enemy_empty_area = 0;
 
 float last_pitch = 0;
@@ -60,20 +60,20 @@ void Auto_aim(u8 *rx_buf,int len)
 		//task
 		if(if_newframe == 1) {
 				frame_visual = fram;
-				for(int i = 0;i<8;i++){
-					int a = 0;
-					memcpy((uint8_t*)&a,&fram.extra[0] + i, 1);
-					if(a > 0 && i < 6)
-						enemy_area = i + 1;
-					else if(a > 0 && i == 6)
-						enemy_area = 0;
-					else if(a > 0 && i == 7)
-						if_if_newframe = 1;
-					else if(a == 0 && i == 7)
-						if_if_newframe = 0;
-					memcpy((uint8_t*)&a,&fram.extra[1] + i, 1);
-					if(a > 0 && i < 6)
-						enemy_empty_area = i + 1;
+				enemy_area = (int)(fram.extra[1] & 0xf0) >> 4;
+				enemy_empty_area = (int)(fram.extra[1] & 0x0f);
+			
+				if(fram.extra[0] == 4){
+					if_if_newframe = 0;auto_aim_flag = 0;
+				}
+				else if(fram.extra[0] == 5){
+					if_if_newframe = 1;auto_aim_flag = 0;
+				}
+				else if(fram.extra[0] == 7){
+					if_if_newframe = 1;auto_aim_flag = 1;
+				}
+				else{
+					if_if_newframe = 0;auto_aim_flag = 0;
 				}
 				
 				if(fabs(fram.yaw) < yaw_aim_limit && fabs(fram.pitch) < pitch_aim_limit)

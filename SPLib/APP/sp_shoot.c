@@ -36,8 +36,8 @@
 
 float Feed_SPEED = 20.f;//task_lss
 
-static uint16_t max_shoot_speed = 40;//task_lss
-static int Shoot_Cooling_Time = 10;//task_lss
+static uint16_t max_shoot_speed = 60;//task_lss
+static int Shoot_Cooling_Time = 200;//task_lss
 static int Cooling_tickets = 10;
 
 PWMFriction_Type    Friction_CH1;
@@ -474,6 +474,21 @@ void Shooting_Control_Looper (void){
 					shootState = Shoot_ON;
 				else
 					shootState = Shoot_OFF;
+				//task_lss
+				if(ext_power_heat_data.shooter_heat0 > 250){
+					shootState = Shoot_OFF;
+					Cooling_tickets = 0;
+				}
+				if(ext_power_heat_data.shooter_heat0 == 0){
+					Cooling_tickets = Shoot_Cooling_Time;
+				}
+				if(Cooling_tickets < Shoot_Cooling_Time){
+					shootState = Shoot_OFF;
+					Cooling_tickets++;
+				}
+				else if(Cooling_tickets > 10000)
+					Cooling_tickets = Shoot_Cooling_Time;
+				
 			}
 			else if(recv.rc.s2==RC_SW_UP){
 				if(recv.rc.s1==RC_SW_DOWN)
@@ -486,9 +501,12 @@ void Shooting_Control_Looper (void){
 					else
 						shootState = Shoot_OFF;
 					//task_lss
-					if(ext_power_heat_data.shooter_heat0 > 1){
+					if(ext_power_heat_data.shooter_heat0 > 250){
 						shootState = Shoot_OFF;
 						Cooling_tickets = 0;
+					}
+					if(ext_power_heat_data.shooter_heat0 == 0){
+						Cooling_tickets = Shoot_Cooling_Time;
 					}
 					if(Cooling_tickets < Shoot_Cooling_Time){
 						shootState = Shoot_OFF;

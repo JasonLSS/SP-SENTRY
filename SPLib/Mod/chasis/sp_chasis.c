@@ -227,22 +227,27 @@ int IfUsingPowerBuffer(void){
 
 int Enemy_Location(void){
 	int Left = 25, Right = -25;
-  if(enemy_area == 1 || enemy_area == 2 || enemy_area == 6){
+  if(enemy_area == 1 || enemy_area == 3)
 		return Left;
-	}
-	else if(enemy_area == 0)
+	else if(enemy_area == 6)
 		return 0;
-	else return Right;
+	else if(enemy_area == 2 || enemy_area == 5)
+		return Right;
+	else
+		return 0;
 }
 
 int Empty_Location(void){
 	int Left = -50, Right = 50;
-  if(enemy_empty_area == 1 || enemy_empty_area == 2 || enemy_empty_area == 6){
+  if(enemy_empty_area == 1 || enemy_empty_area == 3){
 		return Left;
 	}
-	else if(enemy_area == 0)
+	else if(enemy_empty_area == 6)
 		return 0;
-	else return Right;
+	else if(enemy_empty_area == 2 || enemy_empty_area == 5)
+		return Right;
+	else
+		return 0;
 }
 
 float Speed_Change_Limit(float speed){                        
