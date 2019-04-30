@@ -24,7 +24,6 @@
 #if defined(SP_FANTRY)
 
 
-
 #elif defined(SP_SENTRY)
 #define GM_ID               4
 
