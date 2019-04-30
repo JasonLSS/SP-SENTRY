@@ -9,7 +9,7 @@ extern u8 sendbuffer[100];
 typedef struct _frame //视觉发来的数据框架    
 {
     u8 head[2];        //帧头，为0xffff
-    u32 timestamp;//包序号
+    u16 timestamp;//包序号
     float yaw;      //yaw误差值
     float pitch;  //pitch误差值
     u8 extra[2]; //additional imformation    
