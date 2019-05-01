@@ -85,7 +85,7 @@ void GIMBAL_ControlInit(void) {
 		spMOTOR.motor.set_speed_pid(gimbal_yaw_motor, NULL);
     
     gimbal_yaw_motor->control.position_pid->intergration_separation = 0.5f;
-    gimbal_yaw_motor->control.position_pid->intergration_limit = 5*PI;
+    gimbal_yaw_motor->control.position_pid->intergrations_sum_error_limit = 5*PI;
     gimbal_yaw_motor->control.position_pid->output_limit = 5000;
     PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0, yaw_ki_0, yaw_kd_0);
     
@@ -94,7 +94,7 @@ void GIMBAL_ControlInit(void) {
     gimbal_pitch_motor = spMOTOR.user.enable(CAN1, Motor205, RM_2006_P36, true);
 		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
     gimbal_pitch_motor->control.position_pid->intergration_separation = 0.2f;
-    gimbal_pitch_motor->control.position_pid->intergration_limit = 3.f;
+    gimbal_pitch_motor->control.position_pid->intergrations_sum_error_limit = 3.f;
     gimbal_pitch_motor->control.position_pid->output_limit = 8000;
     PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0*2.f, pitch_kd_0);
     
@@ -122,17 +122,17 @@ void GIMBAL_State(void){
 		static int pitch_direction = 1;
 		int id = 6;
 		if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
-			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
+			spGIMBAL_Controller.user.update_enemy_location(6);
 			spGIMBAL_Controller.user.pid_init();
 		}
 		if(robotMode == CRUISE_MODE && robotMode^robotMode_ex){
 			yaw_direction = 1;
 			pitch_direction = 1;
-			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
+			spGIMBAL_Controller.user.update_enemy_location(6);
 			spGIMBAL_Controller.user.cruise_pid_init(); 
 		}
 		if(robotMode == ESCAPE_MODE && robotMode^robotMode_ex){
-			spGIMBAL_Controller.user.update_enemy_location(6);//task_lss
+			spGIMBAL_Controller.user.update_enemy_location(6);
 			spGIMBAL_Controller.user.cruise_pid_init(); 
 		}
 		if(robotMode == STATIC_ATTACK_MODE && robotMode^robotMode_ex){
@@ -174,7 +174,7 @@ void GIMBAL_State(void){
 			}
 			else{
 					spGIMBAL_Controller.user.cruise_pid_init(); 
-					spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
+					spGIMBAL_Controller.user.update_enemy_location(id);
 					yaw_set += yaw_cruise_speed*yaw_direction;
 			}
 		}
@@ -187,7 +187,7 @@ void GIMBAL_State(void){
 			}
 			else{
 					spGIMBAL_Controller.user.cruise_pid_init(); 
-					spGIMBAL_Controller.user.update_enemy_location(id);//task_lss
+					spGIMBAL_Controller.user.update_enemy_location(id);
 					yaw_set += yaw_cruise_speed*yaw_direction;
 			}
 		}

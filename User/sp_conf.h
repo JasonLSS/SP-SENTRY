@@ -154,12 +154,12 @@
 //  <h> Test Module Select
 //  <c1> USING_SENTRY_CHASIS
 //    <i> USING_SENTRY_CHASIS
-//#define USING_SENTRY_CHASIS
+#define USING_SENTRY_CHASIS
 //  </c>
 
 //  <c1> USING_SPEEDBALANCE
 //    <i> USING_SPEEDBALANCE
-//#define USING_SPEED_BALANCE
+#define USING_SPEED_BALANCE
 //  </c>
 
 //  <c1> USING_FRICTION
@@ -177,16 +177,12 @@
 #define CHASIS_POWER_LIMIT
 //  </c>
 
-//  <c1> USING_CHASIS
-//    <i> USING chasis part
-//#define USING_CHASIS
-//  </c>
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
 #define USING_GIMBAL_MODE       1
 //  <c1> USING_USB
 //    <i> Enable USB
-//#define USING_USB
+#define USING_USB
 //  </c>
 //  <c1> USING_OS
 //    <i> Enable FreeRTOS

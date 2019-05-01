@@ -138,6 +138,10 @@ extern struct IMU_Controllers_Type {
           * @param  mag: 3*1 magnetnometer output array
           */
         void (*read_stream)(float* gyro, float* accel, float* temp, float* mag);
+        /** 
+          * @brief  Update IMU data and make pose resolving.
+          */
+        void (*update)(void);
     } operations;
 
     /** 

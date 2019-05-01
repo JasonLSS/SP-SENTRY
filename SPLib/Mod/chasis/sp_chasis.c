@@ -17,7 +17,7 @@
 #include "sp_sensor.h"
 #include "sp_conf.h"
 #include "sp_shoot.h"
-#include "RefereeInfo.h"
+#include "referee.h"
 #include "sp_rng.h"
 #include "Auto_aim.h"
 #include "infrared.h"

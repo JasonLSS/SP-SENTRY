@@ -105,7 +105,10 @@ struct {
 };
 
 void Autoaim_Init(void) {
-    USART_RX_Config(USART2, 115200);
+#ifdef USING_USB
+		USB_RegisteCallback(USB_Cb);
+#else
+		USART_RX_Config(USART2, 115200);
     DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer.buffer, view_buffer.buffer.size, false);
     USART_TX_Config(USART2, 115200);
     DMA_USART_TX_Config(USART2);
@@ -113,7 +116,8 @@ void Autoaim_Init(void) {
     spIRQ.registe(USART2_IRQn, USART_IT_IDLE, Autoaim_USART_Interface);
     USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
     USART_Cmd(USART2, ENABLE);
-    sendtoComputerInit();
+#endif
+		
 }
 
 void Autoaim_USART_Interface(void) {
@@ -128,5 +132,10 @@ void Autoaim_USART_Interface(void) {
     Auto_aim(view_buffer.buffer.buffer, size);
     
 }
+
+void USB_Cb(uint8_t* buf, uint32_t len) {
+    Auto_aim(buf, len);
+}
+
 
 

@@ -31,7 +31,7 @@
 #include "sp_shoot.h"
 #include "sp_sensor.h"
 #include "sp_chasis.h"
-#include "RefereeInfo.h"
+#include "referee.h"
 #include "infrared.h"
 
 /** @addtogroup SP
@@ -225,9 +225,9 @@ void TASK_GlobalInit() {
         DMA_USART_RX_Config(USART3, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
         USART_ITConfig(USART3, USART_IT_IDLE, ENABLE);
         USART_Cmd(USART3, ENABLE);
-
+#ifndef USING_USB
         Autoaim_Init();
-				
+#endif				
 				IIC_Init();
 				Infrared_Init();
 				
@@ -239,9 +239,7 @@ void TASK_GlobalInit() {
     {
 				spMOTOR._system.init();
 			
-#ifdef CHASIS_POWER_LIMIT
-				init_referee_info();
-#endif
+				referee_init();
 			
 				/* Enable Remote Controller Receiver */
 				RC_ReceiverInit();
@@ -255,6 +253,7 @@ void TASK_GlobalInit() {
 
 #ifdef USING_USB
 				USB_TaskInit();
+				Autoaim_Init();
 #endif
     }
 

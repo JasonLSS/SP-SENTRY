@@ -15,7 +15,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_shoot.h"
 #include "Auto_aim.h"
-#include "RefereeInfo.h"
+#include "referee.h"
 
 /** @addtogroup SP
   * @{
@@ -34,10 +34,10 @@
 #define DELTA_TIME                     0.01f
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
 
-float Feed_SPEED = 20.f;//task_lss
+float Feed_SPEED = 20.f;
 
-static uint16_t max_shoot_speed = 60;//task_lss
-static int Shoot_Cooling_Time = 200;//task_lss
+static uint16_t max_shoot_speed = 60;
+static int Shoot_Cooling_Time = 200;
 static int Cooling_tickets = 10;
 
 PWMFriction_Type    Friction_CH1;
@@ -326,14 +326,12 @@ void Friction_Init(void) {
     Friction_CH1.pid.Ki = Friction_SPEED_i;
     Friction_CH1.pid.Kd = Friction_SPEED_d;
     Friction_CH1.pid.intergration_separation = 20.f;
-    Friction_CH1.pid.functions.output_filter = MovingAverageFilter_f32;
     
     PID_ControllerInit(&Friction_CH2.pid, Friction_INTE_limitI, (uint16_t)-1, 160);
     Friction_CH2.pid.Kp = Friction_SPEED_p;
     Friction_CH2.pid.Ki = Friction_SPEED_i;
     Friction_CH2.pid.Kd = Friction_SPEED_d;
     Friction_CH2.pid.intergration_separation = 20.f;
-    Friction_CH2.pid.functions.output_filter = MovingAverageFilter_f32;
 }
 
 
@@ -387,7 +385,7 @@ void Shooting_Control_Init (void){
 					motor203->control.speed_pid->Kp = 500.0f;
 					motor203->control.speed_pid->Ki = 0.0f;
 					motor203->control.speed_pid->Kd = 1.f;
-					motor203->control.speed_pid->intergration_limit = 5*PI;
+					motor203->control.speed_pid->intergrations_sum_error_limit = 5*PI;
 					motor203->control.speed_pid->intergration_separation = PI;
 					motor203->control.output_limit = 9000;
 					Feed_motor = motor203;
@@ -474,7 +472,7 @@ void Shooting_Control_Looper (void){
 					shootState = Shoot_ON;
 				else
 					shootState = Shoot_OFF;
-				//task_lss
+				
 				if(ext_power_heat_data.shooter_heat0 > 250){
 					shootState = Shoot_OFF;
 					Cooling_tickets = 0;
@@ -500,7 +498,7 @@ void Shooting_Control_Looper (void){
 						shootState = Shoot_ON;
 					else
 						shootState = Shoot_OFF;
-					//task_lss
+					
 					if(ext_power_heat_data.shooter_heat0 > 250){
 						shootState = Shoot_OFF;
 						Cooling_tickets = 0;

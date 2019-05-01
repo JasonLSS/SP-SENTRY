@@ -23,7 +23,8 @@ uint8_t mpu_data_buffer[64] = {0x00};
 #define INTERNAL_SAMPRATE           1000
 
 const float ACCEL_SEN = 16384.0f;   //
-const float GYRO_SEN = 1880.0f;     //  
+//const float GYRO_SEN = 1880.0f;     //  
+const float GYRO_SEN = spMATH_RAD2DEG(65.0f);     //  
 const float MAG_SEN = 0.3f;         //
 
 
@@ -255,7 +256,7 @@ void MPU6500_Stream(float* gyro, float* accel, float* temp, float* mag){
     if(mag) ist8310_get_data(mag);
 }
 
-static uint8 len = 12;
+static uint8_t len = 12;
 uint16_t MPU6500_Read_FIFO_Stream(short* gyro, short* accel){
     MPU_Read(MPU_FIFO_R_W, mpu_data_buffer, len);
     accel[0] = (short)(((mpu_data_buffer[0])<<8)|mpu_data_buffer[1]);
@@ -284,18 +285,6 @@ int MPU6500_Init(void) {
     extern void SPI5_Init(void);
     SPI5_Init();
 //    SPI5_DMA();
-    
-    /* Condif EXIT for MPU interrupt */
-    spRCC_Set_SYSCFG();
-    spGPIO.input_config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
-    EXTI_InitTypeDef            exit_initer;
-    exit_initer.EXTI_Line       = EXTI_Line8;
-    exit_initer.EXTI_LineCmd    = ENABLE;
-    exit_initer.EXTI_Mode       = EXTI_Mode_Interrupt;
-    exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;
-    EXTI_Init(&exit_initer);
-//    NVIC_IRQEnable(EXTI9_5_IRQn, 1, 3);
 
 //    uint8_t i = 16;
 //    mpu_data_buffer[d++] = MPU_ReadByte(MPU_PWR_MGMT_1);delay_ms(10);
@@ -425,10 +414,60 @@ int MPU6500_Init(void) {
     
     for(uint8_t i=0; i<sizeof(IMU_Controllers.imu_state.kalman.pass_filter.lpf)/
         sizeof(IMU_Controllers.imu_state.kalman.pass_filter.lpf[0]); i++) {
-        LPF_FirstOrder_Init(IMU_Controllers.imu_state.kalman.pass_filter.lpf+i, 10.f, 200.f); 
+        LPF_FirstOrder_Init(IMU_Controllers.imu_state.kalman.pass_filter.lpf+i, 10.f, DEFAULT_MPU_HZ); 
     }
     
+    /* Condif EXIT for MPU interrupt */
+    spRCC_Set_SYSCFG();
+    spGPIO.input_config(GPIOB, GPIO_Pin_8, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, GPIO_PinSource8); 
+    EXTI_InitTypeDef            exit_initer;
+    exit_initer.EXTI_Line       = EXTI_Line8;
+    exit_initer.EXTI_LineCmd    = ENABLE;
+    exit_initer.EXTI_Mode       = EXTI_Mode_Interrupt;
+    exit_initer.EXTI_Trigger    = EXTI_Trigger_Rising;
+    EXTI_Init(&exit_initer);
+    /* Registe IMU update callback */
+    spIRQ.registe(EXTI9_5_IRQn, NULL, IMU_Controllers.operations.update);
+    
     return result;
+}
+
+void IMU_Update(void){
+    // Read IMU
+    //mag: -37.8 37.2 42.5
+    IMU_Controllers.operations.read_stream(
+        IMU_Controllers.imu_state.ahrs.gyro, 
+        IMU_Controllers.imu_state.ahrs.accel_0,
+        &IMU_Controllers.imu_state.ahrs.temp, 
+        IMU_Controllers.imu_state.ahrs.mag);
+    
+    if(IMU_Controllers.imu_state.kalman.pass_filter.lpf_enbale) {
+        IMU_Controllers.imu_state.ahrs.accel[0] = 
+            LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+0,
+            IMU_Controllers.imu_state.ahrs.accel_0[0]);
+        IMU_Controllers.imu_state.ahrs.accel[1] = 
+            LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+1,
+            IMU_Controllers.imu_state.ahrs.accel_0[1]);
+        IMU_Controllers.imu_state.ahrs.accel[2] = 
+            LPF_FirstOrder_filter(IMU_Controllers.imu_state.kalman.pass_filter.lpf+2,
+            IMU_Controllers.imu_state.ahrs.accel_0[2]);
+    }
+    
+    float time = TASK_GetSecond();
+    float dt = time - IMU_Controllers.imu_state.timestamp;
+    IMU_Controllers.imu_state.freq = 1.f/dt;
+    if(!IMU_Controllers.imu_state.inited) {
+        IMU_Controllers.imu_state.inited = true;
+    } else {
+        KalmanFilter(&IMU_Controllers.imu_state.kalman,
+            IMU_Controllers.imu_state.ahrs.gyro,
+            IMU_Controllers.imu_state.ahrs.accel, 
+            IMU_Controllers.imu_state.ahrs.mag, dt);
+    }
+    // Make log
+    IMU_Controllers.imu_state.timestamp = time;
+    IMU_Controllers.imu_state.count ++;
 }
 
 
@@ -438,28 +477,28 @@ struct IMU_Controllers_Type IMU_Controllers = {
         .init = MPU6500_Init,
         .fifo_reset = MPU6500_Reset_FIFO,
         .fifo_read_stream = MPU6500_Read_FIFO_Stream,
-        .read_stream = MPU6500_Stream
+        .read_stream = MPU6500_Stream,
+        .update = IMU_Update
     },
     .imu_state.kalman.param = {
         .xk= {
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
+            0, 0, 0, 0
         },
         .pk= {
-            1.f, 0, 0,
-            0, 1.f, 0,
-            0, 0, 1.f,
+            1.f, 0, 0, 0,
+            0, 1.f, 0, 0,
+            0, 0, 1.f, 0,
+            0, 0, 0, 1.f,
         },
         .R= {
-            0.5f, 0, 0,
-            0, 0.5f, 0,
-            0, 0, 0.05f,
+            0.5f, 0,
+            0, 0.5f,
         },
         .Q= {
-            0.005f, 0, 0,
-            0, 0.005f, 0,
-            0, 0, 0.01f
+            0.05f, 0, 0, 0,
+            0, 0.05f, 0, 0,
+            0, 0, 0.05f, 0,
+            0, 0, 0, 0.05f,
         },
     },
     .imu_state.kalman.pass_filter = {

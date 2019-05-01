@@ -57,10 +57,10 @@ typedef struct {
     
     float intergration_separation;
     
-    float differential_limit;            /* Limit of differential term. */
-    float intergration_limit;            /* Limit of intergration term. */
-    float output_limit;                  /* Limit of output value. */
-    float delta_limit;                   /* Limit of output increment. */
+    float differential_limit;               /* Limit of differential term. */
+    float intergrations_sum_error_limit;    /* Limit of intergration sum error. */
+    float output_limit;                     /* Limit of output value. */
+    float delta_limit;                      /* Limit of output increment. */
     
     struct {
         uint8_t     target_changed:1;
@@ -119,10 +119,8 @@ void PID_SetTarget(PID_Type* pid, float target);
   */ 
 void PID_SetGains(PID_Type* pid, float kp, float ki, float kd);
 /**
-  * @brief  Set PID controller's indexes and clear some parameters for further operations.
-  * @param  pid: PID controller @ref PID_Type
-  * @param  kp,ki,kd: indexed of P,I,D
-  */
+  * @note  This function will clear @arg sum_error
+  */ 
 void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd);
 
 /**

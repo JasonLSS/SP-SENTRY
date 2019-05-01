@@ -172,6 +172,7 @@ bool TIM_PWM_OutputInit(
     } 
 
     TIM_OCInitTypeDef           TIM_OCInitStructure;
+    memset(&TIM_OCInitStructure, 0x00, sizeof(TIM_OCInitStructure));
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
     TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;

@@ -6,7 +6,7 @@
   * @date       2018.Nov.24
   * @brief      DMA module driver
   * @note       DMA2 only supports transmission between peripherals.
-  * @usage      spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)buffer, (uint32_t)UART7->DR, size);
+  * @usage      spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)buffer, (uint32_t)&UART7->DR, size);
   ******************************************************************************
   * @license
   *

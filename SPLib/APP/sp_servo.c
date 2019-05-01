@@ -203,7 +203,7 @@ float SERVO_GetReadAngle(ServoType* servo) {
 void SERVO_Init(void) {
     memset(ServoPool, 0x00, sizeof(ServoPool));
     for(uint16_t i=0; i<sizeof(ServoPool)/sizeof(*ServoPool); i++) {
-        ServoPool[i].param.speed = -1;
+        ServoPool[i].param.speed = (uint16_t)-1;
     }
 }
 

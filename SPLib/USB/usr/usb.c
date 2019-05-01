@@ -19,6 +19,7 @@
   */
 #include "usb.h"
 #include "usbd_conf.h"
+#include "usbd_hid_core.h"
 #include <string.h>
 #include "sp_conf.h"
 
@@ -92,6 +93,15 @@ void USB_TaskLoop(void)
 //    }
 }
 
+void USB_RxInterrupt(uint8_t* buf, uint32_t size)
+{
+		for(uint16_t i=0; i<sizeof(USB_Callback_Pool)/sizeof(*USB_Callback_Pool); i++) {
+				if(USB_Callback_Pool[i]) {
+						USB_Callback_Pool[i](buf, size);
+				}
+		}
+}
+
 /** Function
   * @brief    准备USB发送的数据
   * @param
@@ -100,6 +110,7 @@ void USB_TaskLoop(void)
 uint16_t USB_SendData(uint8_t* buf, uint32_t len)
 {
 //    return CDC_DataTx(buf, len);
+		USBD_HID_SendReport(&USB_OTG_dev, buf, len);
     return 0;
 }
 

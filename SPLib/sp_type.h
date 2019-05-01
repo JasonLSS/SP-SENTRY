@@ -31,9 +31,15 @@
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 1)
     #define packed_struct       struct __attribute__((packed))
     #define packed_union        union __attribute__((packed))
+			
+		#define packed_struct_n(x)	struct __attribute__((packed, aligned(x)))
+		#define packed_union_n(x)	  union __attribute__((packed, aligned(x)))
 #else
     #define packed_struct       __packed struct
     #define packed_union        __packed union
+		
+		#define packed_struct_n(x)	__packed(x) struct
+		#define packed_union_n(x)	  __packed(x) union
 #endif
     
 #define spINLINE __inline

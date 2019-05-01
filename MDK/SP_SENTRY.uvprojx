@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>SP19_Template_lite</TargetName>
+      <TargetName>SP_SENTRY</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <pArmCC>6090000::V6.9::.\ARMCLANG</pArmCC>
@@ -50,7 +50,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>SP19_Template_lite</OutputName>
+          <OutputName>SP_SENTRY</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F427xx,STM32F427_437xx,USE_STDPERIPH_DRIVER,MPU6500,ARM_MATH_CM4,SP</Define>
               <Undefine></Undefine>
-              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal;..\SPLib\Mod\chasis;..\SPLib\Mod\tof;..\SPLib\Core;..\SPLib\Mod\infrared;..\SPLib\USB\usr;..\SPLib\USB\hid</IncludePath>
+              <IncludePath>..\STMLib;..\STMLib\CMSIS\Include;..\STMLib\STM32F4xx_StdPeriph_Driver\inc;..\STMLib\STM32_USB_OTG_Driver\inc;..\STMLib\STM32_USB_HOST_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Core\inc;..\STMLib\STM32_USB_Device_Library\Class\cdc\inc;..\SPLib;..\SPLib\BSP;..\SPLib\AAL;..\SPLib\APP;..\SPLib\USB;..\SPLib\Mod\imu;..\SPLib\Mod\lqr;..\User;..\User\Config;..\SPLib\mod\View2MCU_ComProtocal;..\SPLib\Mod\chasis;..\SPLib\Mod\tof;..\SPLib\Core;..\SPLib\Mod\infrared;..\SPLib\USB\usr;..\SPLib\USB\hid;..\SPLib\Mod\referee</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -411,11 +411,6 @@
               <FileName>sp_rc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\APP\sp_rc.c</FilePath>
-            </File>
-            <File>
-              <FileName>RefereeInfo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\APP\RefereeInfo.c</FilePath>
             </File>
             <File>
               <FileName>sp_shoot.c</FileName>
@@ -621,6 +616,21 @@
               <FileName>infrared.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\Mod\infrared\infrared.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Referee</GroupName>
+          <Files>
+            <File>
+              <FileName>referee.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\referee\referee.c</FilePath>
+            </File>
+            <File>
+              <FileName>referee_crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\referee\referee_crc.c</FilePath>
             </File>
           </Files>
         </Group>

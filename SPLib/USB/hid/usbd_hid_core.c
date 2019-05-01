@@ -545,6 +545,10 @@ static uint8_t  USBD_HID_DataOut (void  *pdev,
         OutBuffer[i]=usb_rx_buffer[i];
         i++;
     }
+		
+    // __attribute__((weak)) 
+		extern void USB_RxInterrupt(uint8_t* buf, uint32_t size);
+		USB_RxInterrupt(OutBuffer, USB_Rx_Cnt);
 
     /* Prepare Out endpoint to receive next packet */
     DCD_EP_PrepareRx(pdev,

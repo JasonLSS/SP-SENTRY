@@ -32,11 +32,11 @@
 typedef struct {
     struct {
         float dt;
-        float xk[9];
-        float pk[9];
-        float R[9];
-        float Q[9];
-        float mag_angle[3];
+        float xk[4][1];
+        float pk[4][4];
+        float R[2][2];
+        float Q[4][4];
+        float angle_with_mag[3];
     } param;
     struct {
         LPF_FirstOrder_type lpf[3];
@@ -47,7 +47,6 @@ typedef struct {
     struct {
         float roll, pitch, yaw;
     } euler;
-    
 } Kalman_t;
 
 

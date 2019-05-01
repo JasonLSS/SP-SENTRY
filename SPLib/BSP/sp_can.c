@@ -88,7 +88,7 @@ void CAN2_RX1_IRQHandler(void) {
   * @param  exchanger: @ref CAN_Exchanger appoint an exchanger
   * @note   Only used for send once message. INNER use;
   */ 
-static inline void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
+static inline bool __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
 
     CanTxMsg TxMessage;
     
@@ -97,7 +97,7 @@ static inline void __CAN_SendMsg(CAN_TypeDef* canx, CAN_Transmitter* exchanger){
     TxMessage.RTR = CAN_RTR_Data;
     TxMessage.DLC = exchanger->tx.size;
     memcpy(TxMessage.Data, exchanger->tx.addr, exchanger->tx.size);    
-    CAN_Transmit(canx, &TxMessage);
+    return CAN_Transmit(canx, &TxMessage) != CAN_TxStatus_NoMailBox;
 }
 
 
@@ -121,40 +121,40 @@ void CAN1_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode)
 
     //?????GPIO
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0| GPIO_Pin_1;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;            //???¨´???
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;          //???????
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;      //100MHz
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;            //????
-    GPIO_Init(GPIOD, &GPIO_InitStructure);                  //?????PA11,PA12
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
 
     //??????????????
-    GPIO_PinAFConfig(GPIOD,GPIO_PinSource0,GPIO_AF_CAN1);   //GPIOD0?????CAN1
-    GPIO_PinAFConfig(GPIOD,GPIO_PinSource1,GPIO_AF_CAN1);   //GPIOD1?????CAN1
+    GPIO_PinAFConfig(GPIOD,GPIO_PinSource0,GPIO_AF_CAN1);
+    GPIO_PinAFConfig(GPIOD,GPIO_PinSource1,GPIO_AF_CAN1);
         
     //CAN???????
-    CAN_InitStructure.CAN_TTCM=DISABLE;        //????????????   
-    CAN_InitStructure.CAN_ABOM=ENABLE;      //    DISABLE;    //??????????????      
-    CAN_InitStructure.CAN_AWUM=DISABLE;     //????????????????(???CAN->MCR??SLEEP¦Ë)
-    CAN_InitStructure.CAN_NART=ENABLE;        //?????????????? 
-    CAN_InitStructure.CAN_RFLM=DISABLE;        //?????????,????????  
-    CAN_InitStructure.CAN_TXFP=DISABLE;        //?????????????????? 
-    CAN_InitStructure.CAN_Mode= mode;        //?????? 
-    CAN_InitStructure.CAN_SJW=tsjw;            //??????????????(Tsjw)?tsjw+1?????¦Ë CAN_SJW_1tq~CAN_SJW_4tq
-    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1??¦¶CAN_BS1_1tq ~CAN_BS1_16tq
-    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2??¦¶CAN_BS2_1tq ~    CAN_BS2_8tq
-    CAN_InitStructure.CAN_Prescaler=brp;    //??????(Fdiv)?brp+1    
-    CAN_Init(CAN1, &CAN_InitStructure);     // ?????CAN1 
+    CAN_InitStructure.CAN_TTCM=DISABLE;
+    CAN_InitStructure.CAN_ABOM=ENABLE;
+    CAN_InitStructure.CAN_AWUM=DISABLE;
+    CAN_InitStructure.CAN_NART=ENABLE;
+    CAN_InitStructure.CAN_RFLM=DISABLE;
+    CAN_InitStructure.CAN_TXFP=DISABLE;
+    CAN_InitStructure.CAN_Mode= mode;
+    CAN_InitStructure.CAN_SJW=tsjw;
+    CAN_InitStructure.CAN_BS1=tbs1;
+    CAN_InitStructure.CAN_BS2=tbs2;
+    CAN_InitStructure.CAN_Prescaler=brp;
+    CAN_Init(CAN1, &CAN_InitStructure);
 
     //???¨´?????
-    CAN_FilterInitStructure.CAN_FilterNumber=0;      //??????0
+    CAN_FilterInitStructure.CAN_FilterNumber=0;
     CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask; 
-    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit; //32¦Ë 
+    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;
     CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;////32¦ËID
     CAN_FilterInitStructure.CAN_FilterIdLow=0x0000;
     CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;//32¦ËMASK
     CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0000;
     CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO0;//??????0??????FIFO0
-    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE; //?????????0
+    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;
     CAN_FilterInit(&CAN_FilterInitStructure);//??????????
     CAN_ITConfig(CAN1,CAN_IT_FMP0,ENABLE);//FIFO0???????§Ø?????.            
   
@@ -184,34 +184,34 @@ void CAN2_Init(uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16_t brp,uint8_t mode)
     GPIO_Init(GPIOB, &GPIO_InitStructure);//?????PA11,PA12
 
     //??????????????
-    GPIO_PinAFConfig(GPIOB,GPIO_PinSource12,GPIO_AF_CAN2); //GPIOB12?????CAN2
-    GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_CAN2); //GPIOB13?????CAN2
+    GPIO_PinAFConfig(GPIOB,GPIO_PinSource12,GPIO_AF_CAN2);
+    GPIO_PinAFConfig(GPIOB,GPIO_PinSource13,GPIO_AF_CAN2);
         
     //CAN???????
-    CAN_InitStructure.CAN_TTCM=DISABLE;     //????????????
-    CAN_InitStructure.CAN_ABOM=ENABLE;      //??????????????
-    CAN_InitStructure.CAN_AWUM=DISABLE;     //????????????????(???CAN->MCR??SLEEP¦Ë)
-    CAN_InitStructure.CAN_NART=ENABLE;      //?????????????? 
-    CAN_InitStructure.CAN_RFLM=DISABLE;     //?????????,????????  
-    CAN_InitStructure.CAN_TXFP=DISABLE;     //?????????????????? 
-    CAN_InitStructure.CAN_Mode= mode;       //?????? 
-    CAN_InitStructure.CAN_SJW=tsjw;         //??????????????(Tsjw)?tsjw+1?????¦Ë CAN_SJW_1tq~CAN_SJW_4tq
-    CAN_InitStructure.CAN_BS1=tbs1;         //Tbs1??¦¶CAN_BS1_1tq ~CAN_BS1_16tq
-    CAN_InitStructure.CAN_BS2=tbs2;         //Tbs2??¦¶CAN_BS2_1tq ~    CAN_BS2_8tq
-    CAN_InitStructure.CAN_Prescaler=brp;    //??????(Fdiv)?brp+1    
-    CAN_Init(CAN2, &CAN_InitStructure);     // ?????CAN2 
+    CAN_InitStructure.CAN_TTCM=DISABLE;
+    CAN_InitStructure.CAN_ABOM=ENABLE;
+    CAN_InitStructure.CAN_AWUM=DISABLE;
+    CAN_InitStructure.CAN_NART=ENABLE;
+    CAN_InitStructure.CAN_RFLM=DISABLE;
+    CAN_InitStructure.CAN_TXFP=DISABLE;
+    CAN_InitStructure.CAN_Mode= mode;
+    CAN_InitStructure.CAN_SJW=tsjw;
+    CAN_InitStructure.CAN_BS1=tbs1;
+    CAN_InitStructure.CAN_BS2=tbs2;
+    CAN_InitStructure.CAN_Prescaler=brp;
+    CAN_Init(CAN2, &CAN_InitStructure);
 
     //???¨´?????
-    CAN_FilterInitStructure.CAN_FilterNumber=14;                        //??????1
+    CAN_FilterInitStructure.CAN_FilterNumber=14;
     CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask; 
-    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;      //32¦Ë 
-    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;                    //32¦ËID
+    CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;
+    CAN_FilterInitStructure.CAN_FilterIdHigh=0x0000;
     CAN_FilterInitStructure.CAN_FilterIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;                //32¦ËMASK
+    CAN_FilterInitStructure.CAN_FilterMaskIdHigh=0x0000;
     CAN_FilterInitStructure.CAN_FilterMaskIdLow=0x0000;
-    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;  //??????0??????FIFO1
-    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;                //?????????1
-    CAN_FilterInit(&CAN_FilterInitStructure);                           //??????????
+    CAN_FilterInitStructure.CAN_FilterFIFOAssignment=CAN_Filter_FIFO1;
+    CAN_FilterInitStructure.CAN_FilterActivation=ENABLE;
+    CAN_FilterInit(&CAN_FilterInitStructure);
 
     CAN_ITConfig(CAN2,CAN_IT_FMP1,ENABLE);//FIFO1???????§Ø?????.            
   
@@ -320,7 +320,8 @@ const struct CAN_Controllers_Type spCAN =  {
     .user = {
         .registe_receiver = CAN_RegistReceiver,
         .registe_transmitter = CAN_RegistTransmitter,
-        .send = CAN_SendMsg,
+        .submit = CAN_SendMsg,
+        .send = __CAN_SendMsg
     }
 };
 

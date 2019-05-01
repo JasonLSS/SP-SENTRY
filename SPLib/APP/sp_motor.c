@@ -657,14 +657,14 @@ void MOTOR_ControlLooper(void) {
     }
     
 
-    spCAN.user.send(&__MOTOR_CAN1_Manager.datas[0].transmitter);
-    spCAN.user.send(&__MOTOR_CAN1_Manager.datas[1].transmitter);
-    spCAN.user.send(&__MOTOR_CAN1_Manager.datas[2].transmitter);
-    spCAN.user.send(&__MOTOR_CAN1_Manager.datas[3].transmitter);
-    spCAN.user.send(&__MOTOR_CAN2_Manager.datas[0].transmitter);
-    spCAN.user.send(&__MOTOR_CAN2_Manager.datas[1].transmitter);
-    spCAN.user.send(&__MOTOR_CAN2_Manager.datas[2].transmitter);
-    spCAN.user.send(&__MOTOR_CAN2_Manager.datas[3].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN1_Manager.datas[0].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN1_Manager.datas[1].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN1_Manager.datas[2].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN1_Manager.datas[3].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN2_Manager.datas[0].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN2_Manager.datas[1].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN2_Manager.datas[2].transmitter);
+    spCAN.user.submit(&__MOTOR_CAN2_Manager.datas[3].transmitter);
 }
 
 

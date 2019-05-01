@@ -144,7 +144,8 @@ extern const struct CAN_Controllers_Type {
           * @param  exchanger: @ref CAN_Exchanger appoint an exchanger
           * @note   Only used for send once message.
           */ 
-        void (*send)(CAN_Transmitter* exchanger);
+        void (*submit)(CAN_Transmitter* exchanger);
+        bool (*send)(CAN_TypeDef* canx, CAN_Transmitter* exchanger);
     } user;
 } spCAN;
 /** @} */

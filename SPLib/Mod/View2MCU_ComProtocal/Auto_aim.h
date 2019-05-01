@@ -6,7 +6,7 @@
 void Autoaim_Init(void);
 void Auto_aim(uint8_t *rx_buf,int len);
 void Autoaim_USART_Interface(void);
-
+void USB_Cb(uint8_t* buf, uint32_t len);
 
 extern int  if_newframe;
 extern int 	if_if_newframe;
