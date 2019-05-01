@@ -1,32 +1,13 @@
 # Introduce
-This is a lite version of project **SP19_Template** without any things relative to FreeRTOS.
+SuperPower 2019 formal project for SENTRY.
 
-## -- Introduce of SP19_Template  --
-This is the library and template project of STM32F427II by Super Power Robomaster Club of Tongji University. This project is based on STM32 standard peripheral library and STM32 handware abstract layer(HAL) library, which are included in folder **STMLib** but not included in this repository. You can find it in our cloud disk at **gitlab.com:/SuperPower/ECG/sp19_utility**. 
+This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
-## v0.1.2-3
-- Modified **sp_rc** and **sp_irq**.
-- New chasis state control strategy testing.
-## v0.1.2-2
-- Structure modification.
-- Add **sp_irq.h** for IRQ management.
 
-## v0.1.2
-- Add Kalman filter for IMU [tested].
-- Add LPF for Kalman.
-- Add ADIS1647 module.
-- Modified SPI operations.
-## v0.1.1-2
-- Test for gimbal control.
-- Add communication with view via USART2.
+## v0.2.5
+- Update referee.
+- Add USB mode for auto-aim.
+- Update BSP.
 
-## v0.1.1
-- Modified documents.
-
-## v0.1
-- Basic function tested.
-
-## v0.0 Init
-- Inherit from **SP19_Template** v0.1.3-1
 
