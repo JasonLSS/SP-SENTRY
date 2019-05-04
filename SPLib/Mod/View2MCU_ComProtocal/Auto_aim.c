@@ -62,7 +62,15 @@ void Auto_aim(u8 *rx_buf,int len)
 				frame_visual = fram;
 				enemy_area = (int)(fram.extra[1] & 0xf0) >> 4;
 				enemy_empty_area = (int)(fram.extra[1] & 0x0f);
-			
+				if(frame_visual.yaw > 10)
+					frame_visual.yaw = 10;
+				else if(frame_visual.yaw < -10)
+					frame_visual.yaw = -10;
+				if(frame_visual.pitch > 10)
+					frame_visual.pitch = 10;
+				else if(frame_visual.pitch < -10)
+					frame_visual.pitch = -10;
+				
 				if(fram.extra[0] == 4){
 					if_if_newframe = 0;auto_aim_flag = 0;
 				}

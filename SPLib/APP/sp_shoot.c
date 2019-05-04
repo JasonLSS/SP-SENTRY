@@ -458,7 +458,7 @@ void Shooting_Control_Looper (void){
 					}
 			}
 			else if(recv.rc.s2==RC_SW_UP){
-				frictionState = Friction_ON;
+				frictionState = Friction_OFF;
 			}
 			Friction_Looper();
 		#endif

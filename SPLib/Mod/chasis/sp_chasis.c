@@ -57,10 +57,16 @@ void CHASIS_Move(float speed) {
 		spCHASIS._system.params.state.y = motor202->state.speed;
 	
 		#ifdef USING_SPEED_BALANCE
-				float SpeedDifference = motor201->state.speed - motor202->state.speed;
-				float speedchange = PID_ControllerDriver(&speedbalance,0,SpeedDifference);
-				speedA = CHASIS_Legalize((speed + speedchange),chasis_speed_limit);
-				speedB = CHASIS_Legalize(speed,chasis_speed_limit);			
+				if(motor201 && motor202) {
+					float SpeedDifference = motor201->state.speed - motor202->state.speed;
+					float speedchange = PID_ControllerDriver(&speedbalance,0,SpeedDifference);
+					speedA = CHASIS_Legalize((speed + speedchange),chasis_speed_limit);
+					speedB = CHASIS_Legalize(speed,chasis_speed_limit);			
+				} else {
+						speedA = CHASIS_Legalize(speed,chasis_speed_limit);
+						speedB = CHASIS_Legalize(speed,chasis_speed_limit);
+				}
+					
 		#else
 				speedA = CHASIS_Legalize(speed,chasis_speed_limit);
 				speedB = CHASIS_Legalize(speed,chasis_speed_limit);
