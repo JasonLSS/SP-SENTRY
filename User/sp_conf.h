@@ -182,7 +182,7 @@
 #define USING_GIMBAL_MODE       1
 //  <c1> USING_USB
 //    <i> Enable USB
-#define USING_USB
+//#define USING_USB
 //  </c>
 //  <c1> USING_OS
 //    <i> Enable FreeRTOS
