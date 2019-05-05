@@ -67,7 +67,7 @@ typedef struct {
  */
 typedef packed_union {
     uint8_t data;
-    struct {
+    packed_struct {
         uint8_t bit0:1;
         uint8_t bit1:1;
         uint8_t bit2:1;
@@ -82,7 +82,7 @@ typedef spByte_t spInt8_t;
 
 typedef packed_union {
     uint16_t data;
-    struct {
+    packed_struct {
         uint16_t bit0:1;
         uint16_t bit1:1;
         uint16_t bit2:1;
@@ -105,7 +105,7 @@ typedef spHalfWord_t spInt16_t;
 
 typedef packed_union {
     uint32_t data;
-    struct {
+    packed_struct {
         uint32_t bit0:1;
         uint32_t bit1:1;
         uint32_t bit2:1;

@@ -198,15 +198,18 @@ bool vrerify_frame(uint8_t * frame) {
 }
 
 // 使用完整数据帧更新全部裁判信息相关结构体。(带校验)
-void frame_interpret(uint8_t * frame, uint16_t size) {
+void frame_interpret(uint8_t * _frame, uint16_t size) {
     for(uint16_t i=0; i<size; i++) {
-        if(frame[i]==REFEREE_FRAME_HEADER_SOF && vrerify_frame(&frame[i])) {
-            static uint8_t seq_ex = 0;
-            uint8_t seq = frame[3];
-            if(frame[3]<=seq_ex && (seq_ex-frame[3])>=240) {
-                continue;
-            }
-            seq_ex = seq;
+        if(_frame[i]==REFEREE_FRAME_HEADER_SOF && vrerify_frame(&_frame[i])) {
+//            static uint8_t seq_ex = 0;
+//            uint8_t seq = frame[3];
+//            if(frame[3]<=seq_ex && (seq_ex-frame[3])>=240) {
+//                continue;
+//            }
+//            seq_ex = seq;
+						uint8_t * frame = &_frame[i];
+						uint16_t length = (uint16_t)(frame[1] | (frame[2]<<8));
+						i += length;
             
             ext_cmd_id_t cmd_id = (ext_cmd_id_t)(frame[5] | (frame[6]<<8));
             /* Call corresponding function */
@@ -291,7 +294,7 @@ bool referee_send_client(ext_id_t target_id, float data[3], ext_client_custom_da
     client_data.data_id = REFEREE_STUDENT_CLIENT_SOF;
     client_data.sender_id = MY_ROBOT_ID;
     client_data.client_id = target_id;
-    memcpy(client_data.data, data, sizeof(client_data.data));
+    memcpy((uint8_t*)client_data.data, (uint8_t*)data, sizeof(client_data.data));
     client_data.masks = masks;
     /* Calc CRC16 */
     Append_CRC16_Check_Sum((uint8_t*)&client_data, sizeof(client_data));

@@ -261,11 +261,11 @@ void TASK_GlobalInit() {
       * @brief  Peripheral layer initialize
       */
     {
-			Shooting_Control_Init();
-#ifdef USING_SENTRY_CHASIS
+			
+				Shooting_Control_Init();
 				spCHASIS._system.init();
-#endif
-				
+
+
 
     }
     /**
@@ -344,7 +344,7 @@ void TASK_ControlLooper() {
 						}
         } else if(task_counter%10 == 3) {
 						Shooting_Control_Looper();
-        } else if(task_counter%6 == 1) {
+        } else if(task_counter%2 == 1) {
 						#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
 								spGIMBAL_Controller._system.statelooper();
 						#endif
