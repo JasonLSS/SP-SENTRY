@@ -30,7 +30,7 @@ float last_yaw = 0;
 float yaw_aim_limit = 2;
 float pitch_aim_limit = 10;
 float yaw_frame_max = 20;
-float pitch_frame_max = 10;
+float pitch_frame_max = 15;
 //char uart6_buff[256];
 
 uint8_t auto_aim_flag = 0;
@@ -84,11 +84,15 @@ void Auto_aim(u8 *rx_buf,int len)
 					if_if_newframe = 0;auto_aim_flag = 0;
 				}
 				
-				if(fabs(fram.yaw) < yaw_aim_limit && fabs(fram.pitch) < pitch_aim_limit)
-					auto_aim_flag = 1;
-				else
-					auto_aim_flag = 0;
-
+				if(fram.yaw == 0 && fram.pitch == 0){
+					if_if_newframe = 0;
+				}
+				
+//				if(fabs(fram.yaw < 5) && fram.yaw != 0){
+//					auto_aim_flag = 1;
+//				}else{
+//					auto_aim_flag = 0;
+//				}
 
 //				u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
 //				spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);

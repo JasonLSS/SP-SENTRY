@@ -458,7 +458,7 @@ void Shooting_Control_Looper (void){
 					}
 			}
 			else if(recv.rc.s2==RC_SW_UP){
-				frictionState = Friction_OFF;
+				frictionState = Friction_ON;
 			}
 			Friction_Looper();
 		#endif
@@ -498,6 +498,14 @@ void Shooting_Control_Looper (void){
 						shootState = Shoot_ON;
 					else
 						shootState = Shoot_OFF;
+					static float times_tick = 0;
+					if(recv.rc.ch0 > 600 && times_tick < 10){
+						shootState = Shoot_ON;
+						times_tick++;
+					}
+					if(recv.rc.ch0 < 600){
+						times_tick = 0;
+					}
 					
 					if(ext_power_heat_data.shooter_heat0 > 250){
 						shootState = Shoot_OFF;

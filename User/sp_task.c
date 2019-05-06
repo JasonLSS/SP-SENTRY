@@ -261,9 +261,10 @@ void TASK_GlobalInit() {
       * @brief  Peripheral layer initialize
       */
     {
-			
 				Shooting_Control_Init();
 				spCHASIS._system.init();
+
+
 
 
 

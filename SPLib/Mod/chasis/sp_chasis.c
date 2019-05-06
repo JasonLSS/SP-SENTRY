@@ -24,11 +24,7 @@
 
 #define __CHASIS_OuputLimit                 7000 
 
-#ifdef USING_SPEED_BALANCE
-				PID_Type speedbalance;
-				int16_t speed1;
-				int16_t speed2;
-#endif
+
 static float speed_last = 0 ;
 static RobotMode robotMode_ex;
 RC_DataType recv_ex;
@@ -44,6 +40,8 @@ uint16_t distance_Threshold = 150;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
 float SPEED_CHANGE_LIMIT =200.f;
+
+PID_Type speedbalance;
 
 void CHASIS_Move(float speed) {
     // TODO: Make interval time more specific.

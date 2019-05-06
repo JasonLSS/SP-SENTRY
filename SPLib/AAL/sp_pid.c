@@ -16,6 +16,8 @@
 
 
 void PID_ControllerInit(PID_Type* pid, float lim_i, float lim_d, float lim_out) {
+    if(!pid) return;
+    
     lim_i = fabs(lim_i);
     lim_d = fabs(lim_d);
     lim_out = fabs(lim_out);
@@ -38,6 +40,8 @@ void PID_ControllerInit(PID_Type* pid, float lim_i, float lim_d, float lim_out) 
 }
 
 void PID_ControllerInit_withDt(PID_Type* pid, float lim_i, float lim_d, float lim_out, float dt) {
+    if(!pid) return;
+    
     lim_i = fabs(lim_i);
     lim_d = fabs(lim_d);
     lim_out = fabs(lim_out);
@@ -61,6 +65,8 @@ void PID_ControllerInit_withDt(PID_Type* pid, float lim_i, float lim_d, float li
 }
 
 float PID_ControllerDriver(PID_Type* pid, float target, float input) {
+    if(!pid) return 0;
+    
     // uint8_t i;
     volatile float pterm, iterm, dterm;
     float error;
@@ -167,6 +173,8 @@ float PID_ControllerDriver(PID_Type* pid, float target, float input) {
 
 
 float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input, float lim_delta) {
+    if(!pid) return 0;
+    
     lim_delta = fabs(lim_delta);
     
     // uint8_t i;
@@ -253,6 +261,8 @@ float PID_ControllerDriver_Incremental(PID_Type* pid, float target, float input,
 
 
 float PID_ControllerDriver_test(PID_Type* pid, float target, float input) {
+    if(!pid) return 0;
+    
     // uint8_t i;
     volatile float pterm, iterm, dterm;
     float error;
@@ -308,17 +318,23 @@ float PID_ControllerDriver_test(PID_Type* pid, float target, float input) {
 
 
 void PID_SetTarget(PID_Type* pid, float target) {
+    if(!pid) return;
+    
     pid->target = target;
     pid->ctrl_reg.target_changed = 1;
 }
 
 void PID_SetGains(PID_Type* pid, float kp, float ki, float kd) {
+    if(!pid) return;
+    
     pid->Kp = kp;
     pid->Ki = ki;
     pid->Kd = kd;
 }
 
 void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd) {
+    if(!pid) return;
+    
     pid->Kp = kp;
     pid->Ki = ki;
     pid->Kd = kd;
@@ -326,6 +342,8 @@ void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd) {
 }
 
 void PID_UpdateLimits(PID_Type* pid, float lim_i, float lim_d, float lim_out) {
+    if(!pid) return;
+    
     pid->intergrations_sum_error_limit = fabs(lim_i);
     pid->differential_limit = fabs(lim_d);
     pid->output_limit = fabs(lim_out);

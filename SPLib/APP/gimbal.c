@@ -61,24 +61,24 @@ static float yaw_limit_min = -2.6f;
 static float pitch_limit_max = 2000.f/8192.f*2.f*PI;
 static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
-static float visual_syaw_kp = 8.0f;
-static float visual_syaw_ki = 0.0f;
-static float visual_syaw_kd = 0.1f;
+float visual_syaw_kp = 8.0f;
+float visual_syaw_ki = 0.2f;
+float visual_syaw_kd = 0.1f;
 
-static float visual_lyaw_kp = 8.0f;
-static float visual_lyaw_ki = 0.0f;
-static float visual_lyaw_kd = 0.1f;
+float visual_lyaw_kp = 10.0f;
+float visual_lyaw_ki = 0.0f;
+float visual_lyaw_kd = 1.f;
 
-static float visual_spitch_kp = 3000.0f;
-static float visual_spitch_ki = 500.0f;
-static float visual_spitch_kd = 50.0f;
+float visual_spitch_kp = 3.0f;
+float visual_spitch_ki = 0.2f;
+float visual_spitch_kd = 0.1f;
 
-static float visual_lpitch_kp = 3000.0f;
-static float visual_lpitch_ki = 500.0f;
-static float visual_lpitch_kd = 50.0f;
+float visual_lpitch_kp = 8.0f;
+float visual_lpitch_ki = 0.0f;
+float visual_lpitch_kd = 0.0f;
 
-static float yaw_seperate_limit = 10.f;
-static float pitch_seperate_limit = 5.f;
+float yaw_seperate_limit = 15.f;
+float pitch_seperate_limit = 5.f;
 
 
 
@@ -100,14 +100,14 @@ void GIMBAL_ControlInit(void) {
     gimbal_yaw_motor->control.position_pid->intergration_separation = 0.5f;
     gimbal_yaw_motor->control.position_pid->intergrations_sum_error_limit = 5*PI;
     gimbal_yaw_motor->control.position_pid->output_limit = 5000;
-    PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0, yaw_ki_0*2.f, yaw_kd_0);
+    PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0*2.f, yaw_ki_0*2.f, yaw_kd_0);
 	
 		PID_SetGains(gimbal_yaw_motor->control.speed_pid, 1, 0, 0);
     
     gimbal_yaw_motor->control.output_limit = 5000;
 
     gimbal_pitch_motor = spMOTOR.user.enable(CAN1, Motor205, RM_2006_P36, true);
-		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
+//		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
     gimbal_pitch_motor->control.position_pid->intergration_separation = 0.2f;
     gimbal_pitch_motor->control.position_pid->intergrations_sum_error_limit = 3.f;
     gimbal_pitch_motor->control.position_pid->output_limit = 8000;
@@ -210,13 +210,28 @@ void GIMBAL_State(void){
 		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE || robotMode == STATIC_ATTACK_MODE){
 			if(if_if_newframe){
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f;
-					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
+					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f + 2/8192.f*2.f*PI;
 				
+					//yaw seperate
+					static float large_time = 0;
+					static float large_seperate = 4;
+					large_seperate = large_seperate;
 					if(fabs(frame_visual.yaw) > yaw_seperate_limit){
 						spGIMBAL_Controller.user.visual_ly_pid();
+						large_time ++;
+						if(large_time > large_seperate){
+							yaw_set = gimbal_yaw_motor->state.angle +  frame_visual.yaw * 0.0349f/large_time*large_seperate;
+						}
+						if(large_time > 3*large_seperate){
+							large_time = 3*large_seperate;
+						}
 					}else{
 						spGIMBAL_Controller.user.visual_sy_pid();
+						large_time = 0;
 					}
+					
+					
+					
 					if(fabs(frame_visual.pitch) > pitch_seperate_limit){
 						spGIMBAL_Controller.user.visual_lp_pid();
 					}else{
@@ -233,6 +248,7 @@ void GIMBAL_State(void){
 					if(times_D>100){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed*yaw_direction;
+						pitch_set = 0.5f;
 						times_D = 100;
 					}
 			}
@@ -343,7 +359,7 @@ void GIMBAL_VISUAL_SY_PID_Init(void)
 void GIMBAL_VISUAL_SP_PID_Init(void)
 {
 	PID_SetGains(gimbal_pitch_motor->control.position_pid, visual_spitch_kp, visual_spitch_ki, visual_spitch_kd);
-	PID_SetGains(gimbal_pitch_motor->control.speed_pid, 1, 0, 0);
+	PID_SetGains(gimbal_pitch_motor->control.speed_pid, 2000, 0, 0);
 }
 
 void GIMBAL_VISUAL_LY_PID_Init(void)
@@ -355,7 +371,7 @@ void GIMBAL_VISUAL_LY_PID_Init(void)
 void GIMBAL_VISUAL_LP_PID_Init(void)
 {
 	PID_SetGains(gimbal_pitch_motor->control.position_pid, visual_lpitch_kp, visual_lpitch_ki, visual_lpitch_kd);
-	PID_SetGains(gimbal_pitch_motor->control.speed_pid, 1, 0, 0);
+	PID_SetGains(gimbal_pitch_motor->control.speed_pid, 2000, 0, 0);
 }
 
 void GIMBAL_CRUISE_PID_Init(void)
