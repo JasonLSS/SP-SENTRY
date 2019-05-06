@@ -4,8 +4,12 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+
+## v0.2.8
+- Add gimbal small and large PID for different frame value.
+
 ## v0.2.7
-- Modefied gimbal PID.
+- Modified gimbal PID.
 - Add frame lost delay.
 -[Import]Fix the referee bug : now can read game state correctly.
 - Fix the sp_type.h, now can use ARM compiler v5.0.

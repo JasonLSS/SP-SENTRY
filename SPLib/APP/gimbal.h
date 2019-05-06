@@ -60,8 +60,11 @@ extern struct __GIMBAL_Controller_Type {
 				void (*update_target_limit)(float target_pitch, float target_yaw);    /*!< Update gimbal pitch and yaw target with limit. */
 				void (*update_enemy_location)(int id);    														/*!< Update gimbal location limit by enemy direction. */
 				void (*pid_init)();    																								/*!< change gimbal pitch and yaw pid to original mode. */
-				void (*visual_pid_init) ();                                                /*!< change gimbal pitch and yaw pid to visual mode. */
 				void (*cruise_pid_init) ();                                                /*!< change gimbal pitch and yaw pid to cruise mode. */
+				void (*visual_sy_pid) ();
+				void (*visual_sp_pid) ();
+				void (*visual_ly_pid) ();
+				void (*visual_lp_pid) ();
     } user;
 } spGIMBAL_Controller;
 /** @} */

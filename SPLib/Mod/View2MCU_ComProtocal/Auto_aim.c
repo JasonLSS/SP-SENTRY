@@ -29,6 +29,8 @@ float last_pitch = 0;
 float last_yaw = 0;
 float yaw_aim_limit = 2;
 float pitch_aim_limit = 10;
+float yaw_frame_max = 20;
+float pitch_frame_max = 10;
 //char uart6_buff[256];
 
 uint8_t auto_aim_flag = 0;
@@ -62,14 +64,12 @@ void Auto_aim(u8 *rx_buf,int len)
 				frame_visual = fram;
 				enemy_area = (int)(fram.extra[1] & 0xf0) >> 4;
 				enemy_empty_area = (int)(fram.extra[1] & 0x0f);
-				if(frame_visual.yaw > 10)
-					frame_visual.yaw = 10;
-				else if(frame_visual.yaw < -10)
-					frame_visual.yaw = -10;
-				if(frame_visual.pitch > 10)
-					frame_visual.pitch = 10;
-				else if(frame_visual.pitch < -10)
-					frame_visual.pitch = -10;
+				
+				frame_visual.yaw = (frame_visual.yaw > yaw_frame_max ? yaw_frame_max : 
+								 frame_visual.yaw < - yaw_frame_max ? - yaw_frame_max : frame_visual.yaw);
+				frame_visual.pitch = (frame_visual.pitch > pitch_frame_max ? pitch_frame_max : 
+								 frame_visual.pitch < - pitch_frame_max ? - pitch_frame_max : frame_visual.pitch);
+
 				
 				if(fram.extra[0] == 4){
 					if_if_newframe = 0;auto_aim_flag = 0;
