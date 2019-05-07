@@ -4,6 +4,10 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+
+## v0.3.0
+- Modified gimbal PID.(use 120fps camera.)
+
 ## v0.2.9
 - Modified gimbal PID.Now can use auto_aim(test).
 - Add yaw seperate.
