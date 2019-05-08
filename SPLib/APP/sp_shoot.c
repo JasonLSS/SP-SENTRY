@@ -507,6 +507,10 @@ void Shooting_Control_Looper (void){
 						times_tick = 0;
 					}
 					
+					if(recv.rc.ch0 < -600){
+						shootState = Shoot_ON;
+					}
+					
 					if(ext_power_heat_data.shooter_heat0 > 250){
 						shootState = Shoot_OFF;
 						Cooling_tickets = 0;

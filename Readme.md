@@ -5,6 +5,10 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.1
+- Add shoot way.
+- First auto aim success.
+
 ## v0.3.0
 - Modified gimbal PID.(use 120fps camera.)
 
