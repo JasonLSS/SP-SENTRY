@@ -65,7 +65,6 @@ void Buzzer_Init(void) {
     TIM_OC1PreloadConfig(TIM12, TIM_OCPreload_Enable);
     
     TIM_ARRPreloadConfig(TIM12,ENABLE);
-    TIM_CtrlPWMOutputs(TIM12, ENABLE);
     TIM_Cmd(TIM12, ENABLE);
     
     BUZZER_OFF();
@@ -85,7 +84,6 @@ void Buzzer_Init(void) {
     TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable);
     
     TIM_ARRPreloadConfig(TIM3,ENABLE);
-    TIM_CtrlPWMOutputs(TIM3, ENABLE);
     TIM_Cmd(TIM3, ENABLE);
     
     BUZZER_OFF();

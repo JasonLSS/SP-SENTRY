@@ -166,11 +166,11 @@ inline void TASK_Start(void) {
 
     NVIC_IRQEnable(USART1_IRQn, 0, 0);          // RC
     NVIC_IRQEnable(DMA2_Stream5_IRQn, 0, 3);    // RC
+		NVIC_IRQEnable(DMA2_Stream1_IRQn, 0, 3);    // Referee
 
-    NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
-
-    NVIC_IRQEnable(EXTI9_5_IRQn, 0, 3);         // MPU int
-    NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
+//    NVIC_IRQEnable(USART2_IRQn, 0, 2);          // View-USART2
+    NVIC_IRQEnable(EXTI9_5_IRQn, 0, 5);         // MPU int
+//    NVIC_IRQEnable(EXTI2_IRQn, 0, 5);           // Key
     NVIC_IRQEnable(EXTI0_IRQn, 0, 5);           // IMU_ADI
 	
 		NVIC_IRQEnable(USART3_IRQn, 0, 3);
@@ -225,12 +225,17 @@ void TASK_GlobalInit() {
         DMA_USART_RX_Config(USART3, (uint32_t)USART_Transfer.buffer, sizeof(USART_Transfer.buffer), true);
         USART_ITConfig(USART3, USART_IT_IDLE, ENABLE);
         USART_Cmd(USART3, ENABLE);
+				
 #ifndef USING_USB
         Autoaim_Init();
-#endif				
+#endif
+
 				IIC_Init();
 				Infrared_Init();
 				
+#ifdef USING_USB
+				USB_TaskInit();
+#endif
     }
 
     /**
@@ -251,23 +256,21 @@ void TASK_GlobalInit() {
 				/* IMU module init */
 //				IMU_Controllers.operations.init();
 
-#ifdef USING_USB
-				USB_TaskInit();
-				Autoaim_Init();
-#endif
+
     }
 
     /**
       * @brief  Peripheral layer initialize
       */
     {
-				Shooting_Control_Init();
+				
 				spCHASIS._system.init();
-
-
-
-
-
+				
+#ifdef USING_USB
+				Autoaim_Init();
+#endif
+			
+				Shooting_Control_Init();
     }
     /**
       * @brief  Sundries and initialize
@@ -349,9 +352,9 @@ void TASK_ControlLooper() {
 						Infrared_Update();//task_lss
         }
 //				if(task_counter%2 == 0)
-				{
-					sendtoComputer();
-				}
+//				{
+//					sendtoComputer();
+//				}
 		}
 /*------------------------------------------------------------------------*/
 /* System layer looper [PRIVATE] */

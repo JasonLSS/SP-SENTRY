@@ -28,6 +28,8 @@ ext_shoot_data_t                           ext_shoot_data;//实时射击信息（0x0207
 ext_robot_interactive_data_t               ext_robot_interactive_data;
 
 
+int count[8] = {0x00};
+
 // 比赛机器人状态（0x0001）, 发送频率为10Hz。
 void ext_game_state_interpret(uint8_t * ext_game_state_Message) {
 //    uint8_t *a;
@@ -100,9 +102,12 @@ void ext_game_robot_state_interpret(uint8_t * ext_game_robot_state_Message) {
 //    ext_game_robot_state.mains_power_gimbal_output=a>>7;
 //    ext_game_robot_state.mains_power_chassis_output=(a>>6)&0x0001;
 //    ext_game_robot_state.mains_power_shooter_output=(a>>5)&0x0001;
-    spDMA.mem2mem.copy((uint32_t)&ext_game_robot_state, 
+		
+    if(spDMA.mem2mem.copy((uint32_t)&ext_game_robot_state, 
         (uint32_t)ext_game_robot_state_Message,
-        sizeof(ext_game_robot_state));
+        sizeof(ext_game_robot_state))) {
+					count[1] ++;
+				}
 }
 
 ///////实时功率热量数据（0x0202）
@@ -116,9 +121,12 @@ void ext_power_heat_data_interpret(uint8_t * ext_power_heat_data_Message) {
 //    memcpy((uint8_t*)&ext_power_heat_data.chassis_power_buffer,(ext_power_heat_data_Message+8),2);
 //    memcpy((uint8_t*)&ext_power_heat_data.shooter_heat0,ext_power_heat_data_Message+10,2);
 //    memcpy((uint8_t*)&ext_power_heat_data.shooter_heat1,ext_power_heat_data_Message+12,2);
-    spDMA.mem2mem.copy((uint32_t)&ext_power_heat_data, 
+		
+    if(spDMA.mem2mem.copy((uint32_t)&ext_power_heat_data, 
         (uint32_t)ext_power_heat_data_Message,
-        sizeof(ext_power_heat_data));
+        sizeof(ext_power_heat_data))) {
+						count[0] ++;
+				}
 }
 
 
@@ -252,11 +260,11 @@ void frame_interpret(uint8_t * _frame, uint16_t size) {
 uint8_t referee_buffer[256] = {0x00};
 uint8_t dump_buffer[256];
 void update_from_dma(void) {
-    /* Clear IDLE flag bit */
-    uint8_t bt = USART6->DR;
-    /* Reset DMA counter */
-    spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
+//    /* Clear IDLE flag bit */
+//    uint8_t bt = USART6->DR;
     spDMA.mem2mem.copy((uint32_t)dump_buffer, (uint32_t)referee_buffer, sizeof(referee_buffer));
+		/* Reset DMA counter */
+    spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
     /* Search for frame and resolve data */
     frame_interpret(dump_buffer, sizeof(dump_buffer));
 }
@@ -319,8 +327,13 @@ void referee_init(void) {
     USART_RX_Config(USART6, 115200);
     DMA_USART_TX_Config(USART6);
     DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
-    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
-    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+
+		DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
+    spIRQ.registe(DMA2_Stream1_IRQn, DMA_IT_TCIF1, update_from_dma);
+	
+//    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+//    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+	
     USART_Cmd(USART6, ENABLE);
 }
 

@@ -33,6 +33,12 @@ void DMA2_Stream5_IRQHandler(void) {
         (spIRQ_ClearPending)DMA_ClearITPendingBit);
 }
 
+void DMA2_Stream1_IRQHandler(void) {
+    spIRQ.invoke(DMA2_Stream1_IRQn, DMA2_Stream1, 
+        (spIRQ_GetITStatus)DMA_GetITStatus, 
+        (spIRQ_ClearPending)DMA_ClearITPendingBit);
+}
+
 void USART1_IRQHandler (void) {
     spIRQ.invoke(USART1_IRQn, USART1, 
         (spIRQ_GetITStatus)USART_GetITStatus, 

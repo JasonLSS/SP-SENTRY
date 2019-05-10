@@ -5,6 +5,12 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.3
+- [Important] Fix the BUG of PWM output.
+- [Important] Fix the referee read.
+- Change USB NVIC.
+
+
 ## v0.3.2
 - Add USB.
 - Modified frame struct.

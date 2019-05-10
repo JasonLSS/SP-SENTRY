@@ -197,7 +197,9 @@ bool TIM_PWM_OutputInit(
     }
     
     TIM_ARRPreloadConfig(timx,ENABLE);
-    TIM_CtrlPWMOutputs(timx,ENABLE);
+		
+		if(timx==TIM1 || timx==TIM8)
+				TIM_CtrlPWMOutputs(timx,ENABLE);
     
     TIM_SetDuty(timx, channel, duty);
     
