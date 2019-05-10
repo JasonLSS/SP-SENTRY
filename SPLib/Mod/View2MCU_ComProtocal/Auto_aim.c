@@ -88,11 +88,11 @@ void Auto_aim(u8 *rx_buf,int len)
 					if_if_newframe = 0;
 				}
 				
-//				if(fabs(fram.yaw < 5) && fram.yaw != 0 && fabs(fram.pitch < 8) && fram.pitch != 0 ){
-//					auto_aim_flag = 1;
-//				}else{
-//					auto_aim_flag = 0;
-//				}
+				if(fabs(fram.yaw < 5) && fram.yaw != 0 && fabs(fram.pitch < 8) && fram.pitch != 0 ){
+					auto_aim_flag = 1;
+				}else{
+					auto_aim_flag = 0;
+				}
 
 //				u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
 //				spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);
@@ -120,6 +120,7 @@ struct {
 void Autoaim_Init(void) {
 #ifdef USING_USB
 		USB_RegisteCallback(USB_Cb);
+		sendtoComputerInit();
 #else
 		USART_RX_Config(USART2, 115200);
     DMA_USART_RX_Config(USART2, (uint32_t)view_buffer.buffer.buffer, view_buffer.buffer.size, false);

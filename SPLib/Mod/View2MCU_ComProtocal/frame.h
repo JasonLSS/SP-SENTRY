@@ -13,7 +13,7 @@ typedef struct _frame //视觉发来的数据框架
     float yaw;      //yaw误差值
     float pitch;  //pitch误差值
     u8 extra[2]; //additional imformation    
-    u8 crc8check;    //crc8校验位                
+    u8 crc8check;    //crc8校验位
 }frame;                                            
 #pragma  pack() 
 /*

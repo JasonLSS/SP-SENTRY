@@ -37,8 +37,8 @@
 float Feed_SPEED = 20.f;
 
 static uint16_t max_shoot_speed = 60;
-static int Shoot_Cooling_Time = 200;
-static int Cooling_tickets = 10;
+static int Shoot_Cooling_Time = 400;
+static int Cooling_tickets = 400;
 
 PWMFriction_Type    Friction_CH1;
 PWMFriction_Type    Friction_CH2;
@@ -473,7 +473,7 @@ void Shooting_Control_Looper (void){
 				else
 					shootState = Shoot_OFF;
 				
-				if(ext_power_heat_data.shooter_heat0 > 250){
+				if(ext_power_heat_data.shooter_heat0 > 200){
 					shootState = Shoot_OFF;
 					Cooling_tickets = 0;
 				}
@@ -511,7 +511,7 @@ void Shooting_Control_Looper (void){
 						shootState = Shoot_ON;
 					}
 					
-					if(ext_power_heat_data.shooter_heat0 > 250){
+					if(ext_power_heat_data.shooter_heat0 > 200){
 						shootState = Shoot_OFF;
 						Cooling_tickets = 0;
 					}

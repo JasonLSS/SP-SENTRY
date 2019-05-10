@@ -125,6 +125,7 @@ void packFrame(u8 *buff,frame *fram)
 {    
     memcpy(buff,fram,sizeof(frame));
     buff[sizeof(frame)-1] = crc8Check((u8 *)fram,sizeof(frame)-1);
+		buff[sizeof(frame)] = 0x00;
 }
 /***************************************************************************************
  *Name     : packFrame1
@@ -148,14 +149,18 @@ void packFrame1(u8 *buff,frame *fram)
 ****************************************************************************************/
 void sendtoComputer(void)
 {
-    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f ;
-//		sendtoCom_frame.yaw ++;
-//		sendtoCom_frame.timestamp ++;
+//    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f ;
+		sendtoCom_frame.yaw ++;
+		sendtoCom_frame.timestamp ++;
 		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
     packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
+#ifdef USING_USB
+		USB_SendData(sendbuffer,sizeof(sendtoCom_frame ) + 1);
+#else
     spDMA.controller.start(spDMA_USART2_tx_stream, (uint32_t)sendbuffer, (uint32_t)&USART2->DR, sizeof(sendtoCom_frame));
+#endif
 //    DMA_Cmd(DMA1_Stream6,ENABLE);
 //    USART_DMACmd(USART2, USART_DMAReq_Tx, ENABLE);
 }
@@ -168,14 +173,13 @@ void sendtoComputer(void)
 ****************************************************************************************/
 void sendtoComputerInit(void)
 {
-    sendtoCom_frame.head[0]=0xff;
-    sendtoCom_frame.head[1]=0xff;
+    sendtoCom_frame.head[0]=0xf1;
+    sendtoCom_frame.head[1]=0xf2;
     sendtoCom_frame.timestamp = 0x00;
     sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
     sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
-    
     packFrame(sendbuffer,&sendtoCom_frame);
 
 }

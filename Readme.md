@@ -5,6 +5,12 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.2
+- Add USB.
+- Modified frame struct.
+- Modified gimbal PID with speed pid.
+- [BUG]Shoot heat can not be limited.
+
 ## v0.3.1
 - Add shoot way.
 - First auto aim success.

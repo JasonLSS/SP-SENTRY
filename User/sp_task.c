@@ -300,7 +300,6 @@ void TASK_ControlLooper() {
 				#ifdef USING_SENTRY_CHASIS
 						spCHASIS._system.looper(task_counter, &recv);
 				#endif
-				static RC_DataType recv_ex;
 				static uint16_t remain_HP;
 				static uint16_t remain_HP_ex;
         if(task_counter%10 == 1) {
@@ -323,16 +322,13 @@ void TASK_ControlLooper() {
 										else
 												attacked_time--;
 										//task_lss
-										if(enemy_area == 6 && !attacked)
-											robotMode = CRUISE_MODE;
-										if(ext_game_robot_state.remain_HP > 300 && enemy_area != 6)
+										if(!attacked)
 											robotMode = DYNAMIC_ATTACK_MODE;
-				 						if(ext_game_robot_state.remain_HP > 500 && enemy_area != 6 && !attacked)
+				 						if(ext_game_robot_state.remain_HP > 500 && if_if_newframe && !attacked)
 											robotMode = STATIC_ATTACK_MODE;
-										if(ext_game_robot_state.remain_HP < 300 && 
-											 ext_game_robot_state.remain_HP > 100 && enemy_area != 6)
+										if(if_if_newframe && attacked)
 											robotMode = ESCAPE_ATTACK_MODE;
-										if((enemy_area == 6 ||ext_game_robot_state.remain_HP < 100)&& attacked)
+										if((!if_if_newframe ||ext_game_robot_state.remain_HP < 100)&& attacked)
 											robotMode = ESCAPE_MODE;
 										
 										remain_HP_ex = remain_HP;
@@ -352,10 +348,10 @@ void TASK_ControlLooper() {
         } else if(task_counter%10 == 7) {
 						Infrared_Update();//task_lss
         }
-//				if(task_counter%5 == 0)
-//				{
-//					sendtoComputer();
-//				}
+//				if(task_counter%2 == 0)
+				{
+					sendtoComputer();
+				}
 		}
 /*------------------------------------------------------------------------*/
 /* System layer looper [PRIVATE] */
