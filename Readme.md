@@ -5,6 +5,9 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.4
+- Modified shoot heat limit.
+
 ## v0.3.3
 - [Important] Fix the BUG of PWM output.
 - [Important] Fix the referee read.

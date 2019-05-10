@@ -473,7 +473,7 @@ void Shooting_Control_Looper (void){
 				else
 					shootState = Shoot_OFF;
 				
-				if(ext_power_heat_data.shooter_heat0 > 200){
+				if(ext_power_heat_data.shooter_heat0 > 440){
 					shootState = Shoot_OFF;
 					Cooling_tickets = 0;
 				}
@@ -511,7 +511,7 @@ void Shooting_Control_Looper (void){
 						shootState = Shoot_ON;
 					}
 					
-					if(ext_power_heat_data.shooter_heat0 > 200){
+					if(ext_power_heat_data.shooter_heat0 > 440){
 						shootState = Shoot_OFF;
 						Cooling_tickets = 0;
 					}
