@@ -351,10 +351,10 @@ void TASK_ControlLooper() {
         } else if(task_counter%10 == 7) {
 						Infrared_Update();//task_lss
         }
-//				if(task_counter%2 == 0)
-//				{
-//					sendtoComputer();
-//				}
+				if(task_counter%2 == 0)
+				{
+					sendtoComputer();
+				}
 		}
 /*------------------------------------------------------------------------*/
 /* System layer looper [PRIVATE] */

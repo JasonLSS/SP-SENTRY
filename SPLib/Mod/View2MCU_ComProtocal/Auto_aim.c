@@ -87,12 +87,12 @@ void Auto_aim(u8 *rx_buf,int len)
 				if(fram.yaw == 0 && fram.pitch == 0){
 					if_if_newframe = 0;
 				}
-				
-				if(fabs(fram.yaw < 5) && fram.yaw != 0 && fabs(fram.pitch < 8) && fram.pitch != 0 ){
-					auto_aim_flag = 1;
-				}else{
-					auto_aim_flag = 0;
-				}
+//				
+//				if(fabs(fram.yaw < 5) && fram.yaw != 0 && fabs(fram.pitch < 8) && fram.pitch != 0 ){
+//					auto_aim_flag = 1;
+//				}else{
+//					auto_aim_flag = 0;
+//				}
 
 //				u8 size = sprintf(uart6_buff, "%d,%f,%d\r\n",len, fram.yaw, miss);
 //				spDMA.controller.start(spDMA_UART7_tx_stream, (uint32_t)uart6_buff, (uint32_t)&UART7->DR, size);

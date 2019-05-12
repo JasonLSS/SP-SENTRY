@@ -149,12 +149,9 @@ void packFrame1(u8 *buff,frame *fram)
 ****************************************************************************************/
 void sendtoComputer(void)
 {
-//    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f ;
-		sendtoCom_frame.yaw ++;
+    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle ;
 		sendtoCom_frame.timestamp ++;
-		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
-//    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
-//    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
+		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle;
     packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
 #ifdef USING_USB
 		USB_SendData(sendbuffer,sizeof(sendtoCom_frame ) + 1);

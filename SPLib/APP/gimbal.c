@@ -225,7 +225,7 @@ void GIMBAL_State(void){
 					if(times_D>300){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed * yaw_direction;
-						pitch_set += pitch_cruise_speed * pitch_direction;
+						pitch_set = 0.7f;
 						times_D = 300;
 					}
 			}

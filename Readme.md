@@ -5,6 +5,10 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.5
+- Add USB send.
+- Delete pitch cruise.
+
 ## v0.3.4
 - Modified shoot heat limit.
 
