@@ -1,17 +1,17 @@
 /**
   ******************************************************************************
-  * @file       CMControl.c
-  * @author     @YangTianhao,490999282@qq.com; @TangJiaxin, tjx1024@126.com
-  * @version    v1.0
-  * @date       2017.Dec.11
-  * @brief      Control Chassis Motors.
-                CMControlLoop() shows the way to control the motion of chassis in different states.   
-                Use PID to optimize Chassis motor control.        
+  * @file       sp_chasis.c
+  * @author     LSS
+  * @version    v0.0-alpha
+  * @date       2019.May.12
+  * @brief      chasis control
+  * @usage      
   ******************************************************************************
   * @license
   *
   ******************************************************************************
   */
+
 
 #include "sp_chasis.h"
 #include "sp_sensor.h"
@@ -40,6 +40,8 @@ uint16_t distance_Threshold = 150;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
 float SPEED_CHANGE_LIMIT =200.f;
+bool L_flag = true;
+bool R_flag = true;
 
 PID_Type speedbalance;
 
@@ -76,6 +78,12 @@ void CHASIS_Move(float speed) {
 		
 		motor201->control.output = target_motor201;
 		motor202->control.output = target_motor202;
+		
+		static char usart3_buff[128];
+		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
+													target_motor201,motor202->state.speed, speedB,
+													target_motor202);
+		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 
@@ -113,8 +121,34 @@ void CM_ParallelXAuto(float NowPosition, float TargetPosition);
 void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
     if(tick%10 == 1) {
         L_distance = TOF10120_1distance();
+				R_distance = TOF10120_2distance();
+				static int L_down_time = 0;
+				static int R_down_time = 0;
+				static int DOWN_TIME = 30;
+				if(L_distance == 0){
+					L_down_time ++;
+					if(L_down_time > DOWN_TIME){
+						L_flag = false;
+						L_down_time = DOWN_TIME;
+					}
+					else{
+						L_flag = true;
+						L_down_time = 0;
+					}
+				}
+				if(R_distance == 0){
+					R_down_time ++;
+					if(R_down_time > DOWN_TIME){
+						R_flag = false;
+						R_down_time = DOWN_TIME;
+					}
+					else{
+						R_flag = true;
+						R_down_time = 0;
+					}
+				}
     } else if(tick%10 == 3) {
-        R_distance = TOF10120_2distance();
+
     } else if(tick%10 == 7) {
 				if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
 						speed = 0;
@@ -211,7 +245,6 @@ float CHASIS_Legalize(float MotorCurrent , float limit)
 	return MotorCurrent<-limit?-limit:(MotorCurrent>limit?limit:MotorCurrent);
 }
 
-/*-------------  功率监视程序  -------------*/
 void CMWatt_Cal(void)//task_lss
 {
 		if(ext_power_heat_data.chassis_power_buffer<30&&ext_power_heat_data.chassis_power_buffer > 0)

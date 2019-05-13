@@ -154,12 +154,12 @@
 //  <h> Test Module Select
 //  <c1> USING_SENTRY_CHASIS
 //    <i> USING_SENTRY_CHASIS
-//#define USING_SENTRY_CHASIS
+#define USING_SENTRY_CHASIS
 //  </c>
 
 //  <c1> USING_SPEEDBALANCE
 //    <i> USING_SPEEDBALANCE
-//#define USING_SPEED_BALANCE
+#define USING_SPEED_BALANCE
 //  </c>
 
 //  <c1> USING_FRICTION

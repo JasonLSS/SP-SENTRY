@@ -5,6 +5,10 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.6
+- Add protect of chasis sensor,which need to be test.
+- Fix the gimbal switch delay bug.
+
 ## v0.3.5
 - Add USB send.
 - Delete pitch cruise.

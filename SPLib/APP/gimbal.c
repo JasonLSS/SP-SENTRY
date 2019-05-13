@@ -1,17 +1,17 @@
 /**
   ******************************************************************************
-  * @file       CMControl.c
-  * @author     @YangTianhao,490999282@qq.com; @TangJiaxin, tjx1024@126.com
-  * @version    v1.0
-  * @date       2017.Dec.11
-  * @brief      Control Chassis Motors.
-                CMControlLoop() shows the way to control the motion of chassis in different states.   
-                Use PID to optimize Chassis motor control.        
+  * @file       gimbal.c
+  * @author     LSS
+  * @version    v0.0-alpha
+  * @date       2019.Mar.12
+  * @brief      gimbal control
+  * @usage      
   ******************************************************************************
   * @license
   *
   ******************************************************************************
   */
+
   
 /* Includes ------------------------------------------------------------------*/
 #include "gimbal.h"
@@ -127,9 +127,9 @@ void GIMBAL_ControlLooper(void) {
 		spMOTOR.user.set_position(CAN1, Motor208, GimbalController.yaw_set);
 		spMOTOR.user.set_position(CAN1, Motor205, GimbalController.pitch_set);
 	
-		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, frame_visual.yaw,
-													gimbal_yaw_motor->control.target,gimbal_pitch_motor->control.target);
-		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
+//		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, frame_visual.yaw,
+//													gimbal_yaw_motor->control.target,gimbal_pitch_motor->control.target);
+//		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 static float times_D = 0;
@@ -156,15 +156,15 @@ void GIMBAL_State(void){
 		}
 		if(robotMode == STATIC_ATTACK_MODE && robotMode^robotMode_ex){
 			spGIMBAL_Controller.user.cruise_pid_init();
-			times_D= 100;
+			times_D= 300;
 		}
 		if(robotMode == DYNAMIC_ATTACK_MODE && robotMode^robotMode_ex){
 			spGIMBAL_Controller.user.cruise_pid_init();
-			times_D = 100;
+			times_D = 300;
 		}
 		if(robotMode == ESCAPE_ATTACK_MODE && robotMode^robotMode_ex){
 			spGIMBAL_Controller.user.cruise_pid_init();
-			times_D = 100;
+			times_D = 300;
 		}
 		
 		if(robotMode == STANDBY_MODE && gimbal_inited){
