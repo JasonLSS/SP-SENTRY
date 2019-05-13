@@ -71,13 +71,13 @@ void Auto_aim(u8 *rx_buf,int len)
 								 frame_visual.pitch < - pitch_frame_max ? - pitch_frame_max : frame_visual.pitch);
 
 				
-				if(fram.extra[0] == 4){
+				if(fram.extra[0] == 100){
 					if_if_newframe = 0;auto_aim_flag = 0;
 				}
-				else if(fram.extra[0] == 5){
+				else if(fram.extra[0] == 101){
 					if_if_newframe = 1;auto_aim_flag = 0;
 				}
-				else if(fram.extra[0] == 7){
+				else if(fram.extra[0] == 111){
 					if_if_newframe = 1;auto_aim_flag = 1;
 				}
 				else{

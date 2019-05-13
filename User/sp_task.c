@@ -325,10 +325,18 @@ void TASK_ControlLooper() {
 										else
 												attacked_time--;
 										//task_lss
-										if(!attacked)
+										if(!attacked){
+											static int static_long = 0;
 											robotMode = DYNAMIC_ATTACK_MODE;
-				 						if(ext_game_robot_state.remain_HP > 500 && if_if_newframe && !attacked)
-											robotMode = STATIC_ATTACK_MODE;
+											if(ext_game_robot_state.remain_HP > 400 && if_if_newframe && !attacked){
+												robotMode = STATIC_ATTACK_MODE;
+												static_long = 30;
+											}
+											if(static_long > 0){
+												static_long--;
+												robotMode = STATIC_ATTACK_MODE;
+											}
+										}
 										if(if_if_newframe && attacked)
 											robotMode = ESCAPE_ATTACK_MODE;
 										if((!if_if_newframe ||ext_game_robot_state.remain_HP < 100)&& attacked)

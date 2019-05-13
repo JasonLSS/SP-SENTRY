@@ -5,6 +5,13 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v0.3.7
+- Add static mode protect.
+- Add motor stall protection for sensor offline.
+- Add feed motor protect.
+- Change tof address to L-160-3 and R-166-1.
+- Change communicate rules with miniPC.
+
 ## v0.3.6
 - Add protect of chasis sensor,which need to be test.
 - Fix the gimbal switch delay bug.

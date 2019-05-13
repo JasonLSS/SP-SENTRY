@@ -527,6 +527,8 @@ void Shooting_Control_Looper (void){
 
 				}
 			}
+			if(frictionState == Friction_OFF)
+				shootState = Shoot_OFF;
 			Feed_Motor_Looper();
 		#endif
 		recv_ex = recv;

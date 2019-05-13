@@ -33,7 +33,7 @@ float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
 float cruise_speed = 20.0f;
-float chasis_speed_limit = 30.0f;
+float chasis_speed_limit = 20.0f;
 float speedA,speedB;
 uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 150;
@@ -42,7 +42,7 @@ float Distance_Limit = 450.f;
 float SPEED_CHANGE_LIMIT =200.f;
 bool L_flag = true;
 bool R_flag = true;
-
+bool change_flag = false;
 PID_Type speedbalance;
 
 void CHASIS_Move(float speed) {
@@ -78,6 +78,24 @@ void CHASIS_Move(float speed) {
 		
 		motor201->control.output = target_motor201;
 		motor202->control.output = target_motor202;
+		
+		static int stop_time = 0;
+		static bool last_change = false;
+		if(!change_flag && last_change)
+			stop_time = 0;
+		if((change_flag == false) && ((fabs((target_motor201)/5000.f-(motor201->state.speed/20.f)) > 0.2f)||
+												(fabs((target_motor202)/5000.f-(motor202->state.speed/20.f)) > 0.2f))){
+			stop_time++;
+			if(stop_time > 100){
+				change_flag = true;
+				stop_time = 100;
+			}
+		}
+		else{
+			stop_time = 0;
+			change_flag = false;
+		}
+		last_change = change_flag;
 		
 		static char usart3_buff[128];
 		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
@@ -120,7 +138,7 @@ void CM_ParallelXAuto(float NowPosition, float TargetPosition);
 
 void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
     if(tick%10 == 1) {
-        L_distance = TOF10120_1distance();
+        L_distance = TOF10120_3distance();
 				R_distance = TOF10120_2distance();
 				static int L_down_time = 0;
 				static int R_down_time = 0;
@@ -131,23 +149,23 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						L_flag = false;
 						L_down_time = DOWN_TIME;
 					}
-					else{
+				}
+				else{
 						L_flag = true;
 						L_down_time = 0;
 					}
-				}
 				if(R_distance == 0){
 					R_down_time ++;
 					if(R_down_time > DOWN_TIME){
 						R_flag = false;
 						R_down_time = DOWN_TIME;
 					}
-					else{
-						R_flag = true;
-						R_down_time = 0;
-					}
 				}
-    } else if(tick%10 == 3) {
+				else{
+					R_flag = true;
+					R_down_time = 0;
+				}
+    } else if(tick%10 == 3) { 
 
     } else if(tick%10 == 7) {
 				if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
@@ -231,6 +249,13 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				if((R_distance>0&&R_distance<distance_Threshold))
 						chasis_direction = -1;
 				
+				if(!R_flag || !L_flag){
+					if(change_flag){
+						chasis_direction = -chasis_direction;
+						change_flag = false;
+					}
+				}
+				
 				chasis_speed = Speed_Change_Limit(speed * chasis_direction);                           //new program
         recv_ex = *recv;
 				robotMode_ex = robotMode;
@@ -250,7 +275,7 @@ void CMWatt_Cal(void)//task_lss
 		if(ext_power_heat_data.chassis_power_buffer<30&&ext_power_heat_data.chassis_power_buffer > 0)
 			chasis_speed_limit=chasis_speed_limit-0.001f*(1.3f-ext_power_heat_data.chassis_power_buffer/60.0f)*chasis_speed_limit;
 		else 
-			chasis_speed_limit=30.0f;
+			chasis_speed_limit=20.0f;
 }
 
 int IfUsingPowerBuffer(void){
