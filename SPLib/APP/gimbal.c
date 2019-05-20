@@ -61,11 +61,11 @@ static float yaw_limit_min = -2.6f;
 static float pitch_limit_max = 2000.f/8192.f*2.f*PI;
 static float pitch_limit_min = 100.f/8192.f*2.f*PI;
 
-float visual_syaw_kp = 8.0f;
+float visual_syaw_kp = 6.0f;
 float visual_syaw_ki = 0.2f;
 float visual_syaw_kd = 0.1f;
 
-float visual_lyaw_kp = 10.0f;
+float visual_lyaw_kp = 8.0f;
 float visual_lyaw_ki = 0.0f;
 float visual_lyaw_kd = 1.f;
 
@@ -77,7 +77,7 @@ float visual_lpitch_kp = 8.0f;
 float visual_lpitch_ki = 0.0f;
 float visual_lpitch_kd = 0.0f;
 
-float yaw_seperate_limit = 15.f;
+float yaw_seperate_limit = 13.f;
 float pitch_seperate_limit = 8.f;
 
 
@@ -119,6 +119,7 @@ void GIMBAL_ControlInit(void) {
     
     spGIMBAL_Controller._target.gimbal_yaw_motor = gimbal_yaw_motor;
     spGIMBAL_Controller._target.gimbal_pitch_motor = gimbal_pitch_motor;
+		gimbal_pitch_motor->flags.stop = true;
 
 }
 
@@ -127,9 +128,9 @@ void GIMBAL_ControlLooper(void) {
 		spMOTOR.user.set_position(CAN1, Motor208, GimbalController.yaw_set);
 		spMOTOR.user.set_position(CAN1, Motor205, GimbalController.pitch_set);
 	
-//		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, frame_visual.yaw,
-//													gimbal_yaw_motor->control.target,gimbal_pitch_motor->control.target);
-//		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
+		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, frame_visual.yaw,
+													gimbal_yaw_motor->control.target,gimbal_pitch_motor->control.target);
+		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 static float times_D = 0;
@@ -191,10 +192,10 @@ void GIMBAL_State(void){
 		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE || robotMode == STATIC_ATTACK_MODE){
 			if(if_if_newframe){
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.0349f;
-					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f;
+					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.0349f + 0.05f;
 					//yaw seperate
 					static float large_time = 0.f;
-					static float large_seperate = 6.f;
+					static float large_seperate = 3.f;
 					if(fabs(frame_visual.yaw) > yaw_seperate_limit){
 						spGIMBAL_Controller.user.visual_ly_pid();
 						large_time ++;
@@ -209,8 +210,17 @@ void GIMBAL_State(void){
 						large_time = 0;
 					}
 					
+					static float largep_time = 0.f;
+					static float largep_seperate = 3.f;
 					if(fabs(frame_visual.pitch) > pitch_seperate_limit){
 						spGIMBAL_Controller.user.visual_lp_pid();
+						largep_time ++;
+						if(largep_time > largep_seperate){
+							yaw_set = gimbal_yaw_motor->state.angle +  frame_visual.yaw * 0.0349f/large_time*largep_seperate;
+						}
+						if(largep_time > 2 * largep_seperate){
+							largep_time = 2 * largep_seperate;
+						}
 					}else{
 						spGIMBAL_Controller.user.visual_sp_pid();
 					}
@@ -296,9 +306,10 @@ bool GIMBAL_MiddleLooper(uint32_t tick) {
         gimbal_yaw_motor->control.position_pid->Kp = yaw_kp_0;
         gimbal_yaw_motor->control.position_pid->Ki = yaw_ki_0;
 				gimbal_inited = true;
+				gimbal_pitch_motor->flags.stop = false;
         return true;
     } else {
-        if(abs(gimbal_yaw_motor->state.__motor_angel_curr - MIDDLE_YAW)<1.f/0.0439f ) {
+        if(abs(gimbal_yaw_motor->state.__motor_angel_curr - MIDDLE_YAW)<3.f/0.0439f ) {
             pass_flag ++;
         } else {
             pass_flag = 0;
@@ -306,8 +317,14 @@ bool GIMBAL_MiddleLooper(uint32_t tick) {
         
         if(tick%10==1) {
             if(gimbal_yaw_motor->state.__motor_angel_last!=-1) {
+							if(gimbal_yaw_motor->state.__motor_angel_first > (MIDDLE_YAW + spMATH_RAD2DEG(yaw_limit_max)/MOTOR_ENCODER_CONVERT)){
+								GIMBAL_UpdateYaw(spMATH_DEG2RAD(MOTOR_ENCODER_CONVERT*(8192.f +
+									MIDDLE_YAW - gimbal_yaw_motor->state.__motor_angel_first)));
+							}
+							else{
                 GIMBAL_UpdateYaw(spMATH_DEG2RAD(MOTOR_ENCODER_CONVERT*(
 									MIDDLE_YAW - gimbal_yaw_motor->state.__motor_angel_first)));
+							}
             }
             
         }

@@ -5,6 +5,14 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v1.0.1
+- Add watchdog.
+- Add pitch seperate.
+- Fix the bug of middle looper.
+- Change the start speed of friction.
+- Change power limit.
+- Change frame pitch max.
+
 ## v0.3.7
 - Add static mode protect.
 - Add motor stall protection for sensor offline.

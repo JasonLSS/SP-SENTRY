@@ -32,14 +32,14 @@ float target_motor201 = 0;
 float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
-float cruise_speed = 20.0f;
-float chasis_speed_limit = 20.0f;
+float cruise_speed = 15.0f;
+float chasis_speed_limit = 15.0f;
 float speedA,speedB;
 uint16_t L_distance = 0, R_distance = 0;
-uint16_t distance_Threshold = 150;
+uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT =200.f;
+float SPEED_CHANGE_LIMIT =0.5f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -97,11 +97,11 @@ void CHASIS_Move(float speed) {
 		}
 		last_change = change_flag;
 		
-		static char usart3_buff[128];
-		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
-													target_motor201,motor202->state.speed, speedB,
-													target_motor202);
-		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
+//		static char usart3_buff[128];
+//		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
+//													target_motor201,motor202->state.speed, speedB,
+//													target_motor202);
+//		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 
@@ -201,6 +201,8 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 								EnemyCoefficient = EnemyCoefficient - 0.8f;
 							else if(EnemyCoefficient > 0 && EnemyCoefficient < 0.8f)
 								EnemyCoefficient = EnemyCoefficient + 0.8f;
+							else
+								EnemyCoefficient = 1;
 							speed = cruise_speed * fabs(EnemyCoefficient);
 							chasis_direction = sign(EnemyCoefficient);
 						}
@@ -219,6 +221,8 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 								EnemyCoefficient = EnemyCoefficient - 0.8f;         
 							else if(EnemyCoefficient > 0 && EnemyCoefficient < 0.8f)
 								EnemyCoefficient = EnemyCoefficient + 0.8f;
+							else
+								EnemyCoefficient = 1;
 						}
 						if(IfUsingPowerBuffer()){
 							EscapeCoefficient += 0.5f;
@@ -272,10 +276,20 @@ float CHASIS_Legalize(float MotorCurrent , float limit)
 
 void CMWatt_Cal(void)//task_lss
 {
-		if(ext_power_heat_data.chassis_power_buffer<30&&ext_power_heat_data.chassis_power_buffer > 0)
-			chasis_speed_limit=chasis_speed_limit-0.001f*(1.3f-ext_power_heat_data.chassis_power_buffer/60.0f)*chasis_speed_limit;
-		else 
-			chasis_speed_limit=20.0f;
+		if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){
+			chasis_speed_limit=50.0f;
+			if(ext_power_heat_data.chassis_power_buffer<50&&ext_power_heat_data.chassis_power_buffer > 0){
+				chasis_speed_limit=60-10*(ext_power_heat_data.chassis_power/20.0f);
+				chasis_speed_limit=chasis_speed_limit*ext_power_heat_data.chassis_power_buffer/50.0f;
+			}
+		}
+		else{
+			chasis_speed_limit=15.0f;
+			if(ext_power_heat_data.chassis_power_buffer<150&&ext_power_heat_data.chassis_power_buffer > 0){
+				chasis_speed_limit=30-15*(ext_power_heat_data.chassis_power/20.0f);
+				chasis_speed_limit=chasis_speed_limit*ext_power_heat_data.chassis_power_buffer/150.0f;
+			}
+		}
 }
 
 int IfUsingPowerBuffer(void){

@@ -30,7 +30,7 @@ float last_yaw = 0;
 float yaw_aim_limit = 2;
 float pitch_aim_limit = 10;
 float yaw_frame_max = 20;
-float pitch_frame_max = 15;
+float pitch_frame_max = 5;
 //char uart6_buff[256];
 
 uint8_t auto_aim_flag = 0;

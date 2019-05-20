@@ -33,6 +33,7 @@
 #include "sp_chasis.h"
 #include "referee.h"
 #include "infrared.h"
+#include "sp_watchdog.h"
 
 /** @addtogroup SP
   * @brief      SuperPower
@@ -236,6 +237,8 @@ void TASK_GlobalInit() {
 #ifdef USING_USB
 				USB_TaskInit();
 #endif
+
+				
     }
 
     /**
@@ -362,6 +365,9 @@ void TASK_ControlLooper() {
 				if(task_counter%2 == 0)
 				{
 					sendtoComputer();
+				}
+				if(task_counter % 30 == 0){
+					SP_WatchDog_FeedDog();
 				}
 		}
 /*------------------------------------------------------------------------*/

@@ -37,7 +37,7 @@
 float Feed_SPEED = 20.f;
 
 static uint16_t max_shoot_speed = 60;
-static int Shoot_Cooling_Time = 400;
+static int Shoot_Cooling_Time = 200;
 static int Cooling_tickets = 400;
 
 PWMFriction_Type    Friction_CH1;
@@ -349,7 +349,7 @@ void Friction_Looper(void) {
 		else if(frictionState == Friction_ON){
 				frictionState = Friction_ON;
 				timeticket++;
-				if(timeticket%5 == 0)
+				if(timeticket%15 == 0)
 						speed_shoot += (speed_shoot<max_shoot_speed)?10:0;
 				if(timeticket>10000)
 					timeticket = 0;
