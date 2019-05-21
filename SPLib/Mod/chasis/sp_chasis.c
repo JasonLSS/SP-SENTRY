@@ -253,6 +253,13 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				if((R_distance>0&&R_distance<distance_Threshold))
 						chasis_direction = -1;
 				
+#ifdef AIR_PROTECT
+				MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
+				if(motor201->state.angle > 0){
+						chasis_direction = -1;
+				}
+#endif
+				
 				if(!R_flag || !L_flag){
 					if(change_flag){
 						chasis_direction = -chasis_direction;
