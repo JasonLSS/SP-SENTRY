@@ -5,6 +5,15 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v1.0.3
+- [Important] Fix the auto aim bug of double degree.
+- Delete protect of gimbal change.
+- Add gimbal keep model.
+
+## v1.0.2
+- Change chasis power heat control.
+- Close speed balance.
+
 ## v1.0.1
 - Add watchdog.
 - Add pitch seperate.

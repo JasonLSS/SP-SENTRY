@@ -32,8 +32,9 @@ float target_motor201 = 0;
 float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
-float cruise_speed = 15.0f;
-float chasis_speed_limit = 15.0f;
+float cruise_speed = 19.0f;
+float chasis_speed_limit = 80.0f;
+float	chasis_out_limit=800.0f;
 float speedA,speedB;
 uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
@@ -45,11 +46,10 @@ bool R_flag = true;
 bool change_flag = false;
 PID_Type speedbalance;
 
+float test_output = 0;
+
 void CHASIS_Move(float speed) {
     // TODO: Make interval time more specific.
-		#ifdef CHASIS_POWER_LIMIT
-				CMWatt_Cal();
-		#endif
 	
 		MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
 		MOTOR_CrtlType_CAN* motor202 = spMOTOR.user.get(CAN1, Motor202);
@@ -76,8 +76,27 @@ void CHASIS_Move(float speed) {
 		target_motor202 = PID_ControllerDriver(&spCHASIS._system.params.PID.y, 
 		speedB, spCHASIS._system.params.state.y);
 		
-		motor201->control.output = target_motor201;
-		motor202->control.output = target_motor202;
+		#ifdef CHASIS_POWER_LIMIT
+			CMWatt_Cal();
+			static float target_all = 0;
+			target_all = fabs(target_motor201) + fabs(target_motor202);
+			
+			if(target_all < chasis_out_limit){
+				motor201->control.output = target_motor201;
+				motor202->control.output = target_motor202;
+			}
+			else{
+				motor201->control.output = target_motor201/target_all*chasis_out_limit;
+				motor202->control.output = target_motor202/target_all*chasis_out_limit;
+			}
+			if(chasis_out_limit == 0){
+				motor201->control.output = 0;
+				motor202->control.output = 0;
+			}
+		#else
+			motor201->control.output = target_motor201;
+			motor202->control.output = target_motor202;
+		#endif
 		
 		static int stop_time = 0;
 		static bool last_change = false;
@@ -96,7 +115,10 @@ void CHASIS_Move(float speed) {
 			change_flag = false;
 		}
 		last_change = change_flag;
-		
+		if(test_output != 0){
+			motor201->control.output = test_output;
+			motor202->control.output = test_output;
+		}
 //		static char usart3_buff[128];
 //		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
 //													target_motor201,motor202->state.speed, speedB,
@@ -177,7 +199,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 
 				if(robotMode == REMOTE_MODE){
-						speed = (abs(recv->rc.ch2)<20?0:recv->rc.ch2)/20.f;
+						speed = (abs(recv->rc.ch2)<20?0:recv->rc.ch2)/8.f;
 				}
 				else if(robotMode == STANDBY_MODE){
 						speed = 0;
@@ -191,7 +213,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				else if(robotMode == DYNAMIC_ATTACK_MODE){
 						static float timeticket = 0;
 						static float EnemyCoefficient = 1.0f;
-						if(timeticket < 100){
+						if(timeticket < 500){
 							timeticket++;
 						}
 						else{
@@ -208,7 +230,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						}
 				}
 				else if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){//task_lss
-						float EscapeCoefficient = 2.0f;    //(1.5/2.0/2.5)
+						float EscapeCoefficient = 3.0f;    //(1.5/2.0/2.5)
 						static float timeticket = 0;
 						static float EnemyCoefficient = 1.0f;   //  (0.8 ~ 2)+(0.8 ~ 1.6)
 						if(timeticket < 100){
@@ -230,7 +252,6 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						else
 							EscapeCoefficient = 1.5f; 
 						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient);   // (1.2~5)cruise_speed = (14.4 ~ 60)
-						chasis_direction = sign(EnemyCoefficient);
 				}
 				else if(robotMode == CURVE_ATTACK_MODE){//task_lss
 						static float time = 0;
@@ -284,18 +305,30 @@ float CHASIS_Legalize(float MotorCurrent , float limit)
 void CMWatt_Cal(void)//task_lss
 {
 		if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){
-			chasis_speed_limit=50.0f;
+			chasis_out_limit=12000.0f;
 			if(ext_power_heat_data.chassis_power_buffer<50&&ext_power_heat_data.chassis_power_buffer > 0){
-				chasis_speed_limit=60-10*(ext_power_heat_data.chassis_power/20.0f);
-				chasis_speed_limit=chasis_speed_limit*ext_power_heat_data.chassis_power_buffer/50.0f;
+				chasis_out_limit=12000.f-11000.f*(ext_power_heat_data.chassis_power/40.0f);
+				if(chasis_out_limit < 0)
+					chasis_out_limit = 0;
+				chasis_out_limit=chasis_out_limit*(ext_power_heat_data.chassis_power_buffer)/50.0f;
 			}
+			if(ext_power_heat_data.chassis_power_buffer == 0)
+					chasis_out_limit = 0;
 		}
 		else{
-			chasis_speed_limit=15.0f;
-			if(ext_power_heat_data.chassis_power_buffer<150&&ext_power_heat_data.chassis_power_buffer > 0){
-				chasis_speed_limit=30-15*(ext_power_heat_data.chassis_power/20.0f);
-				chasis_speed_limit=chasis_speed_limit*ext_power_heat_data.chassis_power_buffer/150.0f;
+			chasis_out_limit=6000.0f;
+			if(ext_power_heat_data.chassis_power_buffer<200&&ext_power_heat_data.chassis_power_buffer > 0){
+				chasis_out_limit=10000.f-4000.f*(ext_power_heat_data.chassis_power/20.0f);
+				chasis_out_limit=chasis_out_limit*(ext_power_heat_data.chassis_power_buffer-150)/50.0f;
 			}
+			if(ext_power_heat_data.chassis_power_buffer<50&&ext_power_heat_data.chassis_power_buffer > 0){
+				chasis_out_limit=10000.f-4000.f*(ext_power_heat_data.chassis_power/20.0f);
+				chasis_out_limit=chasis_out_limit*(ext_power_heat_data.chassis_power_buffer)/50.0f;
+			}
+			if(ext_power_heat_data.chassis_power_buffer == 0)
+					chasis_out_limit = 0;
+			if(chasis_out_limit < 0)
+					chasis_out_limit = 0;
 		}
 }
 

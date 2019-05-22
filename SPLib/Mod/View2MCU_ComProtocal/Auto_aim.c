@@ -29,8 +29,8 @@ float last_pitch = 0;
 float last_yaw = 0;
 float yaw_aim_limit = 2;
 float pitch_aim_limit = 10;
-float yaw_frame_max = 20;
-float pitch_frame_max = 5;
+float yaw_frame_max = 40;
+float pitch_frame_max = 30;
 //char uart6_buff[256];
 
 uint8_t auto_aim_flag = 0;
@@ -79,6 +79,9 @@ void Auto_aim(u8 *rx_buf,int len)
 				}
 				else if(fram.extra[0] == 111){
 					if_if_newframe = 1;auto_aim_flag = 1;
+				}
+				else if(fram.extra[0] == 102){
+					if_if_newframe = 2;auto_aim_flag = 0;
 				}
 				else{
 					if_if_newframe = 0;auto_aim_flag = 0;
