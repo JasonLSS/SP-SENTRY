@@ -498,6 +498,7 @@ void Shooting_Control_Looper (void){
 						shootState = Shoot_ON;
 					else
 						shootState = Shoot_OFF;
+
 					static float times_tick = 0;
 					if(recv.rc.ch0 > 600 && times_tick < 20){
 						shootState = Shoot_ON;

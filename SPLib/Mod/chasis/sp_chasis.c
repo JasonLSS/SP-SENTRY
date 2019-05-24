@@ -40,7 +40,7 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT =0.5f;
+float SPEED_CHANGE_LIMIT =1.f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -278,6 +278,9 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
 				if(motor201->state.angle > 0){
 						chasis_direction = -1;
+				}
+				if(motor201->state.angle < -200){
+						chasis_direction = 1;
 				}
 #endif
 				

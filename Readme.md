@@ -5,6 +5,12 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v1.0.4
+- Add back protect of gimbal change.
+- Change yaw and pitch limit,and yaw_cruise speed.
+- Change SPEED_CHANGE_LIMIT.
+- Add protect of chasis by angle.
+
 ## v1.0.3
 - [Important] Fix the auto aim bug of double degree.
 - Delete protect of gimbal change.

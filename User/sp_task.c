@@ -313,7 +313,7 @@ void TASK_ControlLooper() {
 								if(recv.rc.s1==RC_SW_MID) {
 										robotMode = CRUISE_MODE;
 								} else if(recv.rc.s1==RC_SW_DOWN){
-										robotMode = DYNAMIC_ATTACK_MODE;
+										robotMode = STATIC_ATTACK_MODE;
 								}else if(recv.rc.s1==RC_SW_UP){
 										//all auto mode
 										static bool attacked = 0;
