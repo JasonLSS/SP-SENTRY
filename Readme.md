@@ -5,6 +5,11 @@ This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
 
+## v1.1.0
+- Increase speed limit.
+- Add protect of different speed.
+- [IMPORTANT]Final version of the division.
+
 ## v1.0.4
 - Add back protect of gimbal change.
 - Change yaw and pitch limit,and yaw_cruise speed.

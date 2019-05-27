@@ -32,7 +32,7 @@ float target_motor201 = 0;
 float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
-float cruise_speed = 19.0f;
+float cruise_speed = 30.0f;
 float chasis_speed_limit = 80.0f;
 float	chasis_out_limit=800.0f;
 float speedA,speedB;
@@ -40,7 +40,7 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT =1.f;
+float SPEED_CHANGE_LIMIT =0.5f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -230,7 +230,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						}
 				}
 				else if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){//task_lss
-						float EscapeCoefficient = 3.0f;    //(1.5/2.0/2.5)
+						float EscapeCoefficient = 2.0f;    //(1.5/2.0/2.5)
 						static float timeticket = 0;
 						static float EnemyCoefficient = 1.0f;   //  (0.8 ~ 2)+(0.8 ~ 1.6)
 						if(timeticket < 100){
@@ -267,6 +267,13 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 				else{
 						speed = 0;
+				}
+				
+				if(speed > 40){
+					distance_Threshold = 400;
+				}
+				else{
+					distance_Threshold = 250;
 				}
 				
 				if((L_distance>0&&L_distance<distance_Threshold))
@@ -319,7 +326,7 @@ void CMWatt_Cal(void)//task_lss
 					chasis_out_limit = 0;
 		}
 		else{
-			chasis_out_limit=6000.0f;
+			chasis_out_limit=8000.0f;
 			if(ext_power_heat_data.chassis_power_buffer<200&&ext_power_heat_data.chassis_power_buffer > 0){
 				chasis_out_limit=10000.f-4000.f*(ext_power_heat_data.chassis_power/20.0f);
 				chasis_out_limit=chasis_out_limit*(ext_power_heat_data.chassis_power_buffer-150)/50.0f;
