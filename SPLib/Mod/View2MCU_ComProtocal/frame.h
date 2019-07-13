@@ -8,12 +8,13 @@ extern u8 sendbuffer[100];
 #pragma  pack(1) 
 typedef struct _frame //视觉发来的数据框架    
 {
-    u8 head[2];        //帧头，为0xffff
+    u8 head;        //帧头，为0xffff
     u16 timestamp;//包序号
     float yaw;      //yaw误差值
     float pitch;  //pitch误差值
     u8 extra[2]; //additional imformation    
     u8 crc8check;    //crc8校验位
+		u8 end;
 }frame;                                            
 #pragma  pack() 
 /*

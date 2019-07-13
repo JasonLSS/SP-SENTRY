@@ -40,7 +40,7 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT =0.5f;
+float SPEED_CHANGE_LIMIT =1.f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -199,7 +199,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 
 				if(robotMode == REMOTE_MODE){
-						speed = (abs(recv->rc.ch2)<20?0:recv->rc.ch2)/8.f;
+						speed = CHASIS_Legalize((abs(recv->rc.ch2)<20?0:recv->rc.ch2)/8.f,chasis_speed_limit);
 				}
 				else if(robotMode == STANDBY_MODE){
 						speed = 0;
@@ -269,8 +269,8 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						speed = 0;
 				}
 				
-				if(speed > 40){
-					distance_Threshold = 400;
+				if(speed > 30){
+					distance_Threshold = speed * 10.f;
 				}
 				else{
 					distance_Threshold = 250;

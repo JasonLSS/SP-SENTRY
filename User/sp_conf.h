@@ -182,6 +182,11 @@
 #define AIR_PROTECT
 //  </c>
 
+//  <c1> NeuralPID
+//    <i> NeuralPID
+//#define NeuralPID
+//  </c>
+
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
 #define USING_GIMBAL_MODE       1

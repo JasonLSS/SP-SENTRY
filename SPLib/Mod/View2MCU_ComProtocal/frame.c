@@ -80,7 +80,7 @@ int unpackFrame(u8 *buff, u16 len, frame *fram)
 {    
 		if(len>=sizeof(frame)) {
 				memcpy(fram, (buff+(len-sizeof(frame))), sizeof(frame));
-				if(fram->crc8check == crc8Check((u8*)fram, sizeof(frame)-1)) {
+				if(fram->crc8check == crc8Check((u8*)fram, sizeof(frame)-2)) {
 						return 0;
 				}
 		}
@@ -124,7 +124,8 @@ int unpackFrame(u8 *buff, u16 len, frame *fram)
 void packFrame(u8 *buff,frame *fram)
 {    
     memcpy(buff,fram,sizeof(frame));
-    buff[sizeof(frame)-1] = crc8Check((u8 *)fram,sizeof(frame)-1);
+    buff[sizeof(frame)-2] = crc8Check((u8 *)fram,sizeof(frame)-2);
+		buff[sizeof(frame)-1] = 0xf2;
 		buff[sizeof(frame)] = 0x00;
 }
 /***************************************************************************************
@@ -170,13 +171,13 @@ void sendtoComputer(void)
 ****************************************************************************************/
 void sendtoComputerInit(void)
 {
-    sendtoCom_frame.head[0]=0xf1;
-    sendtoCom_frame.head[1]=0xf2;
+    sendtoCom_frame.head = 0xf1;
     sendtoCom_frame.timestamp = 0x00;
     sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*0.0439f;
     sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle*0.0439f;
 //    sendtoCom_frame.yaw = (current_position_205-MIDDLE_YAW)*0.0439f;
 //    sendtoCom_frame.pitch = (current_position_206-MIDDLE_PITCH)*0.0439f;
+		sendtoCom_frame.end = 0xf2;
     packFrame(sendbuffer,&sendtoCom_frame);
 
 }

@@ -4,6 +4,11 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+## v2.0.0
+- Change the USB communication protocols.
+- Add neural PID for test.
+- Change chasis remote control.
+- Add convertible distance threshould.
 
 ## v1.1.0
 - Increase speed limit.

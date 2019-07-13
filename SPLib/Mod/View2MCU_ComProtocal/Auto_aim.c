@@ -62,25 +62,28 @@ void Auto_aim(u8 *rx_buf,int len)
 		//task
 		if(if_newframe == 1) {
 				frame_visual = fram;
-				enemy_area = (int)(fram.extra[1] & 0xf0) >> 4;
-				enemy_empty_area = (int)(fram.extra[1] & 0x0f);
+//				enemy_area = (int)(fram.extra[1] & 0xf0) >> 4;
+//				enemy_empty_area = (int)(fram.extra[1] & 0x0f);
 				
+				enemy_area = 6;
+				enemy_empty_area = 6;
+			
 				frame_visual.yaw = (frame_visual.yaw > yaw_frame_max ? yaw_frame_max : 
 								 frame_visual.yaw < - yaw_frame_max ? - yaw_frame_max : frame_visual.yaw);
 				frame_visual.pitch = (frame_visual.pitch > pitch_frame_max ? pitch_frame_max : 
 								 frame_visual.pitch < - pitch_frame_max ? - pitch_frame_max : frame_visual.pitch);
 
 				
-				if(fram.extra[0] == 100){
+				if(fram.extra[0] == 0x33){
 					if_if_newframe = 0;auto_aim_flag = 0;
 				}
-				else if(fram.extra[0] == 101){
+				else if(fram.extra[0] == 0x31){
 					if_if_newframe = 1;auto_aim_flag = 0;
 				}
-				else if(fram.extra[0] == 111){
+				else if(fram.extra[0] == 0x32){
 					if_if_newframe = 1;auto_aim_flag = 1;
 				}
-				else if(fram.extra[0] == 102){
+				else if(fram.extra[0] == 0x30){
 					if_if_newframe = 2;auto_aim_flag = 0;
 				}
 				else{

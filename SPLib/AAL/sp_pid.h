@@ -46,7 +46,8 @@
   */ 
 typedef struct {
     float Kp, Ki, Kd;
-    
+    float Wp, Wi, Wd;
+		float kcoef;  
     float time_stamp, delta_time;
     
     double sum_error;
@@ -132,6 +133,8 @@ void PID_UpdateGains(PID_Type* pid, float kp, float ki, float kd);
   */ 
 void PID_UpdateLimits(PID_Type* pid, float lim_i, float lim_d, float lim_out);
 
+void PID_Setweights(PID_Type* pid, float wp, float wi, float wd);
+void NeureLearningRules(PID_Type* vPID,float zk,float uk,float pterm,float iterm,float dterm);
 
 /**
   * @}
