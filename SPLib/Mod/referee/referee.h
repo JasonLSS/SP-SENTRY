@@ -3,10 +3,7 @@
 
 /******************
 裁判信息解读与透传数据帧封装程序
-update: 2017.5.7
-    视情况调用最后三个函数
-    全局变量说明见uart2referee.h
-    支持上传3个float数据
+update: 2019.07.15
 ******************/
 
 #include "sys.h"
@@ -15,11 +12,57 @@ update: 2017.5.7
 #include "sp_conf.h"
 #include "referee_crc.h"
 
-#define MY_ROBOT_ID robotid_red_hero
-
 /*--------------------------------------------------------------------------------*
  *                                Referee Constants                               *
  *--------------------------------------------------------------------------------*/
+
+//*** <<< Use Configuration Wizard in Context Menu >>> ***
+
+//  <o> Robot Color
+//    <0=>None  <1=>Red  <2=>Blue
+#define sp_referee_robot_color                1
+
+//  <o> Robot Type
+//    <0=>None  <1=>Hero(1)  <2=>Engineer(2)  <3=>Infantry1(3)  <4=>Infantry2(4)  <5=>Infantry3(5)
+//    <6=>Aerial(6)  <7=>Sentry(7)
+#define sp_referee_robot_type                 2
+
+
+#if defined(sp_referee_robot_color) && sp_referee_robot_color==1
+    #if sp_referee_robot_type==1
+        #define MY_ROBOT_ID robotid_red_hero
+    #elif sp_referee_robot_type==2
+        #define MY_ROBOT_ID robotid_red_engineer
+    #elif sp_referee_robot_type==3
+        #define MY_ROBOT_ID robotid_red_infantry_1
+    #elif sp_referee_robot_type==4
+        #define MY_ROBOT_ID robotid_red_infantry_2
+    #elif sp_referee_robot_type==5
+        #define MY_ROBOT_ID robotid_red_infantry_3
+    #elif sp_referee_robot_type==6
+        #define MY_ROBOT_ID robotid_red_aerial
+    #elif sp_referee_robot_type==7
+        #define MY_ROBOT_ID robotid_red_sentry
+    #endif
+#elif defined(sp_referee_robot_color) && sp_referee_robot_color==2
+    #if sp_referee_robot_type==1
+        #define MY_ROBOT_ID robotid_blue_hero
+    #elif sp_referee_robot_type==2
+        #define MY_ROBOT_ID robotid_blue_engineer
+    #elif sp_referee_robot_type==3
+        #define MY_ROBOT_ID robotid_blue_infantry_1
+    #elif sp_referee_robot_type==4
+        #define MY_ROBOT_ID robotid_blue_infantry_2
+    #elif sp_referee_robot_type==5
+        #define MY_ROBOT_ID robotid_blue_infantry_3
+    #elif sp_referee_robot_type==6
+        #define MY_ROBOT_ID robotid_blue_aerial
+    #elif sp_referee_robot_type==7
+        #define MY_ROBOT_ID robotid_blue_sentry
+    #endif
+#endif
+//*** <<< end of configuration section >>>    ***
+
 #ifndef MY_ROBOT_ID
     #error "Please define define your MY_ROBOT_ID, like #define MY_ROBOT_ID robotid_red_hero."
 #endif
@@ -51,20 +94,25 @@ typedef packed_struct {
   * @brief  Command ID Map
   */
 typedef enum {
-    game_state                  = 0x0001,     /*!< frequency = 1Hz */
-    game_result                 = 0x0002,     /*!< send at game ending */
-    game_robot_survivors        = 0x0003,     /*!< frequency = 1Hz */
-    event_data                  = 0x0101,     /*!< send at event changing */
-    supply_projectile_action    = 0x0102,     /*!< send at action */
-    supply_projectile_booking   = 0x0103,     /*!< send by user, max frequency = 10Hz */
-    game_robot_state            = 0x0201,     /*!< frequency = 10Hz */
-    power_heat_data             = 0x0202,     /*!< frequency = 50Hz */
-    game_robot_pos              = 0x0203,     /*!< frequency = 10Hz */
-    buff_musk                   = 0x0204,     /*!< send at changing */
-    aerial_robot_energy         = 0x0205,     /*!< frequency = 10Hz, only for aerial robot */
-    robot_hurt                  = 0x0206,     /*!< send at hurting */
-    shoot_data                  = 0x0207,     /*!< send at shooting */
-    robot_interactive_data      = 0x0301,     /*!< send by user, max frequency = 10Hz */
+    game_state                  = 0x0001,     /*!<  3 bytes, frequency = 1Hz */
+    game_result                 = 0x0002,     /*!<  1 bytes, send at game ending */
+    game_robot_HP               = 0x0003,     /*!< 28 bytes, frequency = 1Hz */
+    
+    event_data                  = 0x0101,     /*!<  4 bytes, send at event changing */
+    supply_projectile_action    = 0x0102,     /*!<  3 bytes, send at action */
+    supply_projectile_booking   = 0x0103,     /*!<  2 bytes, send by user, max frequency = 10Hz */
+    referee_warning             = 0x0104,     /*!<  2 bytes, send at warning */
+    
+    game_robot_state            = 0x0201,     /*!< 15 bytes, frequency = 10Hz */
+    power_heat_data             = 0x0202,     /*!< 14 bytes, frequency = 50Hz */
+    game_robot_pos              = 0x0203,     /*!< 16 bytes, frequency = 10Hz */
+    buff_musk                   = 0x0204,     /*!<  1 bytes, send at changing */
+    aerial_robot_energy         = 0x0205,     /*!<  3 bytes, frequency = 10Hz, only for aerial robot */
+    robot_hurt                  = 0x0206,     /*!<  1 bytes, send at hurting */
+    shoot_data                  = 0x0207,     /*!<  6 bytes, send at shooting */
+    bullet_remaining            = 0x0208,     /*!<  2 bytes, frequency = 1Hz, aerial and sentry */
+    
+    robot_interactive_data      = 0x0301,     /*!<  n bytes, send by user, max frequency = 10Hz */
 } ext_cmd_id_t;
 
 
@@ -109,24 +157,22 @@ typedef packed_struct {
   * @note  0=died/absent, 1=alive
   */
 typedef packed_struct {
-    uint16_t    red_hero: 1;
-    uint16_t    red_engineer: 1;
-    uint16_t    red_infantry_1: 1;
-    uint16_t    red_infantry_2: 1;
-    uint16_t    red_infantry_3: 1;
-    uint16_t    red_aerial: 1;
-    uint16_t    red_sentry: 1;
-    uint16_t    : 1;
+    uint16_t    red_hero;
+    uint16_t    red_engineer;
+    uint16_t    red_infantry_1;
+    uint16_t    red_infantry_2;
+    uint16_t    red_infantry_3;
+    uint16_t    red_sentry;
+    uint16_t    red_base;
     
-    uint16_t    blue_hero: 1;
-    uint16_t    blue_engineer: 1;
-    uint16_t    blue_infantry_1: 1;
-    uint16_t    blue_infantry_2: 1;
-    uint16_t    blue_infantry_3: 1;
-    uint16_t    blue_aerial: 1;
-    uint16_t    blue_sentry: 1;
-    uint16_t    : 1;
-} ext_game_robot_survivors_t;
+    uint16_t    blue_hero;
+    uint16_t    blue_engineer;
+    uint16_t    blue_infantry_1;
+    uint16_t    blue_infantry_2;
+    uint16_t    blue_infantry_3;
+    uint16_t    blue_sentry;
+    uint16_t    blue_base;
+} ext_game_robot_HP_t;
 
 
 // //场地时事件数据（0x0101）
@@ -151,6 +197,11 @@ typedef packed_struct {
     uint8_t     supply_num;
 } ext_supply_projectile_booking_t;
 
+//裁判警告信息（0x0104）
+typedef packed_struct {
+    uint8_t     level;
+    uint8_t     foul_robot_id;
+} ext_referee_warning_t;
 
 //比赛机器人状态(0x0201)
 typedef packed_struct {
@@ -215,7 +266,10 @@ typedef packed_struct {
     float       bullet_speed;
 } ext_shoot_data_t;
 
-
+//子弹剩余发射数（0x0208）
+typedef packed_struct {
+    uint16_t    bullet_remaining_num;
+} ext_bullet_remaining_t;
 
 /*--------------------------------------------------------------------------------*
  *                            Robot Exchange Data                                 *
@@ -294,10 +348,11 @@ typedef packed_struct {
 extern ext_game_state_t ext_game_state;// 比赛进程信息（0x0001）
 extern ext_game_state_t                           ext_game_state;// 比赛状态数据（0x0001）
 extern ext_game_result_t                          ext_game_result;//比赛结果数据(0x0002)
-extern ext_game_robot_survivors_t                 ext_game_robot_survivors;//机器人存存活数据（0x0003）
+extern ext_game_robot_HP_t                        ext_game_robot_HP;//机器人存存活数据（0x0003）
 extern ext_event_data_t                           ext_event_data;//场地时事件数据（0x0101）
 extern ext_supply_projectile_action_t             ext_supply_projectile_action;//补给站动作标识（0x0102）
 extern ext_supply_projectile_booking_t            ext_supply_projectile_booking;//补给站预约子弹（0x0103）
+extern ext_referee_warning_t                      ext_referee_warning;//裁判警告信息（0x0104）
 extern ext_game_robot_state_t                     ext_game_robot_state;//比赛机器人状态(0x0201)
 extern ext_power_heat_data_t                      ext_power_heat_data;////实时功率热量数据（0x0202）
 extern ext_game_robot_pos_t                       ext_game_robot_pos;//机器人位置（0x0203）
@@ -305,8 +360,8 @@ extern ext_buff_musk_t                            ext_buff_musk;//机器人增益（0x
 extern ext_aerial_robot_energy_t                  ext_aerial_robot_energy;//空中机器人能量状态（0x0205）
 extern ext_robot_hurt_t                           ext_robot_hurt;//伤害状态（0x0206）
 extern ext_shoot_data_t                           ext_shoot_data;//实时射击信息（0x0207）
+extern ext_bullet_remaining_t                     ext_bullet_remaining;//子弹剩余发射数（0x0208）
 extern ext_robot_interactive_data_t               ext_robot_interactive_data;
-
 
 void referee_init(void);
 bool referee_send_robot(uint16_t data_id, ext_id_t target_id, uint8_t *data, uint8_t size);

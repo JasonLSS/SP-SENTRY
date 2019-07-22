@@ -83,8 +83,8 @@ float pitch_seperate_limit = 8.f;
 static float yaw_set_last = 0.f;
 static float pitch_set_last = 0.f;
 
-static float yaw_cruise_speed = 3.5f/8192.f*2.f*PI;//task_lss
-static float pitch_cruise_speed = 0.5f/8192.f*2.f*PI;
+float yaw_cruise_speed = 0.015f;//task_lss
+static int pitch_time_speed =300.f;
 
 float yaw_limit[7]= { -1365.3f*2/8192.f*2.f*PI , -1365.3f/8192.f*2.f*PI, 0.f/8192.f*2.f*PI , 1365.3f/8192.f*2.f*PI , 
 											1365.3f*2/8192.f*2.f*PI , 1365.3f*3/8192.f*2.f*PI ,1365.3f*4/8192.f*2.f*PI };//!!!!!!
@@ -128,10 +128,6 @@ void GIMBAL_ControlInit(void) {
 void GIMBAL_ControlLooper(void) {
 		spMOTOR.user.set_position(CAN1, Motor208, GimbalController.yaw_set);
 		spMOTOR.user.set_position(CAN1, Motor205, GimbalController.pitch_set);
-	
-		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f\r\n",gimbal_yaw_motor->state.angle, frame_visual.yaw,
-													gimbal_yaw_motor->control.target,gimbal_pitch_motor->control.target);
-		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 static float times_D = 0;
@@ -141,6 +137,7 @@ void GIMBAL_State(void){
 		static float pitch_set = 0;
 		static int yaw_direction = 1;
 		static int pitch_direction = 1;
+		static int pitch_time = 0;
 		int id = 6;
 		if(robotMode == REMOTE_MODE && robotMode^robotMode_ex){
 			spGIMBAL_Controller.user.update_enemy_location(6);
@@ -185,9 +182,34 @@ void GIMBAL_State(void){
 		}
 		else if(robotMode == CRUISE_MODE){
 			yaw_set += yaw_cruise_speed*yaw_direction;
-			pitch_set = 0.5f;
+			if(pitch_time<pitch_time_speed){
+				pitch_set = 0.5f;
+				pitch_time++;
+			}
+			else if(pitch_time<pitch_time_speed * 2){
+				pitch_set = 0.2f;
+				pitch_time++;
+			}
+			else{
+				pitch_time = 0;
+			}
 		}
 		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE || robotMode == STATIC_ATTACK_MODE || robotMode == ESCAPE_MODE){
+			static float time_out = 0;
+			if(((gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.01745f ) > pitch_limit_max)&& if_if_newframe == 1){
+				time_out++;
+				if(time_out>300){
+					if_if_newframe = 0;
+					time_out = - 1000;
+				}
+			}else{
+					time_out = 0;
+			}
+			if(time_out < 0){
+				time_out ++;
+				if_if_newframe = 0;
+			}
+					
 			if(if_if_newframe == 1){
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.01745f;
 					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.01745f + 0.05f;
@@ -223,7 +245,8 @@ void GIMBAL_State(void){
 					id = 6;
 					spGIMBAL_Controller.user.update_enemy_location(id);
 					if_if_newframe = 0;
-					times_D = 0;
+
+					
 			}
 			else if(if_if_newframe == 2){
 					yaw_set = yaw_set_last;
@@ -234,7 +257,17 @@ void GIMBAL_State(void){
 					if(times_D>300){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed * yaw_direction;
-						pitch_set = 0.5f;
+						if(pitch_time<pitch_time_speed){
+							pitch_set = 0.5f;
+							pitch_time++;
+						}
+						else if(pitch_time<pitch_time_speed * 2){
+							pitch_set = 0.2f;
+							pitch_time++;
+						}
+						else{
+							pitch_time = 0;
+						}
 						times_D = 300;
 					}
 			}
@@ -243,7 +276,17 @@ void GIMBAL_State(void){
 					if(times_D>300){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed * yaw_direction;
+					if(pitch_time<pitch_time_speed){
 						pitch_set = 0.5f;
+						pitch_time++;
+					}
+					else if(pitch_time<pitch_time_speed * 2){
+						pitch_set = 0.2f;
+						pitch_time++;
+					}
+					else{
+						pitch_time = 0;
+					}
 						times_D = 300;
 					}
 			}

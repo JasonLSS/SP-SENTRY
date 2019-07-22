@@ -11,13 +11,13 @@ update: 2017.5.7
 #include "sp_utility.h"
 
 
-// 全局裁判信息字段定义
 ext_game_state_t                           ext_game_state;// 比赛状态数据（0x0001）
 ext_game_result_t                          ext_game_result;//比赛结果数据(0x0002)
-ext_game_robot_survivors_t                 ext_game_robot_survivors;//机器人存存活数据（0x0003）
+ext_game_robot_HP_t                        ext_game_robot_HP;//机器人存存活数据（0x0003）
 ext_event_data_t                           ext_event_data;//场地时事件数据（0x0101）
 ext_supply_projectile_action_t             ext_supply_projectile_action;//补给站动作标识（0x0102）
 ext_supply_projectile_booking_t            ext_supply_projectile_booking;//补给站预约子弹（0x0103）
+ext_referee_warning_t                      ext_referee_warning;//裁判警告信息（0x0104）
 ext_game_robot_state_t                     ext_game_robot_state;//比赛机器人状态(0x0201)
 ext_power_heat_data_t                      ext_power_heat_data;////实时功率热量数据（0x0202）
 ext_game_robot_pos_t                       ext_game_robot_pos;//机器人位置（0x0203）
@@ -25,6 +25,7 @@ ext_buff_musk_t                            ext_buff_musk;//机器人增益（0x0204）
 ext_aerial_robot_energy_t                  ext_aerial_robot_energy;//空中机器人能量状态（0x0205）
 ext_robot_hurt_t                           ext_robot_hurt;//伤害状态（0x0206）
 ext_shoot_data_t                           ext_shoot_data;//实时射击信息（0x0207）
+ext_bullet_remaining_t                     ext_bullet_remaining;//子弹剩余发射数（0x0208）
 ext_robot_interactive_data_t               ext_robot_interactive_data;
 
 
@@ -51,11 +52,11 @@ void  ext_game_result_interpret(uint8_t * ext_game_result_t_Message) {
 }
 
 //机器人存存活数据（0x0003）
-void ext_game_robot_survivors_interpret(uint8_t * ext_game_robot_survivors_t_Message) {
-//    memcpy((uint8_t*)&ext_game_robot_survivors.robot_legion,ext_game_robot_survivors_t_Message,2);
-    spDMA.mem2mem.copy((uint32_t)&ext_game_robot_survivors, 
-        (uint32_t)ext_game_robot_survivors_t_Message, 
-        sizeof(ext_game_robot_survivors));
+void ext_game_robot_HP_interpret(uint8_t * ext_game_robot_HP_t_Message) {
+//    memcpy((uint8_t*)&ext_game_robot_HP.robot_legion,ext_game_robot_HP_t_Message,2);
+    spDMA.mem2mem.copy((uint32_t)&ext_game_robot_HP, 
+        (uint32_t)ext_game_robot_HP_t_Message, 
+        sizeof(ext_game_robot_HP));
 }
 
 //场地时事件数据（0x0101）...........这个得重写，差的太多
@@ -226,8 +227,8 @@ void frame_interpret(uint8_t * _frame, uint16_t size) {
                 ext_game_state_interpret(&frame[7]);                        break;
             case game_result:
                 ext_game_result_interpret(&frame[7]);                       break;
-            case game_robot_survivors:
-                ext_game_robot_survivors_interpret(&frame[7]);              break;
+            case game_robot_HP:
+                ext_game_robot_HP_interpret(&frame[7]);              break;
             case event_data:
                 ext_event_data_interpret(&frame[7]);                        break;
             case supply_projectile_action:
@@ -260,8 +261,8 @@ void frame_interpret(uint8_t * _frame, uint16_t size) {
 uint8_t referee_buffer[256] = {0x00};
 uint8_t dump_buffer[256];
 void update_from_dma(void) {
-//    /* Clear IDLE flag bit */
-//    uint8_t bt = USART6->DR;
+    /* Clear IDLE flag bit */
+    uint8_t bt = USART6->DR;
     spDMA.mem2mem.copy((uint32_t)dump_buffer, (uint32_t)referee_buffer, sizeof(referee_buffer));
 		/* Reset DMA counter */
     spDMA.controller.reset_counter(spDMA_USART6_rx_stream, sizeof(referee_buffer));
@@ -302,7 +303,9 @@ bool referee_send_client(ext_id_t target_id, float data[3], ext_client_custom_da
     client_data.data_id = REFEREE_STUDENT_CLIENT_SOF;
     client_data.sender_id = MY_ROBOT_ID;
     client_data.client_id = target_id;
-    memcpy((uint8_t*)client_data.data, (uint8_t*)data, sizeof(client_data.data));
+    client_data.data[0] = data[0];
+    client_data.data[1] = data[1];
+    client_data.data[2] = data[2];
     client_data.masks = masks;
     /* Calc CRC16 */
     Append_CRC16_Check_Sum((uint8_t*)&client_data, sizeof(client_data));
@@ -328,12 +331,12 @@ void referee_init(void) {
     DMA_USART_TX_Config(USART6);
     DMA_USART_RX_Config(USART6, (uint32_t)referee_buffer, sizeof(referee_buffer), true);
 
-		DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
+    DMA_ITConfig(spDMA_USART6_rx_stream, DMA_IT_TC, ENABLE);
     spIRQ.registe(DMA2_Stream1_IRQn, DMA_IT_TCIF1, update_from_dma);
-	
-//    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
-//    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
-	
+
+    //    USART_ITConfig(USART6, USART_IT_IDLE, ENABLE);
+    //    spIRQ.registe(USART6_IRQn, USART_IT_IDLE, update_from_dma);
+    
     USART_Cmd(USART6, ENABLE);
 }
 

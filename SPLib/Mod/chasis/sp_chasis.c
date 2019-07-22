@@ -32,7 +32,7 @@ float target_motor201 = 0;
 float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
-float cruise_speed = 30.0f;
+float cruise_speed = 20.0f;
 float chasis_speed_limit = 80.0f;
 float	chasis_out_limit=800.0f;
 float speedA,speedB;
@@ -272,8 +272,11 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				if(speed > 30){
 					distance_Threshold = speed * 10.f;
 				}
+				else if (speed > 50){
+					distance_Threshold = 500;
+				}
 				else{
-					distance_Threshold = 250;
+					distance_Threshold = 200;
 				}
 				
 				if((L_distance>0&&L_distance<distance_Threshold))

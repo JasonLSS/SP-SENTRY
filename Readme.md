@@ -4,6 +4,14 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+## v2.0.1
+- Add pitch cruise.
+- Add protect when pitch can't reach target value.
+- Change chasis TOF Threshold.
+- Updata new referee.
+- CLose the STATIC_ATTACK_MODE.
+- 
+
 ## v2.0.0
 - Change the USB communication protocols.
 - Add neural PID for test.

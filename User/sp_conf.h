@@ -174,12 +174,12 @@
 
 //  <c1> CHASIS_POWER_LIMIT
 //    <i> CHASIS_POWER_LIMIT
-#define CHASIS_POWER_LIMIT
+//#define CHASIS_POWER_LIMIT
 //  </c>
 
 //  <c1> AIR_PROTECT
 //    <i> AIR_PROTECT
-#define AIR_PROTECT
+//#define AIR_PROTECT
 //  </c>
 
 //  <c1> NeuralPID

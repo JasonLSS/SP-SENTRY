@@ -331,7 +331,7 @@ void TASK_ControlLooper() {
 										if(!attacked){
 											static int static_long = 0;
 											robotMode = DYNAMIC_ATTACK_MODE;
-											if(ext_game_robot_state.remain_HP > 500 && (if_if_newframe == 1 || if_if_newframe == 2) && !attacked){
+											if(ext_game_robot_state.remain_HP > 600 && (if_if_newframe == 1 || if_if_newframe == 2) && !attacked){
 												robotMode = STATIC_ATTACK_MODE;
 												static_long = 30;
 											}

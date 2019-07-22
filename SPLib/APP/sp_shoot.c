@@ -489,8 +489,35 @@ void Shooting_Control_Looper (void){
 				
 			}
 			else if(recv.rc.s2==RC_SW_UP){
-				if(recv.rc.s1==RC_SW_DOWN)
+				if(recv.rc.s1==RC_SW_DOWN){
 					shootState = Shoot_OFF;
+					static float times_tick = 0;
+					if(recv.rc.ch0 > 600 && times_tick < 20){
+						shootState = Shoot_ON;
+						times_tick++;
+					}
+					if(recv.rc.ch0 < 600){
+						times_tick = 0;
+					}
+					
+					if(recv.rc.ch0 < -600){
+						shootState = Shoot_ON;
+					}
+					
+					if(ext_power_heat_data.shooter_heat0 > 440){
+						shootState = Shoot_OFF;
+						Cooling_tickets = 0;
+					}
+					if(ext_power_heat_data.shooter_heat0 == 0){
+						Cooling_tickets = Shoot_Cooling_Time;
+					}
+					if(Cooling_tickets < Shoot_Cooling_Time){
+						shootState = Shoot_OFF;
+						Cooling_tickets++;
+					}
+					else if(Cooling_tickets > 10000)
+						Cooling_tickets = Shoot_Cooling_Time;
+				}
 				else if(recv.rc.s1==RC_SW_MID)
 					shootState = Shoot_OFF;
 				else if(recv.rc.s1==RC_SW_UP){
