@@ -102,8 +102,8 @@ void CHASIS_Move(float speed) {
 		static bool last_change = false;
 		if(!change_flag && last_change)
 			stop_time = 0;
-		if((change_flag == false) && ((fabs((target_motor201)/5000.f-(motor201->state.speed/20.f)) > 0.2f)||
-												(fabs((target_motor202)/5000.f-(motor202->state.speed/20.f)) > 0.2f))){
+		if((change_flag == false) && ((fabs((target_motor201)/5000.f-(motor201->state.speed/20.f)) > 0.3f)||
+												(fabs((target_motor202)/5000.f-(motor202->state.speed/20.f)) > 0.3f))){
 			stop_time++;
 			if(stop_time > 100){
 				change_flag = true;
@@ -119,11 +119,11 @@ void CHASIS_Move(float speed) {
 			motor201->control.output = test_output;
 			motor202->control.output = test_output;
 		}
-//		static char usart3_buff[128];
-//		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
-//													target_motor201,motor202->state.speed, speedB,
-//													target_motor202);
-//		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
+		static char usart3_buff[128];
+		u8 size = sprintf(usart3_buff, "%f,%f,%f,%f,%f,%f\r\n",motor201->state.speed, speedA,
+													target_motor201,motor202->state.speed, speedB,
+													target_motor202);
+		spDMA.controller.start(spDMA_USART3_tx_stream, (uint32_t)usart3_buff, (uint32_t)&USART3->DR, size);
 }
 
 
@@ -160,6 +160,7 @@ void CM_ParallelXAuto(float NowPosition, float TargetPosition);
 
 void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
     if(tick%10 == 1) {
+#if defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 1
         L_distance = TOF10120_3distance();
 				R_distance = TOF10120_2distance();
 				static int L_down_time = 0;
@@ -187,6 +188,10 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 					R_flag = true;
 					R_down_time = 0;
 				}
+#elif defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 2
+			L_distance = PDin(12);
+			R_distance = PDin(13);
+#endif
     } else if(tick%10 == 3) { 
 
     } else if(tick%10 == 7) {
@@ -278,11 +283,20 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				else{
 					distance_Threshold = 200;
 				}
-				
+	
+#if defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE == 1
 				if((L_distance>0&&L_distance<distance_Threshold))
 						chasis_direction = 1;
 				if((R_distance>0&&R_distance<distance_Threshold))
 						chasis_direction = -1;
+#elif defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE == 2
+				if(L_distance==0)
+					chasis_direction = 1;
+				if(R_distance==0)
+					chasis_direction = -1;
+#elif defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE == 0
+				chasis_direction = 1;
+#endif
 				
 #ifdef AIR_PROTECT
 				MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
@@ -293,15 +307,20 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						chasis_direction = 1;
 				}
 #endif
-				
+
+#ifdef USING_BLOCK_CHECK
 				if(!R_flag || !L_flag){
 					if(change_flag){
 						chasis_direction = -chasis_direction;
 						change_flag = false;
 					}
 				}
-				
-				chasis_speed = Speed_Change_Limit(speed * chasis_direction);                           //new program
+#endif
+
+				if(robotMode != REMOTE_MODE)
+					chasis_speed = Speed_Change_Limit(speed * chasis_direction);
+				else
+					chasis_speed = speed;
         recv_ex = *recv;
 				robotMode_ex = robotMode;
 				
@@ -320,7 +339,7 @@ void CMWatt_Cal(void)//task_lss
 		if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE){
 			chasis_out_limit=12000.0f;
 			if(ext_power_heat_data.chassis_power_buffer<50&&ext_power_heat_data.chassis_power_buffer > 0){
-				chasis_out_limit=12000.f-11000.f*(ext_power_heat_data.chassis_power/40.0f);
+				chasis_out_limit=12000.f-8000.f*(ext_power_heat_data.chassis_power/40.0f);
 				if(chasis_out_limit < 0)
 					chasis_out_limit = 0;
 				chasis_out_limit=chasis_out_limit*(ext_power_heat_data.chassis_power_buffer)/50.0f;
@@ -340,9 +359,9 @@ void CMWatt_Cal(void)//task_lss
 			}
 			if(ext_power_heat_data.chassis_power_buffer == 0)
 					chasis_out_limit = 0;
-			if(chasis_out_limit < 0)
-					chasis_out_limit = 0;
 		}
+		if(chasis_out_limit < 1000)
+				chasis_out_limit = 1000;
 }
 
 int IfUsingPowerBuffer(void){

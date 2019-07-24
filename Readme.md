@@ -4,6 +4,10 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+## v2.0.2
+- Add light IO.
+- Change gimbal PID.(test)
+
 ## v2.0.1
 - Add pitch cruise.
 - Add protect when pitch can't reach target value.

@@ -174,7 +174,7 @@
 
 //  <c1> CHASIS_POWER_LIMIT
 //    <i> CHASIS_POWER_LIMIT
-//#define CHASIS_POWER_LIMIT
+#define CHASIS_POWER_LIMIT
 //  </c>
 
 //  <c1> AIR_PROTECT
@@ -182,14 +182,24 @@
 //#define AIR_PROTECT
 //  </c>
 
+//  <c1> USING_BLOCK_CHECK
+//    <i> Enable BLOCK_CHECK
+#define USING_BLOCK_CHECK
+//  </c>
+
 //  <c1> NeuralPID
 //    <i> NeuralPID
 //#define NeuralPID
 //  </c>
 
+//  <o>  distance Mode  <0=>Disable  <1=>I2C  <2=>IO
+//       <i> Selects Active Bits in Base Address
+#define USING_DISTANCE_MODE       2
+
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
 #define USING_GIMBAL_MODE       1
+
 //  <c1> USING_USB
 //    <i> Enable USB
 #define USING_USB

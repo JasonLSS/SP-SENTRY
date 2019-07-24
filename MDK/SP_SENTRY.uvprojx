@@ -432,6 +432,11 @@
               <FileType>1</FileType>
               <FilePath>..\SPLib\APP\sp_irq.c</FilePath>
             </File>
+            <File>
+              <FileName>sp_sentry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\sentry\sp_sentry.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

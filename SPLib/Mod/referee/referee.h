@@ -25,7 +25,7 @@ update: 2019.07.15
 //  <o> Robot Type
 //    <0=>None  <1=>Hero(1)  <2=>Engineer(2)  <3=>Infantry1(3)  <4=>Infantry2(4)  <5=>Infantry3(5)
 //    <6=>Aerial(6)  <7=>Sentry(7)
-#define sp_referee_robot_type                 2
+#define sp_referee_robot_type                 7
 
 
 #if defined(sp_referee_robot_color) && sp_referee_robot_color==1
@@ -343,6 +343,27 @@ typedef packed_struct {
     uint8_t             data[113];          /*!< max data length = 13byte */
 } ext_robot_interactive_data_t;
 
+
+typedef packed_struct {
+uint16_t            data_id;            /*!< 0x0100 */
+uint16_t            sender_id;
+uint16_t            client_id;
+uint8_t             operate_tpye;
+uint8_t             graphic_tpye;
+uint8_t             graphic_name[5];
+uint8_t             layer;
+uint8_t             color;
+uint8_t             width;
+uint16_t            start_x;
+uint16_t            start_y;
+uint16_t            radius;
+uint16_t            end_x;
+uint16_t            end_y;
+int16_t             start_angle;
+int16_t             end_angle;
+uint8_t             text_lenght;
+uint8_t             text[30];
+} ext_client_graphic_draw_t;
 
 // 全局裁判信息字段定义
 extern ext_game_state_t ext_game_state;// 比赛进程信息（0x0001）

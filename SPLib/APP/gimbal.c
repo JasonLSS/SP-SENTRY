@@ -40,9 +40,9 @@ static RobotMode robotMode_ex;
 bool gimbal_inited = false;
 char usart3_buff[256];
 
-static const float yaw_kp_0 = 8.0f;
+static const float yaw_kp_0 = 10.0f;
 static const float yaw_ki_0 = 0.5f;
-static const float yaw_kd_0 = 0.1f;
+static const float yaw_kd_0 = 0.3f;
 
 static const float pitch_kp_0 = 3.f;
 static const float pitch_ki_0 = 0.3f;
@@ -61,9 +61,9 @@ static float yaw_limit_min = -2.1f;
 static float pitch_limit_max = 1700.f/8192.f*2.f*PI;
 static float pitch_limit_min = 50.f/8192.f*2.f*PI;
 
-float visual_syaw_kp = 10.0f;
-float visual_syaw_ki = 0.2f;
-float visual_syaw_kd = 0.1f;
+float visual_syaw_kp = 20.0f;
+float visual_syaw_ki = 0.5f;
+float visual_syaw_kd = 0.3f;
 
 float visual_lyaw_kp = 8.0f;
 float visual_lyaw_ki = 0.0f;
@@ -82,6 +82,8 @@ float pitch_seperate_limit = 8.f;
 
 static float yaw_set_last = 0.f;
 static float pitch_set_last = 0.f;
+
+float pitch_add = 0.f;
 
 float yaw_cruise_speed = 0.015f;//task_lss
 static int pitch_time_speed =300.f;
@@ -209,7 +211,7 @@ void GIMBAL_State(void){
 				time_out ++;
 				if_if_newframe = 0;
 			}
-					
+			
 			if(if_if_newframe == 1){
 					yaw_set = gimbal_yaw_motor->state.angle + frame_visual.yaw * 0.01745f;
 					pitch_set = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.01745f + 0.05f;
@@ -245,7 +247,7 @@ void GIMBAL_State(void){
 					id = 6;
 					spGIMBAL_Controller.user.update_enemy_location(id);
 					if_if_newframe = 0;
-
+					times_D = 0;
 					
 			}
 			else if(if_if_newframe == 2){
@@ -301,7 +303,7 @@ void GIMBAL_State(void){
 			pitch_direction = -1;
 		else if (pitch_set <= pitch_limit_min)
 			pitch_direction = 1;
-		
+		pitch_add = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.01745f - pitch_limit_max;
 		pitch_set = (pitch_set > pitch_limit_max ? pitch_limit_max : 
 								 pitch_set < pitch_limit_min ? pitch_limit_min : pitch_set);
 		yaw_set   = (yaw_set > yaw_limit_max ? yaw_limit_max : 

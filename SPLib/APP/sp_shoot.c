@@ -489,7 +489,7 @@ void Shooting_Control_Looper (void){
 				
 			}
 			else if(recv.rc.s2==RC_SW_UP){
-				if(recv.rc.s1==RC_SW_DOWN){
+				if(recv.rc.s1==RC_SW_DOWN ||recv.rc.s1==RC_SW_MID){
 					shootState = Shoot_OFF;
 					static float times_tick = 0;
 					if(recv.rc.ch0 > 600 && times_tick < 20){
@@ -518,8 +518,6 @@ void Shooting_Control_Looper (void){
 					else if(Cooling_tickets > 10000)
 						Cooling_tickets = Shoot_Cooling_Time;
 				}
-				else if(recv.rc.s1==RC_SW_MID)
-					shootState = Shoot_OFF;
 				else if(recv.rc.s1==RC_SW_UP){
 					if(auto_aim_flag == 1)
 						shootState = Shoot_ON;

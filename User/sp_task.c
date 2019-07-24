@@ -231,9 +231,17 @@ void TASK_GlobalInit() {
         Autoaim_Init();
 #endif
 
+#if defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 1
 				IIC_Init();
-				Infrared_Init();
-				
+#elif defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 2
+				GPIO_InitTypeDef  GPIO_InitStructure;
+				RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+				GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+				GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+				GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+				GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+				GPIO_Init(GPIOD, &GPIO_InitStructure);
+#endif
 #ifdef USING_USB
 				USB_TaskInit();
 #endif
@@ -311,9 +319,9 @@ void TASK_ControlLooper() {
         if(task_counter%10 == 1) {
 						if(recv.rc.s2==RC_SW_UP) {
 								if(recv.rc.s1==RC_SW_MID) {
-										robotMode = CRUISE_MODE;
-								} else if(recv.rc.s1==RC_SW_DOWN){
 										robotMode = STATIC_ATTACK_MODE;
+								} else if(recv.rc.s1==RC_SW_DOWN){
+										robotMode = DYNAMIC_ATTACK_MODE;
 								}else if(recv.rc.s1==RC_SW_UP){
 										//all auto mode
 										static bool attacked = 0;
