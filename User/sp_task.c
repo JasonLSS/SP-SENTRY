@@ -34,7 +34,9 @@
 #include "referee.h"
 #include "infrared.h"
 #include "sp_watchdog.h"
-
+#if defined(SP_SENTRY) && defined(BOARD_MODE) && (BOARD_MODE == 2 || BOARD_MODE == 1)
+#include "sp_sentry.h"
+#endif
 /** @addtogroup SP
   * @brief      SuperPower
   * @{
@@ -230,7 +232,11 @@ void TASK_GlobalInit() {
 #ifndef USING_USB
         Autoaim_Init();
 #endif
+#if defined(BOARD_MODE) && (BOARD_MODE == 1 || BOARD_MODE == 2)
+				spSENTRY._system.init();
+#endif
 
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 1)
 #if defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 1
 				IIC_Init();
 #elif defined(USING_DISTANCE_MODE) && USING_DISTANCE_MODE== 2
@@ -242,10 +248,19 @@ void TASK_GlobalInit() {
 				GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 				GPIO_Init(GPIOD, &GPIO_InitStructure);
 #endif
+				referee_init();
+			 /* Enable Remote Controller Receiver */
+				RC_ReceiverInit();
+#endif
+
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 2)
 #ifdef USING_USB
 				USB_TaskInit();
 #endif
-
+#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+				spGIMBAL_Controller._system.init();
+#endif
+#endif
 				
     }
 
@@ -254,16 +269,6 @@ void TASK_GlobalInit() {
       */
     {
 				spMOTOR._system.init();
-			
-				referee_init();
-			
-				/* Enable Remote Controller Receiver */
-				RC_ReceiverInit();
-			
-#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-				spGIMBAL_Controller._system.init();
-#endif
-
 				/* IMU module init */
 //				IMU_Controllers.operations.init();
 
@@ -274,14 +279,17 @@ void TASK_GlobalInit() {
       * @brief  Peripheral layer initialize
       */
     {
-				
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 1)				
 				spCHASIS._system.init();
-				
+#endif
+			
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 2)				
 #ifdef USING_USB
 				Autoaim_Init();
 #endif
-			
+
 				Shooting_Control_Init();
+#endif
     }
     /**
       * @brief  Sundries and initialize
@@ -303,17 +311,21 @@ void TASK_ControlLooper() {
 /* Sundries and uiltilies looper [PROTECTED] */
 /*------------------------------------------------------------------------*/
     task_counter++;
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 1)				
     RC_GetState(&recv);
-#ifdef USING_USB
-		USB_TaskLoop();
+#ifdef USING_SENTRY_CHASIS
+		spCHASIS._system.looper(task_counter, &recv);
 #endif
+#endif
+#if defined(BOARD_MODE) && (BOARD_MODE == 1 || BOARD_MODE == 2)			
+			spSENTRY._system.looper(TASK_GetMilliSecond(), &recv);
+#endif
+
 /*------------------------------------------------------------------------*/
 /* Peripheral layer looper [PRIVATE] */
 /*------------------------------------------------------------------------*/
     {
-				#ifdef USING_SENTRY_CHASIS
-						spCHASIS._system.looper(task_counter, &recv);
-				#endif
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 2)
 				static uint16_t remain_HP;
 				static uint16_t remain_HP_ex;
         if(task_counter%10 == 1) {
@@ -361,19 +373,19 @@ void TASK_ControlLooper() {
 						} else {
 								robotMode = STANDBY_MODE;
 						}
-        } else if(task_counter%10 == 3) {
-						Shooting_Control_Looper();
-        } else if(task_counter%2 == 1) {
-						#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
-								spGIMBAL_Controller._system.statelooper();
-						#endif
-        } else if(task_counter%10 == 7) {
-						Infrared_Update();//task_lss
-        }
-				if(task_counter%2 == 0)
-				{
-					sendtoComputer();
 				}
+				if(task_counter%2 == 0){
+					sendtoComputer();
+				}else if(task_counter%2 == 1) {
+#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
+					spGIMBAL_Controller._system.statelooper();
+#endif
+        }
+				if(task_counter%10 == 3) {
+					Shooting_Control_Looper();
+        } 
+#endif
+				
 				if(task_counter % 30 == 0){
 					SP_WatchDog_FeedDog();
 				}
@@ -389,6 +401,7 @@ void TASK_ControlLooper() {
 /*------------------------------------------------------------------------*/
     {
         /* Singal light */
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 1)		
         if(RC_isValid()) {
             if(task_counter%499 == 0) {
                 LED_G_TOGGLE(); LED_R_TOGGLE();
@@ -396,21 +409,30 @@ void TASK_ControlLooper() {
         } else {
             LED_G_OFF(); LED_R_ON();
         }
-        
+#else
+				 if(RC_isValid()) {
+            if(task_counter%499 == 0) {
+                LED_G_TOGGLE(); LED_R_TOGGLE();
+            }
+        } else {
+            LED_G_OFF(); LED_R_ON();
+        }
+#endif
+				
     }
 }
 
 
 void TASK_Backend(void) {
     uint32_t ctime = TASK_GetMilliSecond();
-    
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 1)		    
     RC_ReceiverChecker(ctime);
-
+#endif
+	
     if(!task_inited) {
         static uint16_t tick_init = 0;
         tick_init ++;
-
-#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE>0
+#if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE>0 && defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 2)		
         if(spGIMBAL_Controller._system.regression(tick_init)) {
             task_inited = true;
             TASK_Enable();
@@ -426,8 +448,10 @@ void TASK_Backend(void) {
     }
 
     if(ctime%10 == 0) {
+#if defined(BOARD_MODE) && (BOARD_MODE == 0 || BOARD_MODE == 2)		
 #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
         spGIMBAL_Controller._system.looper();
+#endif
 #endif
         spMOTOR._system.looper();
     }

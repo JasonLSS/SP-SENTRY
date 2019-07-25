@@ -4,6 +4,9 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+## 2.0.5
+- [IMPORTANT]Add double board connect.(test)
+
 ## v2.0.2
 - Add light IO.
 - Change gimbal PID.(test)

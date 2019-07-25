@@ -42,6 +42,10 @@
 #define SP_USING_BOARD_TYPEA
 //  </c>
 
+//  <o>  Board Mode  <0=>singal  <1=>upper  <2=>bottom
+//       <i> Selects Active Bits in Base Address
+#define BOARD_MODE       0
+
 //  <e1> Choose your robot type
 //    <o> RobotType
 //      <1=>FANTRY  <2=>HERO  <3=>ENGINEER  <4=>SENTRY  <5=>NONE
@@ -147,11 +151,15 @@
 
 //  </h>
 
+
 /**
   * @brief  Choose bullet test case 42mm/17mm
   * @note   42mm using motor 203 and 204, 17mm using PWM and motor 201
   */
 //  <h> Test Module Select
+
+
+
 //  <c1> USING_SENTRY_CHASIS
 //    <i> USING_SENTRY_CHASIS
 #define USING_SENTRY_CHASIS
@@ -199,6 +207,7 @@
 //  <o>  Gimbal Mode  <0=>Disable  <1=>Normal  <2=>Debug
 //       <i> Selects Active Bits in Base Address
 #define USING_GIMBAL_MODE       1
+
 
 //  <c1> USING_USB
 //    <i> Enable USB
