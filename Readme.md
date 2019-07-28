@@ -4,6 +4,11 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+## 2.0.7
+- [IMPORTANT]Complete double board connect.
+- Add new PID.
+- Change chasis escape mode logic.
+
 ## 2.0.5
 - [IMPORTANT]Add double board connect.(test)
 

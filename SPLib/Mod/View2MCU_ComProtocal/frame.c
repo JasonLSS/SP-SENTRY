@@ -150,7 +150,11 @@ void packFrame1(u8 *buff,frame *fram)
 ****************************************************************************************/
 void sendtoComputer(void)
 {
-    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle ;
+#if defined(BOARD_MODE) && (BOARD_MODE == 1 || BOARD_MODE == 2)	
+    sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle*27.f/39.f;
+#else
+		sendtoCom_frame.yaw = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle ;
+#endif
 		sendtoCom_frame.timestamp ++;
 		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle;
     packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间

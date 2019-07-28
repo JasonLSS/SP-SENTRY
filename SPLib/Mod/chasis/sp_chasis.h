@@ -82,7 +82,7 @@ void CMWatt_Cal(void);
 int IfUsingPowerBuffer(void);
 int Enemy_Location(void);
 int Empty_Location(void);
-float Speed_Change_Limit(float speed);
+float Speed_Change_Limit(float speed,float limit);
 
 /** @} */
 

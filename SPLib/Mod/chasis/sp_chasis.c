@@ -199,7 +199,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						speed = 0;
 
 				}
-				if(robotMode == CRUISE_MODE && robotMode^robotMode_ex){
+				if((robotMode == CRUISE_MODE || robotMode == DYNAMIC_ATTACK_MODE ||robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE) && robotMode^robotMode_ex){
 						speed = cruise_speed;
 				}
 
@@ -216,7 +216,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						speed = 0;
 				}
 				else if(robotMode == DYNAMIC_ATTACK_MODE){
-						static float timeticket = 0;
+						static float timeticket = 500;
 						static float EnemyCoefficient = 1.0f;
 						if(timeticket < 500){
 							timeticket++;
@@ -256,7 +256,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						}
 						else
 							EscapeCoefficient = 1.5f; 
-						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient);   // (1.2~5)cruise_speed = (14.4 ~ 60)
+						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient)/2.f;   // (1.2~5)cruise_speed = (14.4 ~ 60)
 				}
 				else if(robotMode == CURVE_ATTACK_MODE){//task_lss
 						static float time = 0;
@@ -317,8 +317,10 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 #endif
 
-				if(robotMode != REMOTE_MODE)
-					chasis_speed = Speed_Change_Limit(speed * chasis_direction);
+				if(robotMode == CRUISE_MODE || robotMode == DYNAMIC_ATTACK_MODE )
+					chasis_speed = Speed_Change_Limit(speed ,SPEED_CHANGE_LIMIT);
+				if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE)
+					chasis_speed = Speed_Change_Limit(speed ,SPEED_CHANGE_LIMIT * 10.f);
 				else
 					chasis_speed = speed;
         recv_ex = *recv;
@@ -360,8 +362,8 @@ void CMWatt_Cal(void)//task_lss
 			if(ext_power_heat_data.chassis_power_buffer == 0)
 					chasis_out_limit = 0;
 		}
-		if(chasis_out_limit < 1000)
-				chasis_out_limit = 1000;
+		if(chasis_out_limit < 2000)
+				chasis_out_limit = 2000;
 }
 
 int IfUsingPowerBuffer(void){
@@ -398,9 +400,9 @@ int Empty_Location(void){
 		return 0;
 }
 
-float Speed_Change_Limit(float speed){                        
-	if(fabs(speed_last - speed) > SPEED_CHANGE_LIMIT )
-		speed = speed_last + sign(speed - speed_last)*SPEED_CHANGE_LIMIT;
+float Speed_Change_Limit(float speed,float limit){                        
+	if(fabs(speed_last - speed) > limit )
+		speed = speed_last + sign(speed - speed_last)*limit;
 		speed_last = speed;
 	return speed;
 }

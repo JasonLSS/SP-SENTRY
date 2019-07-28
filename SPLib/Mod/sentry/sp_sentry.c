@@ -49,6 +49,7 @@ void Msg_Recv(CanRxMsg* msg, struct _sentry_reg_t* obj) {
     memcpy(_sol_msg.data, msg->Data, sizeof(_sol_msg.data));
     spSENTRY_Msg_t ret = _sol_msg; 
     int8_t address = _sol_msg.frame.address;
+		ret.frame.operation = feedback;
     switch(_sol_msg.frame.operation) {
     case read:
         if(MsgReg_Read(address, &(ret.frame.value_u32)) == 0) {
@@ -75,15 +76,16 @@ void Sentry_Looper(const uint32_t tick, RC_DataType* recv) {
 		float ctime = spSENTRY._system.time_stamp = TASK_GetSecond();
 		spSENTRY.communi.online = ctime - _sentry_reg.time_stamp < 0.1f;
 	
-		_sentry_reg.reg.state.ext_game_robot_state = ext_game_robot_state;
-		_sentry_reg.reg.state.ext_power_heat_data = ext_power_heat_data;
-	  _sentry_reg.reg.state.ch[0] = (*recv).rc.ch0;
+	  _sentry_reg.reg.state.shooter_heat0 = ext_power_heat_data.shooter_heat0;
+		_sentry_reg.reg.state.ch[0] = (*recv).rc.ch0;
     _sentry_reg.reg.state.ch[1] = (*recv).rc.ch1;
     _sentry_reg.reg.state.ch[2] = (*recv).rc.ch2;
     _sentry_reg.reg.state.ch[3] = (*recv).rc.ch3;
 	  _sentry_reg.reg.state.s1 = (*recv).rc.s1;
 	  _sentry_reg.reg.state.s2 = (*recv).rc.s2;
-		robotMode = spSENTRY.communi.get_reg()->robotMode;
+		frame_visual.yaw = spSENTRY.communi.get_reg()->frame_yaw;
+		if_if_newframe = spSENTRY.communi.get_reg()->frame_newframe;
+		auto_aim_flag = spSENTRY.communi.get_reg()->auto_aim_flag;
 }
 #endif
 
@@ -129,42 +131,67 @@ void Sentry_Looper(const uint32_t tick, RC_DataType* recv) {
 		float ltime = spSENTRY._system.time_stamp;
 		float ctime = spSENTRY._system.time_stamp = TASK_GetSecond();
 		spSENTRY.communi.online = ctime - _sentry_reg.time_stamp < 0.1f;
+//		spSENTRY.communi.get_reg()->robotMode = robotMode;
 		if(spSENTRY.communi.online) {
-			ext_game_robot_state = spSENTRY.communi.get_reg()->state.ext_game_robot_state;
-			ext_power_heat_data = spSENTRY.communi.get_reg()->state.ext_power_heat_data;
+			ext_power_heat_data.shooter_heat0 = spSENTRY.communi.get_reg()->state.shooter_heat0;
+		
 			(*recv).rc.ch0 = spSENTRY.communi.get_reg()->state.ch[0];
 			(*recv).rc.ch1 = spSENTRY.communi.get_reg()->state.ch[1];
 			(*recv).rc.ch2 = spSENTRY.communi.get_reg()->state.ch[2];
 			(*recv).rc.ch3 = spSENTRY.communi.get_reg()->state.ch[3];
 			(*recv).rc.s1 = spSENTRY.communi.get_reg()->state.s1;
 			(*recv).rc.s2 = spSENTRY.communi.get_reg()->state.s2;
-			if(tick%5 == 3){
-					uint8_t addr;
-					spSENTRY.communi.get_reg()->robotMode = robotMode;
-					if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->robotMode, &addr) ) {
-                for(uint8_t _j=0; 
-                    _j<sizeof(spSENTRY.communi.get_reg()->robotMode)/sizeof(spSENTRY.communi.get_reg()->robotMode);
-                    _j++)
-                {
-                    spSENTRY.communi.send_request(write, addr + _j, spSENTRY.communi.get_reg()->robotMode);
-                }
-					}
-			}
-			
+			 spSENTRY.communi.get_reg()->auto_aim_flag = auto_aim_flag;
+//			if(tick%11 == 3){
+//					uint8_t addr;
+//					
+//					if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->robotMode, &addr) ) {
+//                for(uint8_t _j=0; 
+//                    _j<sizeof(spSENTRY.communi.get_reg()->robotMode)/sizeof(spSENTRY.communi.get_reg()->robotMode);
+//                    _j++)
+//                {
+//                    spSENTRY.communi.send_request(write, addr + _j, spSENTRY.communi.get_reg()->robotMode);
+//                }
+//					}
+//			}
+		if(tick%5 == 0){
+		 uint8_t addr;
+        if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->auto_aim_flag, &addr) ) {
+                spSENTRY.communi.send_request(write, addr,  spSENTRY.communi.get_reg()->auto_aim_flag);
+        }
+					
+    }
 		}
 		
-		if(tick%3 == 1) {
-        /* Communication and state sync backend */
-        uint8_t addr;
+		if(tick%5 == 1){
+		 uint8_t addr;
         if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->state, &addr) ) {
-            for(uint8_t _j=0; 
-                _j<sizeof(spSENTRY.communi.get_reg()->state)/sizeof(spSENTRY.communi.get_reg()->state.__value[0]);
-                _j++) 
-            {
-                spSENTRY.communi.send_request(read, addr + _j, 0);
-            }
+                spSENTRY.communi.send_request(read, addr + 3, 0);
         }
+					
     }
+		
+		if(tick%5 == 2){
+		 uint8_t addr;
+        if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->state, &addr) ) {
+                spSENTRY.communi.send_request(read, addr, 0);
+        }
+					
+    }
+		
+		if(tick%5 == 3){
+		 uint8_t addr;
+        if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->state, &addr) ) {
+                spSENTRY.communi.send_request(read, addr + 1, 0);	
+				}
+		}
+		
+		if(tick%5 == 4){
+		 uint8_t addr;
+        if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->state, &addr) ) {
+                spSENTRY.communi.send_request(read, addr + 2, 0);	
+				}
+		}
 
 }
 
@@ -190,12 +217,14 @@ void Sentry_Init(void){
     spSENTRY._system._can_tx.std_id = SENTRY_BOTTOM_ID;
 #elif defined(BOARD_MODE) && (BOARD_MODE == 1)
     spSENTRY._system._can_tx.std_id = SENTRY_UPPER_ID;
+		_sentry_reg.last_address = -1;
 #endif
     spSENTRY._system._can_tx.tx.addr = _sp_msg_tx_buffer.data;
     spSENTRY._system._can_tx.tx.size = sizeof(spSENTRY_Msg_t);
     
     spCAN.user.registe_receiver(CAN2, &spSENTRY._system._can_rx);
 //    spCAN.user.registe_transmitter(CAN2, &spSENTRY._system._can_tx);
+
 }
 
 void Sentry_Send(spSENTRY_Msg_t frame) {
@@ -222,7 +251,7 @@ spSENTRY_MSG_REG* Sentry_GetMsgRegister(void) {
 }
 
 RobotMode Sentry_GetRobotmode(void) {
-    return (RobotMode)_sentry_reg.reg.robotMode;
+    return 0;
 }
 
 struct __SENTRY_Manager_Type spSENTRY = {

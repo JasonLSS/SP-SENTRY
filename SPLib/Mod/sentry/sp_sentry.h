@@ -24,7 +24,7 @@
 #include "sp_rc.h"
 #include "referee.h"
 #include "sp_shoot.h"
-
+#include "Auto_aim.h"
 
 #define SENTRY_UPPER_ID        0x00A
 #define SENTRY_BOTTOM_ID       0x00D
@@ -62,10 +62,9 @@ typedef packed_union_n(4) {
     uint32_t __value[3];
     packed_struct_n(4) {
         int16_t         ch[4];
-				uint8_t         s1:2;
-        uint8_t         s2:2;
-				ext_game_robot_state_t ext_game_robot_state;
-				ext_power_heat_data_t ext_power_heat_data;
+				uint8_t         s1;
+        uint8_t         s2;
+				uint16_t        shooter_heat0;
     };
 } spSENTRY_Msg_State_t;
 
@@ -74,7 +73,9 @@ typedef volatile packed_union_n(4) {
     packed_struct_n(4) {
         uint32_t :32;
 				spSENTRY_Msg_State_t state;
-				RobotMode robotMode;
+				float frame_yaw;
+				float frame_newframe;
+				float auto_aim_flag;
     };
 } spSENTRY_MSG_REG;
 

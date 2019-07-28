@@ -14,7 +14,8 @@
 #include "Auto_aim.h"
 #include "gimbal.h"
 #include "sp_utility.h"
- 
+#include "sp_sentry.h"
+
 frame frame_ex;//存储上一个视觉发来的结构体
 frame fram;//存储视觉数据的结构体
 frame frame_visual;
@@ -93,6 +94,18 @@ void Auto_aim(u8 *rx_buf,int len)
 				if(fram.yaw == 0 && fram.pitch == 0){
 					if_if_newframe = 0;
 				}
+#if defined(BOARD_MODE) && (BOARD_MODE == 2)
+				spSENTRY.communi.get_reg()->frame_newframe = if_if_newframe;
+				spSENTRY.communi.get_reg()->frame_yaw = frame_visual.yaw;
+				uint8_t addr;
+				if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->frame_yaw, &addr) ) {
+							spSENTRY.communi.send_request(write, addr, spSENTRY.communi.get_reg()->frame_yaw);
+				}		
+
+				if(spSENTRY.communi.get_addr( (void*)&spSENTRY.communi.get_reg()->frame_newframe, &addr) ) {
+							spSENTRY.communi.send_request(write, addr, spSENTRY.communi.get_reg()->frame_newframe);
+				}		
+#endif			
 //				
 //				if(fabs(fram.yaw < 5) && fram.yaw != 0 && fabs(fram.pitch < 8) && fram.pitch != 0 ){
 //					auto_aim_flag = 1;
