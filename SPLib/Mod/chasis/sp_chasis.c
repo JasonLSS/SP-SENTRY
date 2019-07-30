@@ -32,7 +32,7 @@ float target_motor201 = 0;
 float target_motor202 = 0;
 float speed = 0;
 float chasis_speed = 0;
-float cruise_speed = 20.0f;
+float cruise_speed = 30.0f;
 float chasis_speed_limit = 80.0f;
 float	chasis_out_limit=800.0f;
 float speedA,speedB;
@@ -40,7 +40,7 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT =1.f;
+float SPEED_CHANGE_LIMIT = 2.f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -256,7 +256,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 						}
 						else
 							EscapeCoefficient = 1.5f; 
-						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient)/2.f;   // (1.2~5)cruise_speed = (14.4 ~ 60)
+						speed = fabs(EscapeCoefficient * cruise_speed * EnemyCoefficient)/1.2f;   // (1.2~5)cruise_speed = (14.4 ~ 60)
 				}
 				else if(robotMode == CURVE_ATTACK_MODE){//task_lss
 						static float time = 0;
@@ -317,15 +317,16 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				}
 #endif
 
-				if(robotMode == CRUISE_MODE || robotMode == DYNAMIC_ATTACK_MODE )
-					chasis_speed = Speed_Change_Limit(speed ,SPEED_CHANGE_LIMIT);
+				
 				if(robotMode == ESCAPE_ATTACK_MODE || robotMode == ESCAPE_MODE)
-					chasis_speed = Speed_Change_Limit(speed ,SPEED_CHANGE_LIMIT * 10.f);
-				else
+					chasis_speed = Speed_Change_Limit(speed * chasis_direction,SPEED_CHANGE_LIMIT * 10.f);
+				else if(robotMode == REMOTE_MODE)
 					chasis_speed = speed;
+				else
+					chasis_speed = Speed_Change_Limit(speed * chasis_direction,SPEED_CHANGE_LIMIT);
         recv_ex = *recv;
 				robotMode_ex = robotMode;
-				
+
 				CHASIS_Move(chasis_speed);
     }
 }
@@ -403,7 +404,7 @@ int Empty_Location(void){
 float Speed_Change_Limit(float speed,float limit){                        
 	if(fabs(speed_last - speed) > limit )
 		speed = speed_last + sign(speed - speed_last)*limit;
-		speed_last = speed;
+	speed_last = speed;
 	return speed;
 }
 

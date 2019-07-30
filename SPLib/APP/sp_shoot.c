@@ -36,7 +36,7 @@
 
 float Feed_SPEED = 20.f;
 
-static uint16_t max_shoot_speed = 60;
+static uint16_t max_shoot_speed = 50;
 static int Shoot_Cooling_Time = 200;
 static int Cooling_tickets = 400;
 

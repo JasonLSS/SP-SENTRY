@@ -388,4 +388,5 @@ void referee_init(void);
 bool referee_send_robot(uint16_t data_id, ext_id_t target_id, uint8_t *data, uint8_t size);
 bool referee_send_client(ext_id_t target_id, float data[3], ext_client_custom_data_mask_t masks);
 
+extern float attacked_time;
 #endif // __REFEREE_H

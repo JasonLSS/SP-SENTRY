@@ -30,6 +30,7 @@ ext_robot_interactive_data_t               ext_robot_interactive_data;
 
 
 int count[8] = {0x00};
+float attacked_time = 0;
 
 // 比赛机器人状态（0x0001）, 发送频率为10Hz。
 void ext_game_state_interpret(uint8_t * ext_game_state_Message) {
@@ -168,6 +169,9 @@ void  ext_robot_hurt_interpret(uint8_t *  ext_robot_hurt_Message) {
     spDMA.mem2mem.copy((uint32_t)&ext_robot_hurt, 
         (uint32_t)ext_robot_hurt_Message,
         sizeof(ext_robot_hurt));
+		if(ext_robot_hurt.hurt_type == 0x0){
+				attacked_time = 200;
+		}
 }
 
 ////实时射击信息（0x0207）

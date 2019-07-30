@@ -187,7 +187,7 @@
 
 //  <c1> AIR_PROTECT
 //    <i> AIR_PROTECT
-//#define AIR_PROTECT
+#define AIR_PROTECT
 //  </c>
 
 //  <c1> USING_BLOCK_CHECK

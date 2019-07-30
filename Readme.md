@@ -4,6 +4,13 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+##v2.0.8
+- Add new gimbal PID.
+- reduce shoot spped.
+- [BUG] Speed change limit have unexpected return.
+- Change attacked judging condition.
+- Add new boot music.
+
 ## 2.0.7
 - [IMPORTANT]Complete double board connect.
 - Add new PID.

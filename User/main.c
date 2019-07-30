@@ -71,7 +71,24 @@ int main(void)
     TASK_TimerInit();
     
     /* System init finish signal */
-	
+#if defined(BOARD_MODE) && (BOARD_MODE == 1 )
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,1046,0);delay_ms(75);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,1174,0);delay_ms(75);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,1318,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,1046,0);delay_ms(75);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,880,0);delay_ms(225);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,1174,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,988,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(75);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,659,0);delay_ms(225);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,987,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,880,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(75);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,523,0);delay_ms(225);BUZZER_OFF();delay_ms(2);
+    BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(150);BUZZER_OFF();delay_ms(2);
+		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,659,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
+		BUZZER_OFF();
+#else
 		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
 		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
 		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,784,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
@@ -86,9 +103,9 @@ int main(void)
 		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,523,0);delay_ms(100);BUZZER_OFF();delay_ms(2);
 		BUZZER_ON(0);spTIMER.set_frequency(BUZZER_TIMER,494,0);delay_ms(200);BUZZER_OFF();delay_ms(2);
     BUZZER_OFF();
+#endif
     LED_G_ON();LED_R_OFF();
     TASK_Start();
-    
     spPortExitCritical();                               /* Enable all IRQs. */
     
     while(1) {

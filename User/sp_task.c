@@ -339,16 +339,18 @@ void TASK_ControlLooper() {
 								}else if(recv.rc.s1==RC_SW_UP){
 										//all auto mode
 										static bool attacked = 0;
-										static float attacked_time = 0;
-										remain_HP = ext_game_robot_state.remain_HP;
-										if(remain_HP_ex > remain_HP){
-												attacked_time = 200;
-												attacked = 1;
-										}
+
+//										remain_HP = ext_game_robot_state.remain_HP;
+//										if(remain_HP_ex > remain_HP){
+//												attacked_time = 200;
+//												attacked = 1;
+//										}
 										if(attacked_time == 0 )
 												attacked = 0;
-										else
+										else{
 												attacked_time--;
+												attacked = 1;
+										}
 										//task_lss
 										if(!attacked){
 											static int static_long = 0;
