@@ -507,6 +507,16 @@
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_watchdog.c</FilePath>
             </File>
+            <File>
+              <FileName>imu_kalman[DSP].c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\imu\imu_kalman[DSP].c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_imu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\Mod\imu\sp_imu.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

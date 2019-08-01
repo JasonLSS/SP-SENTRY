@@ -175,6 +175,11 @@
 #define USING_FRICTION
 //  </c>
 
+//  <c1> USING_IMU
+//    <i> USING_IMU
+//#define USING_IMU
+//  </c>
+
 //  <c1> USING_FEED_MOTOR
 //    <i> USING_FEED_MOTOR
 #define USING_FEED_MOTOR

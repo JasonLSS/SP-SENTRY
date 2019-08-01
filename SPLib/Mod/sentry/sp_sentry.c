@@ -14,7 +14,7 @@
 #include "sp_chasis.h"
 #include "sp_sentry.h"
 #include "sp_math.h"
-
+#include "gimbal.h"
 spSENTRY_Msg_t _sp_msg_rx_buffer, _sp_msg_tx_buffer;
 
 #if  defined(BOARD_MODE) && (BOARD_MODE == 1)
@@ -83,7 +83,8 @@ void Sentry_Looper(const uint32_t tick, RC_DataType* recv) {
     _sentry_reg.reg.state.ch[3] = (*recv).rc.ch3;
 	  _sentry_reg.reg.state.s1 = (*recv).rc.s1;
 	  _sentry_reg.reg.state.s2 = (*recv).rc.s2;
-		frame_visual.yaw = spSENTRY.communi.get_reg()->frame_yaw;
+		_sentry_reg.reg.state.yaw_angle = spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle;
+		frame_visual.yaw = - spSENTRY.communi.get_reg()->frame_yaw;
 		if_if_newframe = spSENTRY.communi.get_reg()->frame_newframe;
 		auto_aim_flag = spSENTRY.communi.get_reg()->auto_aim_flag;
 }
@@ -134,7 +135,7 @@ void Sentry_Looper(const uint32_t tick, RC_DataType* recv) {
 //		spSENTRY.communi.get_reg()->robotMode = robotMode;
 		if(spSENTRY.communi.online) {
 			ext_power_heat_data.shooter_heat0 = spSENTRY.communi.get_reg()->state.shooter_heat0;
-		
+			spGIMBAL_Controller._target.gimbal_yaw_motor->state.angle = spSENTRY.communi.get_reg()->state.yaw_angle;
 			(*recv).rc.ch0 = spSENTRY.communi.get_reg()->state.ch[0];
 			(*recv).rc.ch1 = spSENTRY.communi.get_reg()->state.ch[1];
 			(*recv).rc.ch2 = spSENTRY.communi.get_reg()->state.ch[2];

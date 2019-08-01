@@ -65,6 +65,7 @@ typedef packed_union_n(4) {
 				uint8_t         s1;
         uint8_t         s2;
 				uint16_t        shooter_heat0;
+				float        		yaw_angle;
     };
 } spSENTRY_Msg_State_t;
 
@@ -76,6 +77,7 @@ typedef volatile packed_union_n(4) {
 				float frame_yaw;
 				float frame_newframe;
 				float auto_aim_flag;
+
     };
 } spSENTRY_MSG_REG;
 

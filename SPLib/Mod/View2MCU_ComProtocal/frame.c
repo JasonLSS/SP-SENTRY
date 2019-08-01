@@ -5,7 +5,7 @@
 #include "define.h"
 #include "frame.h"
 #include "crc_table.h"
-
+#include "sp_imu.h"
 #include "gimbal.h"
 
 //created by sui qi
@@ -157,6 +157,10 @@ void sendtoComputer(void)
 #endif
 		sendtoCom_frame.timestamp ++;
 		sendtoCom_frame.pitch = spGIMBAL_Controller._target.gimbal_pitch_motor->state.angle;
+#if defined(BOARD_MODE) && (BOARD_MODE == 2) && defined(USING_IMU)
+		sendtoCom_frame.pitch = IMU_Controllers.imu_state.kalman.euler.pitch;
+		sendtoCom_frame.yaw = IMU_Controllers.imu_state.kalman.euler.yaw;
+#endif
     packFrame(sendbuffer, &sendtoCom_frame);//减少每次搬运内存时间
 #ifdef USING_USB
 		USB_SendData(sendbuffer,sizeof(sendtoCom_frame ) + 1);

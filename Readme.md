@@ -4,6 +4,11 @@ SuperPower 2019 formal project for SENTRY.
 This project request **STMLib** from gitlab project **SP19_Utility**.
 
 # Versions
+##v2.1.0
+- Renew IMU.(But not use)
+- Change gimbal PID.
+- Add gimbal_yaw_angle to communicate.
+
 ##v2.0.8
 - Add new gimbal PID.
 - reduce shoot spped.

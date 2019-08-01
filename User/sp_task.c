@@ -274,8 +274,6 @@ void TASK_GlobalInit() {
 				spGIMBAL_Controller._system.init();
 #endif
 
-				/* IMU module init */
-//				IMU_Controllers.operations.init();
 
 
     }
@@ -299,6 +297,10 @@ void TASK_GlobalInit() {
     {
 
     }
+						/* IMU module init */
+#if defined(BOARD_MODE) && (BOARD_MODE == 2) && defined(USING_IMU)
+				IMU_Controllers.operations.init();
+#endif
 }
 
 
@@ -378,7 +380,7 @@ void TASK_ControlLooper() {
 								robotMode = STANDBY_MODE;
 						}
 				}
-				if(task_counter%2 == 0){
+				if(task_counter%5 == 3){
 					sendtoComputer();
 				}
 				if(task_counter%10 == 3) {
