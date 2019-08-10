@@ -349,10 +349,12 @@ void Friction_Looper(void) {
 		else if(frictionState == Friction_ON){
 				frictionState = Friction_ON;
 				timeticket++;
+				if(timeticket > 100){
 				if(timeticket%15 == 0)
 						speed_shoot += (speed_shoot<max_shoot_speed)?10:0;
+				}
 				if(timeticket>10000)
-					timeticket = 0;
+					timeticket = 100;
 		}
     Friction_CH1.target = Friction_CH2.target = speed_shoot;
     looperUpdateFriction(&Friction_CH1);
@@ -519,11 +521,17 @@ void Shooting_Control_Looper (void){
 						Cooling_tickets = Shoot_Cooling_Time;
 				}
 				else if(recv.rc.s1==RC_SW_UP){
-					if(auto_aim_flag == 1)
+					static float auto_aim_keep;
+					if(auto_aim_flag == 1){
 						shootState = Shoot_ON;
+						auto_aim_keep = 30;
+					}
 					else
 						shootState = Shoot_OFF;
-
+					if(auto_aim_keep > 0){
+						shootState = Shoot_ON;
+						auto_aim_keep --;
+					}
 					static float times_tick = 0;
 					if(recv.rc.ch0 > 600 && times_tick < 20){
 						shootState = Shoot_ON;

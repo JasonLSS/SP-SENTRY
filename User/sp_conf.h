@@ -44,7 +44,7 @@
 
 //  <o>  Board Mode  <0=>singal  <1=>upper  <2=>bottom
 //       <i> Selects Active Bits in Base Address
-#define BOARD_MODE       2
+#define BOARD_MODE       1
 
 //  <e1> Choose your robot type
 //    <o> RobotType

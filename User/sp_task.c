@@ -253,6 +253,15 @@ void TASK_GlobalInit() {
 #ifdef USING_USB
 				USB_TaskInit();
 #endif
+				GPIO_InitTypeDef  GPIO_InitStructure;
+				RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG , ENABLE);
+				GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+				GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//普通输出模式
+				GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//推挽输出
+				GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;//100MHz
+				GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//上拉
+				GPIO_Init(GPIOG, &GPIO_InitStructure);//初始化
+				GPIO_SetBits(GPIOG,GPIO_Pin_13);
 #endif
 				
     }
@@ -342,7 +351,7 @@ void TASK_ControlLooper() {
 										//all auto mode
 										static bool attacked = 0;
 
-//										remain_HP = ext_game_robot_state.remain_HP;
+										remain_HP = ext_game_robot_state.remain_HP;
 //										if(remain_HP_ex > remain_HP){
 //												attacked_time = 200;
 //												attacked = 1;
@@ -367,7 +376,7 @@ void TASK_ControlLooper() {
 //											}
 										}else
 //										if(if_if_newframe && attacked)
-											robotMode = ESCAPE_ATTACK_MODE;
+											robotMode = DYNAMIC_ATTACK_MODE;
 //										if((!if_if_newframe ||ext_game_robot_state.remain_HP < 100)&& attacked)
 //											robotMode = ESCAPE_MODE;
 //										
@@ -386,7 +395,16 @@ void TASK_ControlLooper() {
 				if(task_counter%10 == 3) {
 					Shooting_Control_Looper();
         } 
-
+				
+				if(task_counter%3000 == 0){
+					referee_send_HP(robotid_blue_infantry_1,remain_HP);
+				}
+				if(task_counter%3000 == 2000){
+					referee_send_HP(robotid_blue_infantry_2,remain_HP);
+				}
+				if(task_counter%3000 == 1000){
+					referee_send_HP(robotid_blue_infantry_3,remain_HP);
+				}
 				if(task_counter%2 == 1) {
 #if defined(USING_GIMBAL_MODE) && USING_GIMBAL_MODE==1
 					spGIMBAL_Controller._system.statelooper();

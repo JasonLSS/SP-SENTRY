@@ -293,6 +293,23 @@ bool referee_send_robot(uint16_t data_id, ext_id_t target_id, uint8_t *data, uin
     return true;
 }
 
+bool referee_send_HP(ext_id_t target_id, uint16_t HP) {
+    static ext_robot_send_HP_t robot_data;	
+		robot_data.header.sof= REFEREE_FRAME_HEADER_SOF;
+		robot_data.header.seq++;
+		robot_data.header.data_length=sizeof(robot_data)- sizeof(robot_data.header) - sizeof(robot_data.cmd_id) - sizeof(robot_data.crc16);
+		Append_CRC8_Check_Sum((uint8_t*)&robot_data.header, sizeof(robot_data.header));
+		
+		robot_data.cmd_id = robot_interactive_data;
+    robot_data.data_id = 0x02F0;
+    robot_data.sender_id = MY_ROBOT_ID;
+    robot_data.robot_id = target_id;		// memcpy(&robot_data.graphic_data ,(uint8_t*)&graphic_draw, sizeof(robot_data.graphic_data));
+		robot_data.data = HP;
+		Append_CRC16_Check_Sum((uint8_t*)&robot_data, sizeof(robot_data));
+    /* Send out data */
+		return spDMA.controller.start(spDMA_USART6_tx_stream, 
+        (uint32_t)&robot_data, (uint32_t)USART6->DR, sizeof(robot_data));
+}
 
 bool referee_send_client(ext_id_t target_id, float data[3], ext_client_custom_data_mask_t masks) {
     static ext_client_custom_data_t client_data;

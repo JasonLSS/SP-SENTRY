@@ -47,37 +47,44 @@ static float yaw_limit_min = -1000000.f;
 float pitch_limit_max =0.7f;
 float pitch_limit_min = -0.4f;
 #if defined(BOARD_MODE) && (BOARD_MODE == 1)	
-static const float yaw_kp_0 = 10.0f;
-static const float yaw_ki_0 = 0.5f;
-static const float yaw_kd_0 = 0.3f;
+static const float yaw_kp_0 = 25000.0f;
+static const float yaw_ki_0 = 1000.0f;
+static const float yaw_kd_0 = 2000.f;
+
+static const float pitch_kp_0 = 20.f;
+static const float pitch_ki_0 = 0.4f;
+static const float pitch_kd_0 = 0.015f;
+
 #else
 static const float yaw_kp_0 = 25000.0f;
 static const float yaw_ki_0 = 1000.0f;
 static const float yaw_kd_0 = 2000.f;
+
+static const float pitch_kp_0 = 20.f;
+static const float pitch_ki_0 = 0.4f;
+static const float pitch_kd_0 = 0.015f;
+
 #endif
-static const float pitch_kp_0 = 25000.0f;
-static const float pitch_ki_0 = 1000.0f;
-static const float pitch_kd_0 = 2000.f;
 
-float visual_syaw_kp = 16.0f;
-float visual_syaw_ki = 0.5f;
-float visual_syaw_kd = 0.3f;
+float visual_syaw_kp = 18000.0f;
+float visual_syaw_ki = 2500.f;
+float visual_syaw_kd = 700.f;
 
-float visual_lyaw_kp = 10.0f;
+float visual_lyaw_kp = 12000.0f;
 float visual_lyaw_ki = 0.0f;
-float visual_lyaw_kd = 1.f;
+float visual_lyaw_kd = 0.0f;
 
 float yaw_seperate_limit = 13.f;
 
-float visual_spitch_kp = 32000.0f;
-float visual_spitch_ki = 2000.f;
-float visual_spitch_kd = 2500.f;
+float visual_spitch_kp = 20.0f;
+float visual_spitch_ki = 7.f;
+float visual_spitch_kd = 0.5f;
 
-float visual_lpitch_kp = 27000.0f;
-float visual_lpitch_ki = 4000.0f;
-float visual_lpitch_kd = 3000.0f;
+float visual_lpitch_kp = 30.0f;
+float visual_lpitch_ki = 0.0f;
+float visual_lpitch_kd = 0.0f;
 
-float pitch_seperate_limit = 4.f;
+float pitch_seperate_limit = 10.f;
 
 #else
 static float yaw_limit_max = 4.64f;
@@ -123,11 +130,12 @@ static float pitch_set_last = 0.f;
 
 float pitch_add = 0.f;
 #if defined(BOARD_MODE) && (BOARD_MODE == 1 || BOARD_MODE == 2)	
-float yaw_cruise_speed = 0.015f;
+float yaw_cruise_speed = 0.01f;
+float pitch_curise_speed = 0.003f;
 #else
 float yaw_cruise_speed = 0.01f;
 #endif
-static int pitch_time_speed =200.f;
+static int pitch_time_speed =200000.f;
 
 float yaw_limit[7]= { -1365.3f*2/8192.f*2.f*PI , -1365.3f/8192.f*2.f*PI, 0.f/8192.f*2.f*PI , 1365.3f/8192.f*2.f*PI , 
 											1365.3f*2/8192.f*2.f*PI , 1365.3f*3/8192.f*2.f*PI ,1365.3f*4/8192.f*2.f*PI };//!!!!!!
@@ -142,16 +150,17 @@ void GIMBAL_ControlInit(void) {
 #if defined(BOARD_MODE) && (BOARD_MODE == 1)	
 			
 		gimbal_yaw_motor  = spMOTOR.user.enable(CAN1, Motor208, RM_6623_YAW, true);  
-//		spMOTOR.motor.set_speed_pid(gimbal_yaw_motor, NULL);
+		spMOTOR.motor.set_speed_pid(gimbal_yaw_motor, NULL);
     
     gimbal_yaw_motor->control.position_pid->intergration_separation = 0.5f;
     gimbal_yaw_motor->control.position_pid->intergrations_sum_error_limit = 5*PI;
-    gimbal_yaw_motor->control.position_pid->output_limit = 10000;
+    gimbal_yaw_motor->control.position_pid->output_limit = 15000;
     PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0*2.f, yaw_ki_0*2.f, yaw_kd_0);
-	
-		PID_SetGains(gimbal_yaw_motor->control.speed_pid, 1000, 0, 0);
+//	
+//		PID_SetGains(gimbal_yaw_motor->control.speed_pid, 1000, 0, 0);
     
-    gimbal_yaw_motor->control.output_limit = 8000;
+    gimbal_yaw_motor->control.output_limit = 15000;
+		gimbal_yaw_motor->control.speed_pid->output_limit = 15000;
 		spGIMBAL_Controller._target.gimbal_yaw_motor = gimbal_yaw_motor;
 	
     gimbal_pitch_motor = spMOTOR.user.enable(CAN1, Motor206, RM_6623_YAW, true);
@@ -174,25 +183,25 @@ void GIMBAL_ControlInit(void) {
     
     gimbal_yaw_motor->control.position_pid->intergration_separation = 0.5f;
     gimbal_yaw_motor->control.position_pid->intergrations_sum_error_limit = 5*PI;
-    gimbal_yaw_motor->control.position_pid->output_limit = 15000;
+    gimbal_yaw_motor->control.position_pid->output_limit = 20000;
     PID_SetGains(gimbal_yaw_motor->control.position_pid, yaw_kp_0*2.f, yaw_ki_0*2.f, yaw_kd_0);
 	
 		PID_SetGains(gimbal_yaw_motor->control.speed_pid, 1000, 0, 0);
     
-    gimbal_yaw_motor->control.output_limit = 8000;
+    gimbal_yaw_motor->control.output_limit = 20000;
 		spGIMBAL_Controller._target.gimbal_yaw_motor = gimbal_yaw_motor;
 	
     gimbal_pitch_motor = spMOTOR.user.enable(CAN1, Motor208, RM_6623_YAW, true);
-		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
+//		spMOTOR.motor.set_speed_pid(gimbal_pitch_motor, NULL);
 		
     gimbal_pitch_motor->control.position_pid->intergration_separation = 0.5f;
     gimbal_pitch_motor->control.position_pid->intergrations_sum_error_limit = 5*PI;
     gimbal_pitch_motor->control.position_pid->output_limit = 15000;
     PID_SetGains(gimbal_pitch_motor->control.position_pid, pitch_kp_0, pitch_ki_0*2.f, pitch_kd_0);
 	
-//    PID_SetGains(gimbal_pitch_motor->control.speed_pid, 2000, 0, 0);
-	
-    gimbal_pitch_motor->control.output_limit = 8000;
+    PID_SetGains(gimbal_pitch_motor->control.speed_pid, 2000, 0, 0);
+		gimbal_pitch_motor->control.speed_pid->output_limit = 15000;
+    gimbal_pitch_motor->control.output_limit = 15000;
     spGIMBAL_Controller._target.gimbal_pitch_motor = gimbal_pitch_motor;
 		gimbal_pitch_motor->flags.stop = true;
 #else
@@ -289,17 +298,18 @@ void GIMBAL_State(void){
 		}
 		else if(robotMode == CRUISE_MODE){
 			yaw_set += yaw_cruise_speed*yaw_direction;
-			if(pitch_time<pitch_time_speed){
-				pitch_set = 0.5f;
-				pitch_time++;
-			}
-			else if(pitch_time<pitch_time_speed * 2){
-				pitch_set = -0.3f;
-				pitch_time++;
-			}
-			else{
-				pitch_time = 0;
-			}
+//			if(pitch_time<pitch_time_speed){
+//				pitch_set = 0.5f;
+//				pitch_time++;
+//			}
+//			else if(pitch_time<pitch_time_speed * 2){
+//				pitch_set = -0.3f;
+//				pitch_time++;
+//			}
+//			else{
+//				pitch_time = 0;
+//			}
+			pitch_set += pitch_curise_speed * pitch_direction;
 		}
 		else if(robotMode == DYNAMIC_ATTACK_MODE || robotMode == ESCAPE_ATTACK_MODE || robotMode == CURVE_ATTACK_MODE ||  robotMode == ESCAPE_MODE){
 			static float time_out = 0;
@@ -368,17 +378,18 @@ void GIMBAL_State(void){
 					if(times_D>300){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed * yaw_direction;
-						if(pitch_time<pitch_time_speed){
-							pitch_set = 0.5f;
-							pitch_time++;
-						}
-						else if(pitch_time<pitch_time_speed * 2){
-							pitch_set = -0.3f;
-							pitch_time++;
-						}
-						else{
-							pitch_time = 0;
-						}
+						pitch_set += pitch_curise_speed * pitch_direction;
+//						if(pitch_time<pitch_time_speed){
+//							pitch_set = 0.5f;
+//							pitch_time++;
+//						}
+//						else if(pitch_time<pitch_time_speed * 2){
+//							pitch_set = -0.3f;
+//							pitch_time++;
+//						}
+//						else{
+//							pitch_time = 0;
+//						}
 						times_D = 300;
 					}
 			}
@@ -387,17 +398,18 @@ void GIMBAL_State(void){
 					if(times_D>300){
 						spGIMBAL_Controller.user.update_enemy_location(id);
 						yaw_set += yaw_cruise_speed * yaw_direction;
-					if(pitch_time<pitch_time_speed){
-						pitch_set = 0.5f;
-						pitch_time++;
-					}
-					else if(pitch_time<pitch_time_speed * 2){
-						pitch_set = -0.3f;
-						pitch_time++;
-					}
-					else{
-						pitch_time = 0;
-					}
+						pitch_set += pitch_curise_speed * pitch_direction;
+//					if(pitch_time<pitch_time_speed){
+//						pitch_set = 0.5f;
+//						pitch_time++;
+//					}
+//					else if(pitch_time<pitch_time_speed * 2){
+//						pitch_set = -0.3f;
+//						pitch_time++;
+//					}
+//					else{
+//						pitch_time = 0;
+//					}
 						times_D = 300;
 					}
 			}
@@ -515,9 +527,9 @@ void GIMBAL_State(void){
 			yaw_direction = 1;
 #endif
 		
-		if(pitch_set >= pitch_limit_max)
+		if(pitch_set >= 0.6f)
 			pitch_direction = -1;
-		else if (pitch_set <= pitch_limit_min)
+		else if (pitch_set <= -0.1f)
 			pitch_direction = 1;
 		pitch_add = gimbal_pitch_motor->state.angle + frame_visual.pitch * 0.01745f - pitch_limit_max;
 		pitch_set = (pitch_set > pitch_limit_max ? pitch_limit_max : 
@@ -625,7 +637,7 @@ void GIMBAL_PID_Init(void)
 void GIMBAL_VISUAL_SY_PID_Init(void)
 {
 	PID_SetGains(gimbal_yaw_motor->control.position_pid, visual_syaw_kp, visual_syaw_ki, visual_syaw_kd);
-	PID_SetGains(gimbal_yaw_motor->control.speed_pid, 2000, 0, 0);
+//	PID_SetGains(gimbal_yaw_motor->control.speed_pid, 2000, 0, 0);
 }
 
 
@@ -638,7 +650,7 @@ void GIMBAL_VISUAL_SP_PID_Init(void)
 void GIMBAL_VISUAL_LY_PID_Init(void)
 {
 	PID_SetGains(gimbal_yaw_motor->control.position_pid, visual_lyaw_kp, visual_lyaw_ki, visual_lyaw_kd);
-	PID_SetGains(gimbal_yaw_motor->control.speed_pid, 2000, 0, 0);
+//	PID_SetGains(gimbal_yaw_motor->control.speed_pid, 2000, 0, 0);
 }
 
 void GIMBAL_VISUAL_LP_PID_Init(void)

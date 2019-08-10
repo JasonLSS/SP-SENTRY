@@ -40,7 +40,7 @@ uint16_t L_distance = 0, R_distance = 0;
 uint16_t distance_Threshold = 250;
 float chasis_direction = 1;
 float Distance_Limit = 450.f;
-float SPEED_CHANGE_LIMIT = 2.f;
+float SPEED_CHANGE_LIMIT = 5.f;
 bool L_flag = true;
 bool R_flag = true;
 bool change_flag = false;
@@ -300,7 +300,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 				
 #ifdef AIR_PROTECT
 				MOTOR_CrtlType_CAN* motor201 = spMOTOR.user.get(CAN1, Motor201);
-				if(motor201->state.angle > 0){
+				if(motor201->state.angle > -10){
 						chasis_direction = -1;
 				}
 				if(motor201->state.angle < -200){
@@ -324,6 +324,7 @@ void CHASIS_Looper(uint32_t tick, const RC_DataType *recv) {
 					chasis_speed = speed;
 				else
 					chasis_speed = Speed_Change_Limit(speed * chasis_direction,SPEED_CHANGE_LIMIT);
+				chasis_speed = speed * chasis_direction;
         recv_ex = *recv;
 				robotMode_ex = robotMode;
 
@@ -363,8 +364,8 @@ void CMWatt_Cal(void)//task_lss
 			if(ext_power_heat_data.chassis_power_buffer == 0)
 					chasis_out_limit = 0;
 		}
-		if(chasis_out_limit < 2000)
-				chasis_out_limit = 2000;
+		if(chasis_out_limit < 1000)
+				chasis_out_limit = 1000;
 }
 
 int IfUsingPowerBuffer(void){

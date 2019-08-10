@@ -20,7 +20,7 @@ update: 2019.07.15
 
 //  <o> Robot Color
 //    <0=>None  <1=>Red  <2=>Blue
-#define sp_referee_robot_color                1
+#define sp_referee_robot_color                2
 
 //  <o> Robot Type
 //    <0=>None  <1=>Hero(1)  <2=>Engineer(2)  <3=>Infantry1(3)  <4=>Infantry2(4)  <5=>Infantry3(5)
@@ -343,6 +343,15 @@ typedef packed_struct {
     uint8_t             data[113];          /*!< max data length = 13byte */
 } ext_robot_interactive_data_t;
 
+typedef packed_struct {
+		ext_frame_header_t  					header;
+		uint16_t											cmd_id;
+    uint16_t            					data_id;            /*!< range 0x200~0x2FF */
+    uint16_t            					sender_id;
+    uint16_t            					robot_id;
+    uint16_t											data;          /*!< max data length = 13byte */
+		uint16_t                      crc16;
+} ext_robot_send_HP_t;
 
 typedef packed_struct {
 uint16_t            data_id;            /*!< 0x0100 */
@@ -354,7 +363,7 @@ uint8_t             graphic_name[5];
 uint8_t             layer;
 uint8_t             color;
 uint8_t             width;
-uint16_t            start_x;
+uint16_t            start_x;	
 uint16_t            start_y;
 uint16_t            radius;
 uint16_t            end_x;
@@ -387,6 +396,6 @@ extern ext_robot_interactive_data_t               ext_robot_interactive_data;
 void referee_init(void);
 bool referee_send_robot(uint16_t data_id, ext_id_t target_id, uint8_t *data, uint8_t size);
 bool referee_send_client(ext_id_t target_id, float data[3], ext_client_custom_data_mask_t masks);
-
+bool referee_send_HP(ext_id_t target_id, uint16_t HP);
 extern float attacked_time;
 #endif // __REFEREE_H
