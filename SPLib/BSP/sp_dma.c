@@ -176,6 +176,7 @@ bool DMA_Restart(DMA_Stream_TypeDef * stream, uint32_t mem_target, uint32_t peri
     return false;
 }
 
+extern void dma_delay(uint32_t);
 DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t len) {
     if(len==0) {
         return false;
@@ -186,6 +187,8 @@ DMA_Stream_TypeDef* DMA_CopyMem2Mem(uint32_t target, uint32_t buffer, uint16_t l
         if((spDMA_Mem2Mem[i].stream->CR&DMA_SxCR_CHSEL_Msk)==spDMA_Mem2Mem[i].channel && 
             DMA_GetCmdStatus(spDMA_Mem2Mem[i].stream)==DISABLE) {
                 DMA_Start(spDMA_Mem2Mem[i].stream, target, buffer, len);
+                /* Wait for finising. The speed is about 1byte/cpu_clock. */
+                dma_delay(len);
                 return spDMA_Mem2Mem[i].stream;
             }
     }

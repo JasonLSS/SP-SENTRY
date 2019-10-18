@@ -37,7 +37,7 @@
 #include "sp_type.h"
 
 
-#define spGPIO_PinFromPinSource(ps)         (0x0001<<(ps))  /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
+#define spGPIO_PinFromPinSource(ps)         (((uint16_t)0x0001)<<(ps))  /* Resolve GPIO_Pin_X from GPIO_PinSourceX */
 
 
 /** @defgroup GPIO_Declarations
@@ -144,7 +144,7 @@ extern const struct GPIO_Controllers_Type {
       * @brief  General GPIO config
       * @param  GPIOx   where x can be (A..K) to select the GPIO peripheral for STM32F405xx/407xx and STM32F415xx/417xx devices
       *                       x can be (A..I) to select the GPIO peripheral for STM32F42xxx/43xxx devices.
-      *                       x can be (A, B, C, D and H) to select the GPIO peripheral for STM32F401xx devices.   
+      *                       x can be (A, B, C, D and H) to select the GPIO peripheral for STM32F401xx devices.
       *	@param  Pinx    GPIO_Pin specifies the port bit to read.
       *                 This parameter can be GPIO_Pin_x where x can be (0..15).
       *	@param  Modex   GPIO working mode
@@ -176,8 +176,9 @@ extern const struct GPIO_Controllers_Type {
       *                 @arg GPIO_Speed_2MHz, @arg GPIO_Speed_25MHz, @arg GPIO_Speed_50MHz, @arg GPIO_Speed_100MHz
       * @note   Use as alternative of @func GPIO_Config
       */
-    void (*output_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOOType_TypeDef OTyperx, 
+    void (*__output_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOOType_TypeDef OTyperx, 
         GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx);
+    void (*output_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
 
     /** 
       * @brief  Config GPIO as general input mode
@@ -193,7 +194,8 @@ extern const struct GPIO_Controllers_Type {
       *                 @arg GPIO_Speed_2MHz, @arg GPIO_Speed_25MHz, @arg GPIO_Speed_50MHz, @arg GPIO_Speed_100MHz
       * @note   Use as alternative of @func GPIO_Config
       */
-    void (*input_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx);
+    void (*__input_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx);
+    void (*input_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
     /** 
       * @brief  Config GPIO as alternal function mode
       * @param  GPIOx   where x can be (A..K) to select the GPIO peripheral for STM32F405xx/407xx and STM32F415xx/417xx devices
@@ -211,8 +213,9 @@ extern const struct GPIO_Controllers_Type {
       * @note   Pleas use @func GPIO_PinAFConfig at FIRST.
       *         Use as alternative of @func GPIO_Config
       */
-    void (*alternal_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, 
+    void (*__alternal_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx, 
         GPIOOType_TypeDef OTyperx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx);
+    void (*alternal_config)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
 
     /** 
       * @brief  Config GPIO as anolog mode
@@ -233,8 +236,10 @@ extern const struct GPIO_Controllers_Type {
       *	@param  Pinx    GPIO_Pin specifies the port bit to read.
       *                 This parameter can be GPIO_Pin_x where x can be (0..15).
       * @param  high    If change to high level.
+      * @note   If mode is @arg GPIO_Mode_OUT, get() returns output state, else will return input state.
       */
     void (*set)(GPIO_TypeDef* GPIOx, uint16_t Pinx, bool high);
+    bool (*get)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
     
     /** 
       * @brief  Reverse GPIO pin output
@@ -245,18 +250,6 @@ extern const struct GPIO_Controllers_Type {
       *                 This parameter can be GPIO_Pin_x where x can be (0..15).
       */
     void (*toggle)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
-    
-    /** 
-      * @brief  Get GPIO pin output state
-      * @param  GPIOx   where x can be (A..K) to select the GPIO peripheral for STM32F405xx/407xx and STM32F415xx/417xx devices
-      *                       x can be (A..I) to select the GPIO peripheral for STM32F42xxx/43xxx devices.
-      *                       x can be (A, B, C, D and H) to select the GPIO peripheral for STM32F401xx devices.   
-      *	@param  Pinx    GPIO_Pin specifies the port bit to read.
-      *                 This parameter can be GPIO_Pin_x where x can be (0..15).
-      * @param  retval  [true]=high level, [false]=low level
-      */
-    uint8_t (*get_output)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
-    uint8_t (*get_input)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
     
     /** 
       * @brief  Change GPIO mode
@@ -272,7 +265,8 @@ extern const struct GPIO_Controllers_Type {
       *                              @arg GPIO_Mode_AN
       * @param  retval  [true]=high level, [false]=low level
       */
-    void (*mode)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef mode);
+    void (*set_mode)(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef mode);
+    GPIOMode_TypeDef (*get_mode)(GPIO_TypeDef* GPIOx, uint16_t Pinx);
 } spGPIO;
 /** @} */
 

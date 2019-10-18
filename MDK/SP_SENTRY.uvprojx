@@ -408,11 +408,6 @@
               <FilePath>..\SPLib\APP\sp_motor.c</FilePath>
             </File>
             <File>
-              <FileName>sp_rc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\APP\sp_rc.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_shoot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\APP\sp_shoot.c</FilePath>
@@ -436,6 +431,11 @@
               <FileName>sp_sentry.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\Mod\sentry\sp_sentry.c</FilePath>
+            </File>
+            <File>
+              <FileName>sp_rc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SPLib\APP\sp_rc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -463,41 +463,6 @@
           <GroupName>BSP</GroupName>
           <Files>
             <File>
-              <FileName>sp_delay.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\SPLib\ASM\sp_delay.s</FilePath>
-            </File>
-            <File>
-              <FileName>sp_spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_spi.c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_usart.c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_gpio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_dma.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_dma.c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_can.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_can.c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\BSP\sp_timer.c</FilePath>
-            </File>
-            <File>
               <FileName>sp_rng.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SPLib\BSP\sp_rng.c</FilePath>
@@ -508,14 +473,9 @@
               <FilePath>..\SPLib\BSP\sp_watchdog.c</FilePath>
             </File>
             <File>
-              <FileName>imu_kalman[DSP].c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\Mod\imu\imu_kalman[DSP].c</FilePath>
-            </File>
-            <File>
-              <FileName>sp_imu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\Mod\imu\sp_imu.c</FilePath>
+              <FileName>SP_BSP_armcc5.lib</FileName>
+              <FileType>4</FileType>
+              <FilePath>..\SPLib\BSP\SP_BSP_armcc5.lib</FilePath>
             </File>
           </Files>
         </Group>
@@ -538,34 +498,9 @@
           <GroupName>USB</GroupName>
           <Files>
             <File>
-              <FileName>SP19_USB.lib</FileName>
+              <FileName>USB_CDC_armcc5.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>..\SPLib\SP19_USB.lib</FilePath>
-            </File>
-            <File>
-              <FileName>usbd_desc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\USB\hid\usbd_desc.c</FilePath>
-            </File>
-            <File>
-              <FileName>usbd_hid_core.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\USB\hid\usbd_hid_core.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\USB\usr\usb.c</FilePath>
-            </File>
-            <File>
-              <FileName>usb_bsp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\USB\usr\usb_bsp.c</FilePath>
-            </File>
-            <File>
-              <FileName>usbd_usr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\SPLib\USB\usr\usbd_usr.c</FilePath>
+              <FilePath>..\SPLib\USB\USB_CDC_armcc5.lib</FilePath>
             </File>
           </Files>
         </Group>

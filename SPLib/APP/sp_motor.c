@@ -51,8 +51,8 @@ MOTOR_CrtlType_CAN                          MOTORs[MOTOR_POOLSIZE] = {0x00};
 /**
   * @brief  CAN1/CAN2 received message buffer
   */
-PID_Type                                    __CHASIS_SpeedPID[MOTOR_POOLSIZE];
-PID_Type                                    __CHASIS_PositionPID[MOTOR_POOLSIZE];
+PID_Type                                    __SpeedPID[MOTOR_POOLSIZE];
+PID_Type                                    __PositionPID[MOTOR_POOLSIZE];
 
 
 /**
@@ -157,7 +157,6 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __m
     }
     
     /* Use angle calculation only when using position PID */
-//    if(__motor->control.position_pid) {
     float delta = 0.f;
     /* Calculate absolute angle from delta angle */
     if(__motor->state.__motor_angel_last!=-1){
@@ -182,7 +181,12 @@ void __MOTOR_DataResolve_RM3510_3508(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __m
     }
     /* Record current angle for next resolving */
     __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
-//    }
+    __motor->state.last_angle = __motor->state.angle;
+
+    /* Update time stamp */
+    float time = TASK_GetSecond();
+    __motor->state.freq = 1.0f/(time - __motor->state.time_stamp);
+    __motor->state.time_stamp = time;
     /* Clear flag */
     __motor->data.receiver.rx.changed = false;
 }
@@ -202,7 +206,6 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
     /* Use angle calculation only when using position PID */
-//    if(__motor->control.position_pid) {
         float delta = 0.f;
         /* Calculate absolute angle from delta angle */
         if(__motor->state.__motor_angel_last!=-1){
@@ -227,7 +230,11 @@ void __MOTOR_DataResolve_RM2006(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
         }
         /* Record current angle for next resolving */
         __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
-//    }
+
+    /* Update time stamp */
+    float time = TASK_GetSecond();
+    __motor->state.freq = 1.0f/(time - __motor->state.time_stamp);
+    __motor->state.time_stamp = time;
     /* Clear flag */
     __motor->data.receiver.rx.changed = false;
 }
@@ -239,10 +246,13 @@ void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
     __motor->state.__motor_angel_curr = (msg_data->Data[0]<<8) | msg_data->Data[1];
     /* BYTE2+BYTE3 = speed */
     __motor->state.speed = spMATH_RPM2RAD( (int16_t)((msg_data->Data[2]<<8) | msg_data->Data[3]) );
-    /* BYTE2+BYTE3 = current */
+    /* BYTE4+BYTE6 = current */
     __motor->state.current = (msg_data->Data[4]<<8) | msg_data->Data[5];
+    /* BYTE7 = temprature */
+    if(__motor->flags.rm_type == GM_6020) {
+        __motor->state.temprature = msg_data->Data[6];
+    }
     /* Use angle calculation only when using position PID */
-//    if(__motor->control.position_pid) {
         float delta = 0.f;
         /* Calculate absolute angle from delta angle */
         if(__motor->state.__motor_angel_last!=-1){
@@ -262,7 +272,11 @@ void __MOTOR_DataResolve_RM6xxx(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
         }
         /* Record current angle for next resolving */
         __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
-//    }
+
+    /* Update time stamp */
+    float time = TASK_GetSecond();
+    __motor->state.freq = 1.0f/(time - __motor->state.time_stamp);
+    __motor->state.time_stamp = time;
     /* Clear flag */
     __motor->data.receiver.rx.changed = false;
 }
@@ -275,7 +289,6 @@ void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
     /* BYTE2+BYTE3 = current */
     __motor->state.current = (msg_data->Data[2]<<8) | msg_data->Data[3];
     /* Use angle calculation only when using position PID */
-//    if(__motor->control.position_pid) {
         float delta = 0.f;
         /* Calculate absolute angle from delta angle */
         if(__motor->state.__motor_angel_last!=-1){
@@ -295,7 +308,11 @@ void __MOTOR_DataResolve_GM3510(CanRxMsg* msg_data, MOTOR_CrtlType_CAN* __motor)
         }
         /* Record current angle for next resolving */
         __motor->state.__motor_angel_last = __motor->state.__motor_angel_curr;
-//    }
+
+    /* Update time stamp */
+    float time = TASK_GetSecond();
+    __motor->state.freq = 1.0f/(time - __motor->state.time_stamp);
+    __motor->state.time_stamp = time;
     /* Clear flag */
     __motor->data.receiver.rx.changed = false;
 }
@@ -327,6 +344,7 @@ void __MOTOR_MountCAN(MOTOR_CrtlType_CAN* __motor, CAN_TypeDef* canx, uint16_t s
                 break;
             case RM_6025_PITCH:
             case RM_6623_YAW:
+            case GM_6020:
                 __motor->data.receiver.resolver = (ResolverCallback_t)__MOTOR_DataResolve_RM6xxx;
                 break;
             case GM_3510:
@@ -419,9 +437,9 @@ __MOTOR_BusManagerType            __MOTOR_CAN2_Manager;
 /**
   * @brief  Control single motor's movement
   */
-MOTOR_CrtlType_CAN* CHASIS_AddMonitor(
+MOTOR_CrtlType_CAN* AddMonitor(
     CAN_TypeDef* CANx,
-    CHASIS_MotorIdType motorx, 
+    MotorIdType motorx, 
     MOTOR_RM_Types type) 
 {
     if(CANx!=CAN1 && CANx!=CAN2) return NULL;
@@ -445,9 +463,9 @@ MOTOR_CrtlType_CAN* CHASIS_AddMonitor(
     return manager->motors[(uint8_t)motorx];
 }
 
-MOTOR_CrtlType_CAN* CHASIS_EnableMotor(
+MOTOR_CrtlType_CAN* EnableMotor(
     CAN_TypeDef* CANx,
-    CHASIS_MotorIdType motorx, 
+    MotorIdType motorx, 
     MOTOR_RM_Types type, 
     bool is_pos_pid) 
 {
@@ -467,53 +485,56 @@ MOTOR_CrtlType_CAN* CHASIS_EnableMotor(
     __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], 0);
     __MOTOR_MountCAN(manager->motors[(uint8_t)motorx], manager->canx, MOTOR_CAN_IDOFFSET+(uint8_t)motorx);
     
-    PID_ControllerInit(&__CHASIS_SpeedPID[(uint8_t)motorx], PIDVAL_CM_SPEED_IntegralLimit, 
-        0xFFFF, MOTOR_MaxOutput);
+    /* Init speed PID controller */
+    PID_ControllerInit(&__SpeedPID[(uint8_t)motorx], PIDVAL_CM_SPEED_IntegralLimit, 0xFFFF, MOTOR_MaxOutput);
+    __MOTOR_SetSpeedPID(manager->motors[(uint8_t)motorx], &__SpeedPID[(uint8_t)motorx]);
     
-    __MOTOR_SetSpeedPID(manager->motors[(uint8_t)motorx], &__CHASIS_SpeedPID[(uint8_t)motorx]);
+    /* Init position PID controller */
+    PID_ControllerInit(&__PositionPID[(uint8_t)motorx], PIDVAL_CM_POSI_IntegralLimit, 0xFFFF, MOTOR_MaxOutput);
+    __MOTOR_SetPositionPID(manager->motors[(uint8_t)motorx], &__PositionPID[(uint8_t)motorx]);
     
-    /* Init position PID controller if used */
-    if(is_pos_pid) {
-        PID_ControllerInit(&__CHASIS_PositionPID[(uint8_t)motorx], PIDVAL_CM_POSI_IntegralLimit, 
-            0xFFFF, MOTOR_MaxOutput);
-        
-        __MOTOR_SetPositionPID(manager->motors[(uint8_t)motorx], &__CHASIS_PositionPID[(uint8_t)motorx]);
-    }
+    manager->motors[(uint8_t)motorx]->flags.position_mode = is_pos_pid;
     
     return manager->motors[(uint8_t)motorx];
 }
 
-void CHASIS_SetMotorSpeed(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float speed) {
+void SetMotorSpeed(CAN_TypeDef* CANx, MotorIdType motorx, float speed) {
     if(CANx!=CAN1 && CANx!=CAN2) return;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
         manager->motors[(uint8_t)motorx] &&
-        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.speed_pid ) {
+        manager->motors[(uint8_t)motorx]->flags.enable && 
+        (!manager->motors[(uint8_t)motorx]->flags.stop) &&
+        manager->motors[(uint8_t)motorx]->control.speed_pid ) {
         __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], speed);
     }
 }
 
-void CHASIS_SetMotorPosition(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float position) {
+void SetMotorPosition(CAN_TypeDef* CANx, MotorIdType motorx, float position) {
     if(CANx!=CAN1 && CANx!=CAN2) return;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
         manager->motors[(uint8_t)motorx] &&
-        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.position_pid ) {
+        manager->motors[(uint8_t)motorx]->flags.enable && 
+        (!manager->motors[(uint8_t)motorx]->flags.stop) &&
+        manager->motors[(uint8_t)motorx]->control.position_pid ) {
         __MOTOR_SetTarget(manager->motors[(uint8_t)motorx], position);
     }
 }
 
-void CHASIS_SetMotorRelativePosition(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float relaposition) {
+void SetMotorRelativePosition(CAN_TypeDef* CANx, MotorIdType motorx, float relaposition) {
     if(CANx!=CAN1 && CANx!=CAN2) return;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
         manager->motors[(uint8_t)motorx] &&
-        manager->motors[(uint8_t)motorx]->flags.enable && manager->motors[(uint8_t)motorx]->control.position_pid ) {
+        manager->motors[(uint8_t)motorx]->flags.enable && 
+        (!manager->motors[(uint8_t)motorx]->flags.stop) &&
+        manager->motors[(uint8_t)motorx]->control.position_pid ) {
         __MOTOR_SetTargetDelta(manager->motors[(uint8_t)motorx], relaposition);
     }
 }
 
-MOTOR_CrtlType_CAN* CHASIS_GetMotor(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+MOTOR_CrtlType_CAN* GetMotor(CAN_TypeDef* CANx, MotorIdType motorx) {
     if(CANx!=CAN1 && CANx!=CAN2) return NULL;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
@@ -526,7 +547,7 @@ MOTOR_CrtlType_CAN* CHASIS_GetMotor(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx
 /**
   * @brief  Stop chasis movement via CAN-bus
   */
-void __CHASIS_Stop(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+void __Stop(CAN_TypeDef* CANx, MotorIdType motorx) {
     if(CANx!=CAN1 && CANx!=CAN2) return;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
@@ -540,7 +561,7 @@ void __CHASIS_Stop(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
 /**
   * @brief  If motor is stopping
   */
-bool __CHASIS_GetStopSatus(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+bool __GetStopSatus(CAN_TypeDef* CANx, MotorIdType motorx) {
     if(CANx!=CAN1 && CANx!=CAN2) return true;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
@@ -554,7 +575,7 @@ bool __CHASIS_GetStopSatus(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
 /**
   * @brief  Start chasis movement via CAN-bus
   */
-void __CHASIS_Start(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx) {
+void __Start(CAN_TypeDef* CANx, MotorIdType motorx) {
     if(CANx!=CAN1 && CANx!=CAN2) return;
     __MOTOR_BusManagerType *manager = (CANx==CAN1)? &__MOTOR_CAN1_Manager:&__MOTOR_CAN2_Manager;
     if((uint8_t)motorx <= sizeof(manager->motors)/sizeof(manager->motors[0]) &&
@@ -610,7 +631,8 @@ void MOTOR_ControlLooper(void) {
             } else {
                 /* Calc position PID MOTORs[i].control.output */
                 float pid_tmp;
-                if(MOTORs[i].control.position_pid) {
+                // if(MOTORs[i].control.position_pid) {
+                if(MOTORs[i].flags.position_mode) {
                     // TODO: Make interval time more specific.
                     pid_tmp = PID_ControllerDriver(MOTORs[i].control.position_pid, 
                         MOTORs[i].control.target , MOTORs[i].state.angle);
@@ -675,15 +697,15 @@ struct __MOTOR_Manager_Type spMOTOR = {
         .looper = MOTOR_ControlLooper,
     },
     .user = {
-        .enable = CHASIS_EnableMotor,
-        .enable_simple = CHASIS_AddMonitor,
-        .set_speed = CHASIS_SetMotorSpeed,
-        .set_position = CHASIS_SetMotorPosition,
-        .set_relative_position = CHASIS_SetMotorRelativePosition,
-        .get = CHASIS_GetMotor,
-        .stop = __CHASIS_Stop,
-        .isstop = __CHASIS_GetStopSatus,
-        .start = __CHASIS_Start,
+        .enable = EnableMotor,
+        .enable_simple = AddMonitor,
+        .set_speed = SetMotorSpeed,
+        .set_position = SetMotorPosition,
+        .set_relative_position = SetMotorRelativePosition,
+        .get = GetMotor,
+        .stop = __Stop,
+        .isstop = __GetStopSatus,
+        .start = __Start,
     },
     .motor = {
         .get_instance = MOTOR_RM_GetInstance,

@@ -25,7 +25,6 @@
 #include "referee.h"
 #include "sp_shoot.h"
 #include "Auto_aim.h"
-
 #define SENTRY_UPPER_ID        0x00A
 #define SENTRY_BOTTOM_ID       0x00D
 #define MSG_REG_SIZE        ((1<<6)+1)

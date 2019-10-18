@@ -58,6 +58,7 @@ typedef enum {
     RM_6623_YAW,
     RM_3510_P27,
     RM_2006_P96,
+    GM_6020,
     GM_3510                 /* NOT YET 20181205 */
 } MOTOR_RM_Types;
 
@@ -76,6 +77,7 @@ typedef struct {
         uint8_t                 enable:1;
         uint8_t                 can_mounted:1;
         uint8_t                 stop:1;
+        uint8_t                 position_mode:1;
         MOTOR_RM_Types          rm_type;
     } flags;
     /**
@@ -97,11 +99,15 @@ typedef struct {
         int16_t                 current;            /* Read from CAN. [uint=?] */
         float                   speed;              /* Read from CAN. [uint=rad/s] */
         float                   angle;              /* Read from CAN. [uint=rad] */
+        float                   last_angle;         /*  [uint=rad] */
         int16_t                 temprature;         /* Read from CAN. [uint=?] */
         uint16_t                motor_block_flag;
         int16_t                 __motor_angel_curr;
         int16_t                 __motor_angel_last;
         int16_t                 __motor_angel_first;
+        
+        float                   time_stamp;
+        float                   freq;
     } state;
     /**
       * @brief  SControll parameters of motor.
@@ -145,7 +151,7 @@ typedef enum {
     Motor20E,
     Motor20F,
     Motor216
-} CHASIS_MotorIdType;
+} MotorIdType;
 
 /** @} */
 
@@ -164,46 +170,46 @@ extern struct __MOTOR_Manager_Type {
     struct {
         /**
          * @brief  Enable a motor's controller.
-         * @param  type: motor type @ref CHASIS_MotorIdType
-         * @param  motorx: select motor from @arg Motor201 to @arg Motor216, @ref CHASIS_MotorIdType
+         * @param  type: motor type @ref MotorIdType
+         * @param  motorx: select motor from @arg Motor201 to @arg Motor216, @ref MotorIdType
          * @param  is_pos_pid: if using position PID control
          * @retval NULL if init failed, or pointer of motor @ref MOTOR_CrtlType_CAN
          */
-        MOTOR_CrtlType_CAN* (*enable)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, MOTOR_RM_Types type, bool is_pos_pid);
+        MOTOR_CrtlType_CAN* (*enable)(CAN_TypeDef* CANx, MotorIdType motorx, MOTOR_RM_Types type, bool is_pos_pid);
         
         /**
          * @brief  Enable a motor without controller, which means only monitor a motor.
-         * @param  type: motor type @ref CHASIS_MotorIdType
-         * @param  motorx: select motor from @arg Motor201 to @arg Motor216, @ref CHASIS_MotorIdType
+         * @param  type: motor type @ref MotorIdType
+         * @param  motorx: select motor from @arg Motor201 to @arg Motor216, @ref MotorIdType
          * @retval NULL if init failed, or pointer of motor @ref MOTOR_CrtlType_CAN
          */
-        MOTOR_CrtlType_CAN* (*enable_simple)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, MOTOR_RM_Types type);
+        MOTOR_CrtlType_CAN* (*enable_simple)(CAN_TypeDef* CANx, MotorIdType motorx, MOTOR_RM_Types type);
         
         /**
          * @brief  Control single motor's movement
          * @note   Using feedback loop control
          */ 
-        void (*set_speed)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float speed);
-        void (*set_position)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float position);
-        void (*set_relative_position)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx, float relaposition);
+        void (*set_speed)(CAN_TypeDef* CANx, MotorIdType motorx, float speed);
+        void (*set_position)(CAN_TypeDef* CANx, MotorIdType motorx, float position);
+        void (*set_relative_position)(CAN_TypeDef* CANx, MotorIdType motorx, float relaposition);
         
         /**
          * @brief  Get motor controller
          */ 
-        MOTOR_CrtlType_CAN* (*get)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
+        MOTOR_CrtlType_CAN* (*get)(CAN_TypeDef* CANx, MotorIdType motorx);
         
         /**
          * @brief  Start or stop motor. 
          * @note   Stop will force output to zero. Then must using start() to restart motor.
          */ 
-        void (*stop)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
-        void (*start)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
+        void (*stop)(CAN_TypeDef* CANx, MotorIdType motorx);
+        void (*start)(CAN_TypeDef* CANx, MotorIdType motorx);
         
         /**
          * @brief  Check if motor is stopping.
          * @retval [true]=stopping, [false]=normal.
          */ 
-        bool (*isstop)(CAN_TypeDef* CANx, CHASIS_MotorIdType motorx);
+        bool (*isstop)(CAN_TypeDef* CANx, MotorIdType motorx);
     } user;
     struct {
         /**

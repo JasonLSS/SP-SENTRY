@@ -9,13 +9,13 @@
 
 /*
 190124:
-                                
+
     cov-mag_angle =
             1.0e-04 *
             0.0322   -0.0007   -0.0008
            -0.0007    0.0283    0.0008
            -0.0008    0.0008    0.1173
-    
+
     cov-gyro =
             1.0e-04 *
             0.1713    0.0006   -0.0002
@@ -39,21 +39,15 @@ typedef struct {
         float angle_with_mag[3];
     } param;
     struct {
-        LPF_FirstOrder_type lpf[3];
-        bool                lpf_enbale;
-        HPF_FirstOrder_type hpf[3];
-        bool                hpf_enbale;
-    } pass_filter;
-    struct {
         float roll, pitch, yaw;
     } euler;
 } Kalman_t;
 
 
 void KalmanFilter(
-        Kalman_t* kalman, 
-        const float * gyro, 
-        const float * accel,
-        const float * mag, float dt);
+    Kalman_t* kalman,
+    const float * gyro,
+    const float * accel,
+    const float * mag, float dt);
 
 #endif // __IMU_KALMAN_H

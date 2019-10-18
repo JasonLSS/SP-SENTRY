@@ -25,8 +25,9 @@
   * @{
   */
 
-
 #define USING_FRICTION_FILTER                    /*<! Using input filter */
+
+extern void delay_ms(uint32_t ms);
 
 
 __INLINE void NVIC_IRQEnable(uint8_t irq, uint8_t pri, uint8_t subpri) {
@@ -51,7 +52,7 @@ __INLINE void NVIC_IRQDisable(uint8_t irq) {
 void Buzzer_Init(void) {
 #if defined(SP_USING_BOARD_TYPEA)
     /* TIM12CH1 + PH6 */
-    spGPIO.alternal_config(GPIOH, GPIO_Pin_6, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.alternal_config(GPIOH, GPIO_Pin_6);
     GPIO_PinAFConfig(GPIOH, GPIO_PinSource6, GPIO_AF_TIM12); 
     
     spTIMER.init(TIM12, 1000, false);
@@ -65,12 +66,13 @@ void Buzzer_Init(void) {
     TIM_OC1PreloadConfig(TIM12, TIM_OCPreload_Enable);
     
     TIM_ARRPreloadConfig(TIM12,ENABLE);
+    TIM_CtrlPWMOutputs(TIM12, ENABLE);
     TIM_Cmd(TIM12, ENABLE);
     
     BUZZER_OFF();
 #else
     /* TIM3CH1 + PB4 */
-    spGPIO.alternal_config(GPIOB, GPIO_Pin_4, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.alternal_config(GPIOB, GPIO_Pin_4);
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_TIM3); 
     
     spTIMER.init(TIM3, 2000, false);
@@ -84,12 +86,13 @@ void Buzzer_Init(void) {
     TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable);
     
     TIM_ARRPreloadConfig(TIM3,ENABLE);
+    TIM_CtrlPWMOutputs(TIM3, ENABLE);
     TIM_Cmd(TIM3, ENABLE);
     
     BUZZER_OFF();
 #endif
 }
-float spBeep_MusicalScale[][8] = {
+const float spBeep_MusicalScale[][8] = {
 //      C       D       E       F       G       A       B     
     {0, 16.35,  18.35,  20.60,  21.83,  24.50,  27.50,  30.87 },    // 0
     {0, 32.70,  36.71,  41.20,  43.65,  49.00,  55.00,  61.74 },    // 1
@@ -105,7 +108,7 @@ float spBeep_MusicalScale[][8] = {
 void spBeep(float f, uint32_t d) {
     spTIMER.set_frequency(BUZZER_TIMER, (f), 0); \
     spTIMER.set_duty(BUZZER_TIMER, 0, 90.f); delay_ms(d); \
-    spTIMER.set_duty(BUZZER_TIMER, 0, 0);delay_ms(10);
+    spTIMER.set_duty(BUZZER_TIMER, 0, 0); delay_ms(10);
 }
 
 
@@ -113,18 +116,18 @@ void spBeep(float f, uint32_t d) {
 void Led_Configuration(void) {
 #if defined(SP_USING_BOARD_TYPEA)
     /* PE11 + PF14 */
-    spGPIO.output_config(GPIOE, GPIO_Pin_11, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    spGPIO.output_config(GPIOF, GPIO_Pin_14, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.output_config(GPIOE, GPIO_Pin_11);
+    spGPIO.output_config(GPIOF, GPIO_Pin_14);
 #else
     /* PF14 + PE7 */
-    spGPIO.output_config(GPIOF, GPIO_Pin_14, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    spGPIO.output_config(GPIOE, GPIO_Pin_7, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.output_config(GPIOF, GPIO_Pin_14);
+    spGPIO.output_config(GPIOE, GPIO_Pin_7);
 #endif
     
     /* Laser output */
-    spGPIO.output_config(GPIOG, GPIO_Pin_13, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.output_config(GPIOG, GPIO_Pin_13);
     
-    LED_G_OFF();
+    LED_G_ON();
     LED_R_ON();
     LASER_OFF();
 }
@@ -146,9 +149,8 @@ void Led8_Configuration(void) {
 void Power_Configuration(void) {
 #if defined(SP_USING_BOARD_TYPEA)
     spRCC_Set_GPIOH();
-    spGPIO.output_config(GPIOH, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5, 
-        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    GPIO_SetBits(GPIOH,GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5);
+    spGPIO.output_config(GPIOH, GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5);
+    GPIO_ResetBits(GPIOH,GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5);
 #endif
 }
 
@@ -176,8 +178,7 @@ bool getUserButton(void) {
 void Button_Configuration(void) {
     spRCC_Set_SYSCFG();
     spGPIO.input_config(spUserButton.gpio_pin.gpio, 
-        spGPIO_PinFromPinSource(spUserButton.gpio_pin.pin_source), 
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(spUserButton.gpio_pin.pin_source));
     
     if(spUserButton.gpio_pin.gpio==GPIOA) {
         SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, spUserButton.gpio_pin.pin_source); 

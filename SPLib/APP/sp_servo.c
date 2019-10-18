@@ -51,8 +51,7 @@ void PWM_OutputInit(ServoType* servo)
     /* Config GPIO */
     spGPIO.alternal_config(
         servo->control.portpin.gpio,
-        spGPIO_PinFromPinSource(servo->control.portpin.pin_source),
-        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(servo->control.portpin.pin_source));
     
     /* Config pins */
     GPIO_PinAFConfig(

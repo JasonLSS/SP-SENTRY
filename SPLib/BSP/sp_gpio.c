@@ -97,6 +97,9 @@ void GPIO_OUT_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOOType_TypeDef OType
         GPIO_InitStructure.GPIO_PuPd    =       PuPdx;
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
+void GPIO_OUT(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    GPIO_OUT_Config(GPIOx, Pinx, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+}
 
 void GPIO_IN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
         GPIO_RCC(GPIOx);
@@ -108,6 +111,10 @@ void GPIO_IN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOPuPd_TypeDef PuPdx, 
         GPIO_InitStructure.GPIO_PuPd    =       PuPdx;
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
+void GPIO_IN(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    GPIO_IN_Config(GPIOx, Pinx, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+}
+
 
 void GPIO_AF_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx, 
         GPIOOType_TypeDef OTyperx, GPIOPuPd_TypeDef PuPdx, GPIOSpeed_TypeDef Speedx) {
@@ -120,6 +127,9 @@ void GPIO_AF_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx,
         GPIO_InitStructure.GPIO_PuPd    =       PuPdx;
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
+void GPIO_AF(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    GPIO_AF_Config(GPIOx, Pinx, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+}
 
 void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
         GPIO_RCC(GPIOx);
@@ -130,7 +140,16 @@ void GPIO_AN_Config(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
         GPIO_Init(GPIOx, &GPIO_InitStructure);
 }
 
-void GPIO_ChangeOutput(GPIO_TypeDef* GPIOx, uint16_t Pinx, bool high) {
+void GPIO_SetMode(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef mode) {
+    GPIOx->MODER &= ~(GPIO_MODER_MODER0 << (Pinx * 2));
+    GPIOx->MODER |= (((uint32_t)mode) << (Pinx * 2));
+}
+
+GPIOMode_TypeDef GPIO_GetMode(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    return (GPIOMode_TypeDef)(( GPIOx->MODER >> (Pinx * 2) ) & 0x03);
+}
+
+void GPIO_Set(GPIO_TypeDef* GPIOx, uint16_t Pinx, bool high) {
     if(high) {
         GPIO_SetBits(GPIOx, Pinx);
     } else {
@@ -138,27 +157,45 @@ void GPIO_ChangeOutput(GPIO_TypeDef* GPIOx, uint16_t Pinx, bool high) {
     }
 }
 
-void GPIO_SetMode(GPIO_TypeDef* GPIOx, uint16_t Pinx, GPIOMode_TypeDef mode) {
-    GPIOx->MODER  &= ~(GPIO_MODER_MODER0 << (Pinx * 2));
-    GPIOx->MODER |= (((uint32_t)mode) << (Pinx * 2));
+bool GPIO_Get(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    
+    GPIOMode_TypeDef mode = GPIO_GetMode(GPIOx, Pinx);
+    switch(mode) {
+    case GPIO_Mode_OUT:
+        return GPIO_ReadOutputDataBit(GPIOx, Pinx);
+    case GPIO_Mode_IN:
+    case GPIO_Mode_AF:
+    case GPIO_Mode_AN:
+        return GPIO_ReadInputDataBit(GPIOx, Pinx);
+    }
+    return false;
 }
 
+void GPIO_Toggle(GPIO_TypeDef* GPIOx, uint16_t Pinx) {
+    GPIO_ToggleBits(GPIOx, Pinx);
+}
 
 
 
 const struct GPIO_Controllers_Type spGPIO = {
     .general_config = GPIO_Config,
-    .output_config = GPIO_OUT_Config,
-    .input_config = GPIO_IN_Config,
-    .alternal_config = GPIO_AF_Config,
+    
+    .__output_config = GPIO_OUT_Config,
+    .__input_config = GPIO_IN_Config,
+    .__alternal_config = GPIO_AF_Config,
+    
+    .output_config = GPIO_OUT,
+    .input_config = GPIO_IN,
+    .alternal_config = GPIO_AF,
+    
     .analog_config = GPIO_AN_Config,
     
-    .set = GPIO_ChangeOutput,
-    .mode = GPIO_SetMode,
+    .set = GPIO_Set,
+    .get = GPIO_Get,
+    .toggle = GPIO_Toggle,
     
-    .toggle = GPIO_ToggleBits,
-    .get_output = GPIO_ReadOutputDataBit,
-    .get_input = GPIO_ReadInputDataBit
+    .set_mode = GPIO_SetMode,
+    .get_mode = GPIO_GetMode,
 };
 
 

@@ -53,8 +53,6 @@
 
 #include "sp_conf.h"
 #include "sp_utility.h"
-#include "sp_imu.h"
-#include "gimbal.h"
 
 
 float frame[6];

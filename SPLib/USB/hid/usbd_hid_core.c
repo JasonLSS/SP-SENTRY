@@ -60,7 +60,7 @@
 #ifdef USB_HID_CONFIG_DESC_SIZ
 #undef USB_HID_CONFIG_DESC_SIZ
 #endif
-#define USB_HID_CONFIG_DESC_SIZ 48
+#define USB_HID_CONFIG_DESC_SIZ 41
 
 extern uint8_t OutBuffer[];
 
@@ -193,8 +193,7 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN_E
   USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
   0x00,         /*bInterfaceNumber: Number of Interface*/
   0x00,         /*bAlternateSetting: Alternate setting*/
-//  0x02,         /*bNumEndpoints*/
-	0x03,
+  0x02,         /*bNumEndpoints*/
   0x03,         /*bInterfaceClass: HID*/
   0x00,         /*bInterfaceSubClass : 1=BOOT, 0=no boot*/
   0x00,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse*/
@@ -232,18 +231,6 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN_E
   0x00,
   0x01,          /*bInterval: Polling Interval (10 ms)*/
   /* 41 */
-	
-		/******************** Descriptor of Mouse endpoint ********************/
-  /* 42 */
-  0x07,          /*bLength: Endpoint Descriptor size*/
-  USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-
-  0x82,    			 /*bEndpointAddress: Endpoint Address (IN)*/
-  0x01,          /*bmAttributes: Synchronization endpoint*/
-  63, 					 /*wMaxPacketSize: 4 Byte max */
-  0x00,
-  0x01,          /*bInterval: Polling Interval (10 ms)*/
-  /* 48 */
 } ;
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
@@ -341,7 +328,7 @@ __ALIGN_BEGIN static uint8_t HID_MOUSE_ReportDesc[HID_MOUSE_REPORT_DESC_SIZE] __
   * @retval status
   */
 
-static uint8_t  usb_rx_buffer[HID_OUT_PACKET];
+static uint8_t usb_rx_buffer[HID_OUT_PACKET];
 static uint8_t  USBD_HID_Init (void  *pdev, 
                                uint8_t cfgidx)
 {
@@ -351,11 +338,6 @@ static uint8_t  USBD_HID_Init (void  *pdev,
               HID_IN_EP,
               HID_IN_PACKET,
               USB_OTG_EP_INT);
-	
-	DCD_EP_Open(pdev,
-              0x82,
-              63,
-              USB_OTG_EP_ISOC);
   
   /* Open EP OUT */
   DCD_EP_Open(pdev,
@@ -379,7 +361,6 @@ static uint8_t  USBD_HID_DeInit (void  *pdev,
 {
   /* Close HID EPs */
   DCD_EP_Close (pdev , HID_IN_EP);
-	DCD_EP_Close (pdev , 0x82);
   DCD_EP_Close (pdev , HID_OUT_EP);
   
   
@@ -485,8 +466,7 @@ uint8_t USBD_HID_SendReport     (USB_OTG_CORE_HANDLE  *pdev,
 {
   if (pdev->dev.device_status == USB_OTG_CONFIGURED )
   {
-			DCD_EP_Tx (pdev, HID_IN_EP, report, len);
-//		DCD_EP_Tx (pdev, 0x82, report, len);
+    DCD_EP_Tx (pdev, HID_IN_EP, report, len);
   }
   return USBD_OK;
 }

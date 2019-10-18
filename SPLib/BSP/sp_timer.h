@@ -39,7 +39,8 @@
   * @ingroup  TIMER
   * @{
   */
-
+#define __TIMER_MIN_FREQ        (0.05f)
+#define __TIMER_MAX_FREQ        (168000000)
 /** @} */
 
 
@@ -52,7 +53,7 @@ extern const struct TIMER_Controllers_Type {
     /** 
       * @brief  Config a timer with base counter.
       * @param  Timx: TIM[1~14]
-      * @param  frequency: PWM frequency.
+      * @param  frequency: PWM frequency. [(minest)0.05Hz ~ (?)168MHz]
       * @param  isstart: If start right now.
       * @retval If succeed
       */

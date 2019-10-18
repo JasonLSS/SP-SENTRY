@@ -6,7 +6,21 @@
   * @date       2018.Dec.10
   * @brief      Some useful math functions
   @verbatim      
-
+  Test case:
+        LPF_FirstOrder_type lpf;
+        HPF_FirstOrder_type hpf;
+        LPF_FirstOrder_Init(&lpf, 10, 100);
+        HPF_FirstOrder_Init(&hpf, 10, 100);
+        ------------------------------------
+        if(tick % 10 == 5) {
+            extern char uart_tx_buff[256];;
+            float time = TASK_GetSecond();
+            float freq = 0.2f*3.1415926f*time;
+            float val = sin(freq*time);
+            float out = HPF_FirstOrder_filter(&hpf, val);
+            uint8_t size = sprintf(uart_tx_buff, "%f,%f,%f,%f\n", val, out, freq, time);
+            spDMA.controller.start(spDMA_USART6_tx_stream, (uint32_t)uart_tx_buff, (uint32_t)&USART6->DR, size);
+        }
   @endverbatim
   ******************************************************************************
   * @license
@@ -39,7 +53,7 @@
 
 
      
-/** @defgroup   Common Mathematical Functions
+/** @defgroup   Common_Transformer
   * @ingroup    MATH
   * @{
   */
@@ -115,7 +129,7 @@ static __inline void swap(void* A, void* B, uint16_t size) {
   */
   
   
-/** @defgroup   Value Constraint Functions
+/** @defgroup   Value_Constraint
   * @ingroup    MATH
   * @{
   */
@@ -150,16 +164,8 @@ static __inline float limit_bilateral(float x, float limit) {
   * @note   x will output between [-limit, limit] in a loop way
   *         eg. limit_bilateral_loop(10, 3) = -2
   *         eg. limit_bilateral_loop(11.2, 1.0) = -0.8
-  */
-static __inline float limit_bilateral_loop(float x, float limit) {
-    if(limit==0) {
-        return x;
-    }
-    if(limit < 0) {
-        limit = fabs(limit);
-    }
-    return x - (int)((fabs(x)+limit)/(2*limit))*2*limit*sign(x);
-}
+  */ 
+extern __inline float limit_bilateral_loop(float x, float limit);
 
 /**
   * @brief  Limit value in a range
@@ -240,7 +246,7 @@ static __inline float deadzone_gain(float x, float n, float m) {
 
 
 
-/** @defgroup   LPF Singnal Low Pass Filter Functions
+/** @defgroup   Low_Pass_Filter
   * @ingroup    MATH
   * @{
   */
@@ -278,7 +284,7 @@ float LPF_FirstOrder_filter(LPF_FirstOrder_type* lpf, float Vi );
   */
 
 
-/** @defgroup   HPF Singnal High Pass Filter Functions
+/** @defgroup   High_Pass_Filter
   * @ingroup    MATH
   * @{
   */
@@ -286,7 +292,6 @@ float LPF_FirstOrder_filter(LPF_FirstOrder_type* lpf, float Vi );
 /**
   * @brief  I-order RC high pass filter struct
   * @note   Excpression: \f[ V_o(k) = (V_i(k) -  V_i(k-1) +  V_o(k-1)) \frac{ RC }{ RC + T_s} \f]
-  
   */
 typedef struct {
 //    float  Vi;

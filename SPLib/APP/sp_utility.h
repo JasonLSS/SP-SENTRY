@@ -74,7 +74,7 @@
 #define LED_R_ON()              LED_R = false
 #define LED_R_TOGGLE()          LED_R = !LED_R
 
-extern float spBeep_MusicalScale[][8];    
+extern const float spBeep_MusicalScale[][8];    
 #define BUZZER_ON(a)            spTIMER.set_duty(BUZZER_TIMER, 0, 90.f)
 #define BUZZER_OFF()            spTIMER.set_duty(BUZZER_TIMER, 0, 0)
 

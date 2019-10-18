@@ -12,6 +12,7 @@
   ******************************************************************************
   */
 
+#if !defined(USING_OS)
 
 #include "sp_irq.h"
 
@@ -21,20 +22,56 @@ void EXTI0_IRQHandler(void) {
         (spIRQ_ClearPending)EXTI_ClearITPendingBit);
 }
 
-void EXTI9_5_IRQHandler(void) {
-    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line8, 
+void EXTI1_IRQHandler(void) {
+    spIRQ.invoke(EXTI1_IRQn, (void*)EXTI_Line1,
         (spIRQ_GetITStatus)EXTI_GetITStatus, 
         (spIRQ_ClearPending)EXTI_ClearITPendingBit);
 }
 
-void DMA2_Stream5_IRQHandler(void) {
-    spIRQ.invoke(DMA2_Stream5_IRQn, DMA2_Stream5, 
-        (spIRQ_GetITStatus)DMA_GetITStatus, 
-        (spIRQ_ClearPending)DMA_ClearITPendingBit);
+void EXTI2_IRQHandler(void) {
+    spIRQ.invoke(EXTI2_IRQn, (void*)EXTI_Line2,
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
 }
+
+void EXTI3_IRQHandler(void) {
+    spIRQ.invoke(EXTI3_IRQn, (void*)EXTI_Line3,
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+}
+
+void EXTI4_IRQHandler(void) {
+    spIRQ.invoke(EXTI4_IRQn, (void*)EXTI_Line4,
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+}
+
+void EXTI9_5_IRQHandler(void) {
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line5, 
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line6, 
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line7, 
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line8, 
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+    spIRQ.invoke(EXTI9_5_IRQn, (void*)EXTI_Line9, 
+        (spIRQ_GetITStatus)EXTI_GetITStatus, 
+        (spIRQ_ClearPending)EXTI_ClearITPendingBit);
+}
+
 
 void DMA2_Stream1_IRQHandler(void) {
     spIRQ.invoke(DMA2_Stream1_IRQn, DMA2_Stream1, 
+        (spIRQ_GetITStatus)DMA_GetITStatus, 
+        (spIRQ_ClearPending)DMA_ClearITPendingBit);
+}
+void DMA2_Stream5_IRQHandler(void) {
+    spIRQ.invoke(DMA2_Stream5_IRQn, DMA2_Stream5, 
         (spIRQ_GetITStatus)DMA_GetITStatus, 
         (spIRQ_ClearPending)DMA_ClearITPendingBit);
 }
@@ -113,8 +150,6 @@ void TIM8_TRG_COM_TIM14_IRQHandler(void) {
 }
 
 
-
-
 //TODO: Manager Core IRQs
 /* IQR Manager --------------------------------------------------------------------*/
 
@@ -155,6 +190,32 @@ spIRQ_CbUnit_t* IRQ_Regeiste(IRQn_Type irq, uint32_t it_flag, IRQ_Callback_t cb)
     return pCb;
 }
 
+#if USING_OS
+void IRQ_Invoke(IRQn_Type irq, void* peripheral, 
+    spIRQ_GetITStatus get_it_status,
+    spIRQ_ClearPending clear_pending) {
+    
+//    spIRQ_CbUnit_t* pCurrCb = spIRQ_CbEntries[irq];
+//    /* Invoke callback */
+//    while(pCurrCb) {
+//        if(get_it_status && get_it_status(peripheral, pCurrCb->interrupt_request_flag)) {
+//            if(pCurrCb->callback) pCurrCb->callback();
+//        }
+//        pCurrCb = pCurrCb->next;
+//    }
+//    /* Clear pending flag */
+//    pCurrCb = spIRQ_CbEntries[irq];
+//    while(pCurrCb) {
+//        if(clear_pending) clear_pending(peripheral, pCurrCb->interrupt_request_flag);
+//        pCurrCb = pCurrCb->next;
+//    }
+        
+BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//xTaskNotifyFromISR( xTaskhandle2W5500, 0x01, eSetBits, &xHigherPriorityTaskWoken );
+portYIELD_FROM_ISR( xHigherPriorityTaskWoken );  //没有这句，上面两句的事件响应速度慢
+
+}
+#else
 void IRQ_Invoke(IRQn_Type irq, void* peripheral, 
     spIRQ_GetITStatus get_it_status,
     spIRQ_ClearPending clear_pending) {
@@ -174,6 +235,7 @@ void IRQ_Invoke(IRQn_Type irq, void* peripheral,
         pCurrCb = pCurrCb->next;
     }
 }
+#endif
 
 
 struct __IRQ_Manager_Type spIRQ = {
@@ -182,5 +244,6 @@ struct __IRQ_Manager_Type spIRQ = {
     .invoke = IRQ_Invoke,
 };
 
+#endif
 
 /************************ (C) COPYRIGHT Tongji Super Power *****END OF FILE****/

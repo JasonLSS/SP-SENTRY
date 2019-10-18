@@ -15,13 +15,15 @@
 #ifndef __SP_IRQ_H
 #define __SP_IRQ_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if !defined(USING_OS)
 
 #include "sp_conf.h"
 #include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /** @addtogroup SP
   * @brief      SuperPower
@@ -117,6 +119,8 @@ extern struct __IRQ_Manager_Type {
 /**
   * @}
   */
+
+#endif
 
 #ifdef __cplusplus
 }

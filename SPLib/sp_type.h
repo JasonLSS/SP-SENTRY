@@ -31,15 +31,15 @@
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 1)
     #define packed_struct       struct __attribute__((packed))
     #define packed_union        union __attribute__((packed))
-			
-		#define packed_struct_n(x)	struct __attribute__((packed, aligned(x)))
-		#define packed_union_n(x)	  union __attribute__((packed, aligned(x)))
+        
+    #define packed_struct_n(x)  struct __attribute__((packed, aligned(x)))
+    #define packed_union_n(x)   union __attribute__((packed, aligned(x)))
 #else
     #define packed_struct       __packed struct
     #define packed_union        __packed union
-		
-		#define packed_struct_n(x)	__packed(x) struct
-		#define packed_union_n(x)	  __packed(x) union
+    
+    #define packed_struct_n(x)  __packed(x) struct
+    #define packed_union_n(x)   __packed(x) union
 #endif
     
 #define spINLINE __inline
@@ -61,6 +61,15 @@ typedef struct {
     uint32_t        us;                     /*!< Current microsecond */
 } spTimeStamp;
 
+/**
+ * @brief   System status
+ */
+typedef enum {
+    spSS_Error      = -1,
+    spSS_SelfCheck  =  0,
+    spSS_Running    =  1,
+    spSS_Suspend    =  2,
+} spSystemStatus_t;
 
 /**
  * @brief   Bit-filed data type

@@ -14,6 +14,45 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sp_timer.h"
 
+const float __prescaler_factor[] = {168, 10, 10, 2, 1.6};
+
+void __calc_psc_period(TIM_TypeDef *Timx, float frequency, uint32_t* psc, uint32_t* per) {
+    /* Calculate arrangement value(peroid) and prescaler. */
+    if(frequency < __TIMER_MIN_FREQ) {
+        frequency = __TIMER_MIN_FREQ;
+    } else if(frequency > __TIMER_MAX_FREQ) {
+        frequency = __TIMER_MAX_FREQ;
+    }
+    
+    uint32_t bus_freq = SystemCoreClock;
+    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
+       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
+        bus_freq /= 2;
+    }
+       
+    uint32_t peroid0 = bus_freq / frequency;
+    uint32_t prescaler = 1;
+    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
+    if(Timx!=TIM2 && Timx!=TIM5) {
+        uint32_t peroid = peroid0;
+        for(int i=0; i<sizeof(__prescaler_factor)/sizeof(__prescaler_factor[0]); ++i) {
+            prescaler *= __prescaler_factor[i];
+            peroid = peroid0/prescaler;
+            if(peroid < 0x10000) {
+                *psc = prescaler;
+                *per = peroid;
+                return;
+            }
+        }
+        *psc = 0x10000;
+        *per = peroid0 / (*psc);
+    } else {
+        *psc = 1;
+        *per = peroid0;
+    }
+}
+
+
 
 bool TIM_Init(
     TIM_TypeDef *Timx, 
@@ -76,13 +115,9 @@ bool TIM_Init(
        Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
         bus_freq /= 2;
     }
-    uint32_t peroid = bus_freq / frequency;
-    uint32_t prescaler = 1;
-    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
-    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
-        prescaler = bus_freq / 1000000;
-        peroid /= prescaler;
-    }
+    uint32_t prescaler, peroid;
+    __calc_psc_period(Timx, frequency, &prescaler, &peroid);
+    
     TIM_TimeBaseInitTypeDef     tim_initstruct;
     tim_initstruct.TIM_Prescaler            =   prescaler - 1;
     tim_initstruct.TIM_Period               =   peroid - 1;
@@ -109,20 +144,8 @@ void TIM_SetFrequency(TIM_TypeDef *Timx, float frequency, uint8_t channel) {
     
     float duty = TIM_GetDuty(Timx, channel);
     
-    /* Calculate arrangement value(peroid) and prescaler. */
-    uint32_t bus_freq = SystemCoreClock;
-    
-    if(Timx==TIM2  | Timx==TIM3  | Timx==TIM4  | Timx==TIM5  | Timx==TIM6 | \
-       Timx==TIM7  | Timx==TIM12 | Timx==TIM13 | Timx==TIM14) {
-        bus_freq /= 2;
-    }
-    uint32_t peroid = bus_freq / frequency;
-    uint32_t prescaler = 1;
-    /* NOTE: Only TIM2 and TIM5 is 32-bit conter for STM32F427II. */
-    if(peroid > 0x10000 && Timx!=TIM2 && Timx!=TIM5) {
-        prescaler = bus_freq / 1000000;
-        peroid /= prescaler;
-    }
+    uint32_t prescaler, peroid;
+    __calc_psc_period(Timx, frequency, &prescaler, &peroid);
     
     TIM_Cmd(Timx, DISABLE);
     Timx->PSC = prescaler - 1;
@@ -157,8 +180,7 @@ bool TIM_PWM_OutputInit(
     /* Config GPIO */
     spGPIO.alternal_config(
         portpin->gpio,
-        spGPIO_PinFromPinSource(portpin->pin_source),
-        GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(portpin->pin_source));
     
     /* Config pins */
     GPIO_PinAFConfig(
@@ -197,9 +219,7 @@ bool TIM_PWM_OutputInit(
     }
     
     TIM_ARRPreloadConfig(timx,ENABLE);
-		
-		if(timx==TIM1 || timx==TIM8)
-				TIM_CtrlPWMOutputs(timx,ENABLE);
+    TIM_CtrlPWMOutputs(timx,ENABLE);
     
     TIM_SetDuty(timx, channel, duty);
     

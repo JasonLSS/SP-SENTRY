@@ -23,15 +23,17 @@
   * limitations under the License.
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
 
-#ifndef __USB_CDC_DESC_H
-#define __USB_CDC_DESC_H
+#ifndef __USB_DESC_H
+#define __USB_DESC_H
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_def.h"
+#include "usb_core.h"
+//#include "usbd_cdc_desc.h"
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -77,12 +79,12 @@
 /** @defgroup USBD_DESC_Exported_Variables
   * @{
   */ 
-extern  uint8_t USBD_DeviceDesc  		[USB_SIZ_DEVICE_DESC];
-extern  uint8_t USBD_StrDesc			[USB_MAX_STR_DESC_SIZ];
-extern  uint8_t USBD_OtherSpeedCfgDesc	[USB_LEN_CFG_DESC]; 
+extern  uint8_t USBD_DeviceDesc  [USB_SIZ_DEVICE_DESC];
+extern  uint8_t USBD_StrDesc[USB_MAX_STR_DESC_SIZ];
+extern  uint8_t USBD_OtherSpeedCfgDesc[USB_LEN_CFG_DESC]; 
 extern  uint8_t USBD_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC];
-extern  uint8_t USBD_LangIDDesc			[USB_SIZ_STRING_LANGID];
-extern  USBD_DEVICE USR_CDC_desc; 
+extern  uint8_t USBD_LangIDDesc[USB_SIZ_STRING_LANGID];
+extern  USBD_DEVICE USR_desc; 
 /**
   * @}
   */ 
@@ -92,23 +94,23 @@ extern  USBD_DEVICE USR_CDC_desc;
   */ 
 
 
-uint8_t *     usbd_cdc_DeviceDescriptor( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_LangIDStrDescriptor( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_ManufacturerStrDescriptor ( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_ProductStrDescriptor ( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_SerialStrDescriptor( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_ConfigStrDescriptor( uint8_t speed , uint16_t *length);
-uint8_t *     usbd_cdc_InterfaceStrDescriptor( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_DeviceDescriptor( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_LangIDStrDescriptor( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_ManufacturerStrDescriptor ( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_ProductStrDescriptor ( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_SerialStrDescriptor( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_ConfigStrDescriptor( uint8_t speed , uint16_t *length);
+uint8_t *     USBD_USR_InterfaceStrDescriptor( uint8_t speed , uint16_t *length);
 
 #ifdef USB_SUPPORT_USER_STRING_DESC
-uint8_t *     usbd_cdc_USRStringDesc (uint8_t speed, uint8_t idx , uint16_t *length);  
+uint8_t *     USBD_USR_USRStringDesc (uint8_t speed, uint8_t idx , uint16_t *length);  
 #endif /* USB_SUPPORT_USER_STRING_DESC */  
   
 /**
   * @}
   */ 
 
-#endif /* __usbd_cdc_DESC_H */
+#endif /* __USBD_DESC_H */
 
 /**
   * @}

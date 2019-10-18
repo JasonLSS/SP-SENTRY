@@ -22,7 +22,7 @@
 CAN_Receiver*                   __can1_receivers[CAN1_POOLSIZE] = {0x00};
 CAN_Receiver*                   __can2_receivers[CAN2_POOLSIZE] = {0x00};
 CAN_Transmitter*                __can1_transmitters[CAN1_POOLSIZE] = {0x00};
-CAN_Transmitter*                __can2_transmitters[CAN1_POOLSIZE] = {0x00};
+CAN_Transmitter*                __can2_transmitters[CAN2_POOLSIZE] = {0x00};
 
 
 /**
@@ -225,11 +225,9 @@ void spCAN_Init(CAN_TypeDef* canx, uint8_t tsjw,uint8_t tbs2,uint8_t tbs1,uint16
     assert_param(canx == CAN1 || canx == CAN2);
     
     if(canx == CAN1) {
-        // Enable CAN1, baudrate=1Mbps
-        CAN1_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
+        CAN1_Init(tsjw, tbs2, tbs1, brp, mode);
     } else if(canx == CAN2) {
-        // Enable CAN2, baudrate=1Mbps
-        CAN2_Init(CAN_SJW_1tq,CAN_BS2_4tq,CAN_BS1_9tq,3,CAN_Mode_Normal);
+        CAN2_Init(tsjw, tbs2, tbs1, brp, mode);
     }
 }
 

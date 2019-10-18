@@ -72,7 +72,7 @@ void Msg_Recv(CanRxMsg* msg, struct _sentry_reg_t* obj) {
 }
 
 void Sentry_Looper(const uint32_t tick, RC_DataType* recv) {
-		float ltime = spSENTRY._system.time_stamp;
+//		float ltime = spSENTRY._system.time_stamp;
 		float ctime = spSENTRY._system.time_stamp = TASK_GetSecond();
 		spSENTRY.communi.online = ctime - _sentry_reg.time_stamp < 0.1f;
 	
@@ -252,7 +252,7 @@ spSENTRY_MSG_REG* Sentry_GetMsgRegister(void) {
 }
 
 RobotMode Sentry_GetRobotmode(void) {
-    return 0;
+    return robotMode;
 }
 
 struct __SENTRY_Manager_Type spSENTRY = {

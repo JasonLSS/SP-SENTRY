@@ -60,12 +60,9 @@ void SPI5_Init(void){
     GPIO_PinAFConfig(GPIOF, GPIO_PinSource7, GPIO_AF_SPI5); 
     GPIO_PinAFConfig(GPIOF, GPIO_PinSource8, GPIO_AF_SPI5);
     GPIO_PinAFConfig(GPIOF, GPIO_PinSource9, GPIO_AF_SPI5);
-    spGPIO.alternal_config(GPIOF, 
-        GPIO_Pin_7 |  GPIO_Pin_8|  GPIO_Pin_9, GPIO_OType_PP,
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.alternal_config(GPIOF, GPIO_Pin_7 |  GPIO_Pin_8|  GPIO_Pin_9);
     
-    spGPIO.output_config(GPIOF, 
-        GPIO_Pin_6, GPIO_OType_PP, GPIO_PuPd_UP, GPIO_Speed_100MHz);
+    spGPIO.output_config(GPIOF, GPIO_Pin_6);
     GPIO_SetBits(GPIOF, GPIO_Pin_6);
     
     /* f_APB2 = 84MHz, f_MPU_SCLK_Max = 1MHz */
@@ -156,18 +153,13 @@ void SPI4_Init(void){
     GPIO_PinAFConfig(SPI4_Pins.mosi.gpio, SPI4_Pins.mosi.pin_source, GPIO_AF_SPI4);
     
     spGPIO.alternal_config(SPI4_Pins.sck.gpio, 
-        spGPIO_PinFromPinSource(SPI4_Pins.sck.pin_source), GPIO_OType_PP,
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(SPI4_Pins.sck.pin_source));
     spGPIO.alternal_config(SPI4_Pins.miso.gpio, 
-        spGPIO_PinFromPinSource(SPI4_Pins.miso.pin_source), GPIO_OType_PP,
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(SPI4_Pins.miso.pin_source));
     spGPIO.alternal_config(SPI4_Pins.mosi.gpio, 
-        spGPIO_PinFromPinSource(SPI4_Pins.mosi.pin_source), GPIO_OType_PP,
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
-    
+        spGPIO_PinFromPinSource(SPI4_Pins.mosi.pin_source));
     spGPIO.output_config(SPI4_Pins.nss.gpio, 
-        spGPIO_PinFromPinSource(SPI4_Pins.nss.pin_source), GPIO_OType_PP, 
-        GPIO_PuPd_UP, GPIO_Speed_100MHz);
+        spGPIO_PinFromPinSource(SPI4_Pins.nss.pin_source));
     spSPI.release(&SPI4_Pins);
     
     /* f_APB2 = 84MHz, f_MPU_SCLK_Max = 1MHz */

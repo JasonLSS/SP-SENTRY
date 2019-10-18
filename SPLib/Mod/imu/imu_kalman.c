@@ -47,7 +47,7 @@ void KalmanFilter(
     float pitch = kalman->euler.pitch;
     float wx = gyro[0] + sin(roll)*tan(pitch)*gyro[1] + cos(roll)*tan(pitch)*gyro[2];
     float wy = cos(roll)*gyro[1] - sin(roll)*gyro[2];
-    float wz = sin(roll)/cos(pitch)*gyro[1] - cos(roll)/cos(pitch)*gyro[2];
+    float wz = sin(roll)/cos(pitch)*gyro[1] + cos(roll)/cos(pitch)*gyro[2];
 //    float wx = gyro[0];
 //    float wy = gyro[1];
     

@@ -340,7 +340,7 @@ void TASK_ControlLooper() {
     {
 
 				static uint16_t remain_HP = 0;
-				static uint16_t remain_HP_ex = 0;
+//				static uint16_t remain_HP_ex = 0;
         if(task_counter%10 == 1) {
 						if(recv.rc.s2==RC_SW_UP) {
 								if(recv.rc.s1==RC_SW_MID) {
@@ -364,7 +364,7 @@ void TASK_ControlLooper() {
 										}
 										//task_lss
 										if(!attacked){
-											static int static_long = 0;
+//											static int static_long = 0;
 											robotMode = DYNAMIC_ATTACK_MODE;
 //											if(ext_game_robot_state.remain_HP > 600 && (if_if_newframe == 1 || if_if_newframe == 2) && !attacked){
 //												robotMode = STATIC_ATTACK_MODE;
@@ -380,7 +380,7 @@ void TASK_ControlLooper() {
 //										if((!if_if_newframe ||ext_game_robot_state.remain_HP < 100)&& attacked)
 //											robotMode = ESCAPE_MODE;
 //										
-										remain_HP_ex = remain_HP;
+//										remain_HP_ex = remain_HP;
 								}
 						} else if(recv.rc.s2==RC_SW_DOWN) {  
 								// hand operation mode
